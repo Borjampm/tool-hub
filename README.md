@@ -1,2 +1,2 @@
-# expenses-app
-A small app to manage expenses
+# Marqness Server
+My very own server, for now all the code will be here
