@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nginx Configuration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #c3e6cb;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+        }
+        .info h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .info p {
+            margin-bottom: 5px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Nginx Configuration Test</h1>
+
+        <div class="status">
+            <strong>✅ Success!</strong> Your nginx configuration is working correctly!
+        </div>
+
+        <div class="info">
+            <h3>Server Information</h3>
+            <p><strong>Server:</strong> <span id="server-info">nginx</span></p>
+            <p><strong>Date:</strong> <span id="current-date"></span></p>
+            <p><strong>Time:</strong> <span id="current-time"></span></p>
+            <p><strong>User Agent:</strong> <span id="user-agent"></span></p>
+        </div>
+
+        <div class="info">
+            <h3>Test Results</h3>
+            <p>✅ HTML serving: Working</p>
+            <p>✅ CSS styling: Working</p>
+            <p>✅ JavaScript: <span id="js-test">Testing...</span></p>
+            <p>✅ HTTP Response: 200 OK</p>
+        </div>
+
+        <div class="footer">
+            <p>This is a test page for nginx configuration</p>
+            <p>If you can see this page, your nginx setup is working correctly!</p>
+        </div>
+    </div>
+
+    <script>
+        // Update current date and time
+        const now = new Date();
+        document.getElementById('current-date').textContent = now.toLocaleDateString();
+        document.getElementById('current-time').textContent = now.toLocaleTimeString();
+
+        // Update user agent
+        document.getElementById('user-agent').textContent = navigator.userAgent;
+
+        // Test JavaScript
+        document.getElementById('js-test').textContent = 'Working';
+        document.getElementById('js-test').style.color = '#28a745';
+    </script>
+</body>
+</html>
