@@ -19,12 +19,19 @@ export class TimeEntryService {
    * Create a new time entry when the timer starts
    */
   static async createEntry(data: CreateTimeEntryData): Promise<TimeEntry> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to create time entries');
+    }
+
     const { data: entry, error } = await supabase
       .from('time_entries')
       .insert({
         entry_id: data.entryId,
         name: 'Untitled Activity', // Temporary name, will be updated when completed
         start_time: data.startTime.toISOString(),
+        user_id: user.id,
       })
       .select()
       .single();
@@ -66,12 +73,19 @@ export class TimeEntryService {
   }
 
   /**
-   * Get all time entries, ordered by creation date (newest first)
+   * Get all time entries for the authenticated user, ordered by creation date (newest first)
    */
   static async getAllEntries(): Promise<TimeEntry[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to fetch time entries');
+    }
+
     const { data: entries, error } = await supabase
       .from('time_entries')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -83,13 +97,20 @@ export class TimeEntryService {
   }
 
   /**
-   * Get a specific time entry by entry_id
+   * Get a specific time entry by entry_id for the authenticated user
    */
   static async getEntry(entryId: string): Promise<TimeEntry | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to fetch time entries');
+    }
+
     const { data: entry, error } = await supabase
       .from('time_entries')
       .select('*')
       .eq('entry_id', entryId)
+      .eq('user_id', user.id)
       .single();
 
     if (error) {
@@ -105,13 +126,20 @@ export class TimeEntryService {
   }
 
   /**
-   * Delete a time entry by entry_id
+   * Delete a time entry by entry_id for the authenticated user
    */
   static async deleteEntry(entryId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to delete time entries');
+    }
+
     const { error } = await supabase
       .from('time_entries')
       .delete()
-      .eq('entry_id', entryId);
+      .eq('entry_id', entryId)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error('Error deleting time entry:', error);

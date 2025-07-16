@@ -68,10 +68,19 @@ CREATE TABLE time_entries (
 
 ## Usage
 
-1. **Start Timer**: Click "Start" to begin tracking time
+### Authentication Required
+The app now requires user authentication. When you first visit:
+
+1. **Sign Up**: Create a new account with email and password
+2. **Sign In**: Use existing credentials to access your data
+3. **Protected Data**: Each user can only see their own time entries
+
+### Time Tracking Flow
+1. **Start Timer**: Click "Start" to begin tracking time (creates entry in database)
 2. **Stop Timer**: Click "Stop" to pause and open the metadata form
-3. **Save Entry**: Fill in the activity details and save
-4. **View Dashboard**: Check your time tracking history and statistics
+3. **Save Entry**: Fill in the activity details and save to your account
+4. **View Dashboard**: Check your personal time tracking history and statistics
+5. **Sign Out**: Use the sign out button when done
 
 ## Supabase Studio
 

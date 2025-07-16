@@ -1,0 +1,55 @@
+---
+globs: *.ts,*.tsx
+description: TypeScript type-only import rules for verbatimModuleSyntax compliance
+---
+
+# TypeScript Type-Only Import Rules
+
+## CRITICAL: Use Type-Only Imports
+
+This project has `verbatimModuleSyntax` enabled in TypeScript configuration, which **requires** type-only imports for all TypeScript types, interfaces, and type aliases.
+
+### Rules:
+- **ALWAYS use `import type { ... }` for types, interfaces, and type aliases**
+- **Use regular `import { ... }` only for runtime values (functions, classes, constants)**
+- **Failure to follow this will cause "Importing binding name not found" errors**
+
+### Examples:
+
+#### ✅ CORRECT - Type-only imports:
+```typescript
+import type { ReactNode } from 'react';
+import type { User, Session } from '@supabase/supabase-js';
+import type { TimeEntry } from '../lib/supabase';
+```
+
+#### ✅ CORRECT - Runtime imports:
+```typescript
+import React, { useState, useEffect } from 'react';
+import { AuthError } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
+```
+
+#### ❌ WRONG - Will cause compilation errors:
+```typescript
+import { User, Session, ReactNode } from 'react';
+import { TimeEntry } from '../lib/supabase';
+```
+
+### Import Organization Order:
+1. **React imports first**
+2. **Type-only imports second**
+3. **Third-party runtime imports third**
+4. **Local imports last**
+
+### Common Types Requiring Type-Only Imports:
+- `ReactNode`, `ReactElement`, `ComponentProps` from 'react'
+- `User`, `Session` from '@supabase/supabase-js'
+- Custom interfaces and types from local files
+- Props interfaces for components
+- State and context types
+
+### Quick Reference:
+- If it's used in type annotations → `import type`
+- If it's used in runtime code → regular `import`
+- When in doubt → use `import type` for types and interfaces

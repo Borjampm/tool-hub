@@ -1,0 +1,80 @@
+---
+globs: *.ts,*.tsx
+description: Authentication patterns and security rules for Marqness time tracking app
+---
+
+# Authentication & Security Patterns
+
+## Authentication Context Rules
+
+### Always Check User Authentication
+- **NEVER access user data without authentication checks in service methods**
+- **Always verify `user` exists before database operations**
+- **Use `useAuth()` hook for authentication state in components**
+
+#### Service Layer Pattern:
+```typescript
+// ✅ CORRECT - Always include user checks
+static async createEntry(data: CreateTimeEntryData): Promise<TimeEntry> {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    throw new Error('User must be authenticated to create time entries');
+  }
+  
+  // ... rest of method with user.id
+}
+```
+
+## Database Security (Row Level Security)
+
+### User Data Isolation
+- **All time_entries queries MUST include user filtering**
+- **NEVER query without user context**
+- **Always include `user_id` in database operations**
+
+#### Database Query Patterns:
+```typescript
+// ✅ CORRECT - User-filtered queries
+.from('time_entries')
+.select('*')
+.eq('user_id', user.id)
+
+// ✅ CORRECT - Include user_id in inserts
+.insert({
+  entry_id: data.entryId,
+  name: data.name,
+  user_id: user.id,  // Always include this
+})
+```
+
+## Component Authentication Guards
+
+### Protected Component Pattern:
+```typescript
+// ✅ Use AuthGuard to wrap protected content
+<AuthProvider>
+  <AuthGuard>
+    <ProtectedComponent />
+  </AuthGuard>
+</AuthProvider>
+```
+
+### Loading States:
+- **Show loading indicators during auth resolution**
+- **Disable buttons during API calls**
+- **Handle authentication state changes gracefully**
+
+## Common Authentication Pitfalls to Avoid
+
+1. **❌ Direct database queries without user context** - Will expose other users' data
+2. **❌ Missing authentication checks in service methods** - Security vulnerability
+3. **❌ Not handling loading states** - Poor user experience
+4. **❌ Forgetting to include user_id in database operations** - RLS policy errors
+
+## Supabase Auth Integration
+
+### Use Centralized Client:
+- **Import from `../lib/supabase`** - Never create multiple instances
+- **Use RLS policies** - Let database handle user filtering
+- **Handle auth errors gracefully** - Provide clear user feedback
