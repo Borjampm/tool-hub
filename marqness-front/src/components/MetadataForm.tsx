@@ -12,9 +12,10 @@ interface MetadataFormProps {
   onClose: () => void;
   onSubmit: (data: MetadataFormData) => void;
   elapsedTime: number;
+  isLoading?: boolean;
 }
 
-export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime }: MetadataFormProps) {
+export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading = false }: MetadataFormProps) {
   const {
     register,
     handleSubmit,
@@ -108,14 +109,16 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime }: Metadat
           <div className="flex space-x-3 pt-4">
             <button
               type="submit"
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+              disabled={isLoading}
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Save Activity
+              {isLoading ? 'Saving...' : 'Save Activity'}
             </button>
             <button
               type="button"
               onClick={handleCancel}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium"
+              disabled={isLoading}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
             </button>

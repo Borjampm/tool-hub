@@ -3,6 +3,7 @@ import { useTimer } from '../contexts/TimerContext';
 import { TimerDisplay } from './TimerDisplay';
 import { TimerControls } from './TimerControls';
 import { MetadataForm } from './MetadataForm';
+import { TimeEntryService } from '../services/timeEntryService';
 
 interface MetadataFormData {
   name: string;
@@ -13,21 +14,35 @@ interface MetadataFormData {
 export function TimerView() {
   const { state, startTimer, stopTimer, resetTimer } = useTimer();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const generateEntryId = () => {
     return `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  const handleStart = () => {
+  const handleStart = async () => {
     const entryId = generateEntryId();
+    setIsLoading(true);
+    setError(null);
     
-    // Log where API request would be made
-    console.log(`🚀 API Request - POST /api/entries/start`, {
-      timestamp: new Date().toISOString(),
-      entryId: entryId,
-    });
-
-    startTimer(entryId);
+    try {
+      // Create entry in database
+      await TimeEntryService.createEntry({
+        entryId,
+        startTime: new Date(),
+      });
+      
+      // Start the timer in local state
+      startTimer(entryId);
+      
+      console.log(`✅ Time entry created:`, entryId);
+    } catch (err) {
+      console.error('Failed to start timer:', err);
+      setError('Failed to start timer. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleStop = () => {
@@ -35,18 +50,33 @@ export function TimerView() {
     setIsFormOpen(true);
   };
 
-  const handleFormSubmit = (data: MetadataFormData) => {
-    // Log where API request would be made
-    console.log(`🚀 API Request - POST /api/entries/${state.entryId}/stop`, {
-      entryId: state.entryId,
-      elapsedTime: state.elapsedTime,
-      metadata: data,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Reset the timer after successful "submission"
-    resetTimer();
-    setIsFormOpen(false);
+  const handleFormSubmit = async (data: MetadataFormData) => {
+    if (!state.entryId) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Complete the entry in database
+      await TimeEntryService.completeEntry(state.entryId, {
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        endTime: new Date(),
+        elapsedTime: state.elapsedTime,
+      });
+      
+      console.log(`✅ Time entry completed:`, state.entryId);
+      
+      // Reset the timer after successful submission
+      resetTimer();
+      setIsFormOpen(false);
+    } catch (err) {
+      console.error('Failed to save time entry:', err);
+      setError('Failed to save time entry. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFormClose = () => {
@@ -71,8 +101,21 @@ export function TimerView() {
               isRunning={state.isRunning}
               onStart={handleStart}
               onStop={handleStop}
+              isLoading={isLoading}
             />
           </div>
+          
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+              <button
+                onClick={() => setError(null)}
+                className="text-xs text-red-500 hover:text-red-700 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {state.entryId && (
             <div className="mt-4 text-sm text-gray-500">
@@ -93,6 +136,7 @@ export function TimerView() {
         onClose={handleFormClose}
         onSubmit={handleFormSubmit}
         elapsedTime={state.elapsedTime}
+        isLoading={isLoading}
       />
     </div>
   );
