@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { TimeEntryService } from '../services/timeEntryService';
 import type { TimeEntry } from '../lib/supabase';
 
@@ -55,6 +55,24 @@ export function Dashboard() {
       .reduce((total, entry) => total + (entry.elapsed_time || 0), 0);
   };
 
+  const getCategoryBreakdown = () => {
+    const categoryMap = new Map<string, { count: number; totalTime: number }>();
+    
+    entries.forEach(entry => {
+      const category = entry.category || 'uncategorized';
+      const existing = categoryMap.get(category) || { count: 0, totalTime: 0 };
+      
+      categoryMap.set(category, {
+        count: existing.count + 1,
+        totalTime: existing.totalTime + (entry.elapsed_time || 0),
+      });
+    });
+    
+    return Array.from(categoryMap.entries())
+      .map(([category, data]) => ({ category, ...data }))
+      .sort((a, b) => b.totalTime - a.totalTime);
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -71,7 +89,7 @@ export function Dashboard() {
       <div className="space-y-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Your time tracking analytics and history</p>
+          <p className="text-gray-600">Your time tracking analytics and insights</p>
         </div>
 
         {error && (
@@ -118,44 +136,70 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* Recent Entries */}
+            {/* Category Breakdown */}
             <div className="bg-white rounded-lg shadow-lg">
               <div className="p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">Recent Entries</h2>
+                <h2 className="text-xl font-semibold text-gray-900">Category Breakdown</h2>
               </div>
-              <div className="divide-y divide-gray-200">
-                {entries.map((entry) => (
-                  <div key={entry.id} className="p-6 hover:bg-gray-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-medium text-gray-900">{entry.name}</h3>
-                        {entry.description && (
-                          <p className="text-sm text-gray-600 mt-1">{entry.description}</p>
-                        )}
-                        <div className="flex items-center space-x-4 mt-2">
-                          {entry.category && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {entry.category}
-                            </span>
-                          )}
-                          <span className="text-sm text-gray-500">
-                            {formatDate(entry.created_at)}
+              <div className="p-6">
+                {getCategoryBreakdown().length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No categorized activities yet</p>
+                ) : (
+                  <div className="space-y-4">
+                    {getCategoryBreakdown().map(({ category, count, totalTime }) => (
+                      <div key={category} className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {category || 'Uncategorized'}
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            {count} {count === 1 ? 'activity' : 'activities'}
                           </span>
                         </div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {formatTime(totalTime)}
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-lg font-semibold text-gray-900">
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Recent Activity Summary */}
+            <div className="bg-white rounded-lg shadow-lg">
+              <div className="p-6 border-b border-gray-200">
+                <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
+              </div>
+              <div className="p-6">
+                {entries.slice(0, 5).length === 0 ? (
+                  <p className="text-gray-500 text-center py-4">No recent activities</p>
+                ) : (
+                  <div className="space-y-3">
+                    {entries.slice(0, 5).map((entry) => (
+                      <div key={entry.id} className="flex items-center justify-between py-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {entry.name}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatDate(entry.created_at)}
+                          </p>
+                        </div>
+                        <div className="text-sm font-medium text-gray-900">
                           {entry.elapsed_time ? formatTime(entry.elapsed_time) : 'In progress...'}
                         </div>
-                        {entry.end_time && entry.start_time && (
-                          <div className="text-sm text-gray-500">
-                            {new Date(entry.start_time).toLocaleTimeString()} - {new Date(entry.end_time).toLocaleTimeString()}
-                          </div>
-                        )}
                       </div>
-                    </div>
+                    ))}
+                    {entries.length > 5 && (
+                      <div className="text-center pt-3">
+                        <p className="text-xs text-gray-500">
+                          Showing 5 of {entries.length} activities
+                        </p>
+                      </div>
+                    )}
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </>

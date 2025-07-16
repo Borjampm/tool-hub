@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
 
 interface TimerState {
   isRunning: boolean;
@@ -60,7 +60,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(timerReducer, initialState);
 
   useEffect(() => {
-    let intervalId: number;
+    let intervalId: NodeJS.Timeout | undefined;
     if (state.isRunning) {
       intervalId = setInterval(() => {
         dispatch({ type: 'TICK' });
