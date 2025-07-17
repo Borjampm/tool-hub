@@ -148,6 +148,60 @@ export function Activities() {
     setModalLoading(false);
   };
 
+  const generateSampleActivities = async () => {
+    const sampleActivities = [
+      { name: 'Daily standup meeting', description: 'Team sync and planning for the day' },
+      { name: 'Code review session', description: 'Reviewing pull requests from team members' },
+      { name: 'Learning React hooks', description: 'Deep dive into useEffect and custom hooks' },
+      { name: 'Morning jog', description: 'Cardio workout around the neighborhood' },
+      { name: 'Lunch break', description: 'Enjoyed a nice sandwich and caught up with colleagues' },
+      { name: 'Bug fixing', description: 'Fixed critical login issue reported by users' },
+      { name: 'Reading technical articles', description: 'Staying up to date with latest React trends' },
+      { name: 'Grocery shopping', description: 'Weekly grocery run to stock up on essentials' },
+      { name: 'Yoga session', description: 'Relaxing yoga practice to unwind' },
+      { name: 'Project planning', description: 'Planning next sprint and prioritizing features' },
+    ];
+
+    try {
+      setError(null);
+      const now = new Date();
+      const promises = sampleActivities.map(async (activity) => {
+        // Generate random duration between 15 minutes and 8 hours
+        const durationMinutes = Math.floor(Math.random() * (8 * 60 - 15)) + 15;
+        
+        // Generate random start time within the last 14 days
+        const daysBack = Math.floor(Math.random() * 14);
+        const hoursBack = Math.floor(Math.random() * 24);
+        const minutesBack = Math.floor(Math.random() * 60);
+        
+        const startTime = new Date(now);
+        startTime.setDate(startTime.getDate() - daysBack);
+        startTime.setHours(startTime.getHours() - hoursBack);
+        startTime.setMinutes(startTime.getMinutes() - minutesBack);
+        
+        const endTime = new Date(startTime);
+        endTime.setMinutes(endTime.getMinutes() + durationMinutes);
+        
+        const manualEntryData: ManualTimeEntryData = {
+          name: activity.name,
+          description: activity.description,
+          category: undefined, // No category for sample activities
+          startTime,
+          endTime,
+          elapsedTime: durationMinutes * 60, // Convert to seconds
+        };
+        
+        return TimeEntryService.createManualEntry(manualEntryData);
+      });
+      
+      const newEntries = await Promise.all(promises);
+      setEntries([...newEntries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), ...entries]);
+    } catch (err) {
+      console.error('Failed to create sample activities:', err);
+      setError('Failed to create sample activities');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -168,12 +222,23 @@ export function Activities() {
             <h1 className="text-3xl font-bold text-gray-900">Activities</h1>
             <p className="text-gray-600">Manage all your time tracking entries</p>
           </div>
-          <button
-            onClick={handleCreateActivity}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
-          >
-            Create Activity
-          </button>
+          <div className="flex space-x-3">
+            {import.meta.env.DEV && (
+              <button
+                onClick={generateSampleActivities}
+                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 font-medium text-sm"
+                title="Development only: Generate sample data"
+              >
+                Generate Sample Data
+              </button>
+            )}
+            <button
+              onClick={handleCreateActivity}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+            >
+              Create Activity
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -198,12 +263,22 @@ export function Activities() {
               <p className="text-gray-600 max-w-md mx-auto mb-6">
                 Create your first activity manually or start using the timer to track your time.
               </p>
-              <button
-                onClick={handleCreateActivity}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
-              >
-                Create Activity
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {import.meta.env.DEV && (
+                  <button
+                    onClick={generateSampleActivities}
+                    className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 font-medium text-sm"
+                  >
+                    Generate Sample Data
+                  </button>
+                )}
+                <button
+                  onClick={handleCreateActivity}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+                >
+                  Create Activity
+                </button>
+              </div>
             </div>
           </div>
         ) : (

@@ -6,9 +6,10 @@ import { Navbar } from './components/Navbar';
 import { TimerView } from './components/TimerView';
 import { Activities } from './components/Activities';
 import { Dashboard } from './components/Dashboard';
+import { Settings } from './components/Settings';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'timer' | 'activities' | 'dashboard'>('timer');
+  const [activeTab, setActiveTab] = useState<'timer' | 'activities' | 'dashboard' | 'settings'>('timer');
 
   return (
     <AuthProvider>
@@ -20,6 +21,7 @@ function App() {
               {activeTab === 'timer' && <TimerView />}
               {activeTab === 'activities' && <Activities />}
               {activeTab === 'dashboard' && <Dashboard />}
+              {activeTab === 'settings' && <Settings />}
             </main>
           </div>
         </TimerProvider>
