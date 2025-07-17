@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } from '../services/timeEntryService';
+import { CSVExportService } from '../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import type { TimeEntry } from '../lib/supabase';
 
@@ -12,6 +13,7 @@ export function Activities() {
   const [editingEntry, setEditingEntry] = useState<TimeEntry | undefined>();
   const [modalLoading, setModalLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     loadEntries();
@@ -202,6 +204,28 @@ export function Activities() {
     }
   };
 
+  const handleExportCSV = async () => {
+    if (entries.length === 0) {
+      setError('No activities to export');
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      setError(null);
+      
+      // Use direct download method to avoid needing storage bucket setup
+      CSVExportService.downloadCSVDirect(entries);
+      
+      console.log('✅ CSV export completed successfully');
+    } catch (err) {
+      console.error('Failed to export CSV:', err);
+      setError('Failed to export activities as CSV. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -223,6 +247,28 @@ export function Activities() {
             <p className="text-gray-600">Manage all your time tracking entries</p>
           </div>
           <div className="flex space-x-3">
+            {entries.length > 0 && (
+              <button
+                onClick={handleExportCSV}
+                disabled={isExporting}
+                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Download all activities as CSV file"
+              >
+                {isExporting ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    <span>Exporting...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>Download as CSV</span>
+                  </div>
+                )}
+              </button>
+            )}
             {import.meta.env.DEV && (
               <button
                 onClick={generateSampleActivities}
