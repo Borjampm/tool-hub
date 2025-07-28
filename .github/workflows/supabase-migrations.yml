@@ -1,0 +1,14 @@
+# .github/workflows/supabase-migrations.yml
+on: [push]
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/actions@v0.2
+        with:
+          cli-version: "latest"
+          command: db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
