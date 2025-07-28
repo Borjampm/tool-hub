@@ -38,7 +38,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
       if (isSignUp) {
         result = await signUp(data.email, data.password);
         if (!result.error) {
-          setSuccessMessage('Check your email for a confirmation link!');
+          setSuccessMessage('Account created! Please check your email and click the confirmation link to activate your account.');
           reset();
         }
       } else {
