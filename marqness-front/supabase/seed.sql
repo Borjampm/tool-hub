@@ -1,0 +1,2 @@
+-- No seed data needed - users will create their own accounts and time entries
+-- This file exists because Supabase expects a seed.sql file 

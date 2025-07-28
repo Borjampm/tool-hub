@@ -1,0 +1,242 @@
+
+import { useForm } from 'react-hook-form';
+import { useState, useEffect } from 'react';
+import { CategoryService } from '../services/categoryService';
+import type { UserCategory } from '../lib/supabase';
+
+interface MetadataFormData {
+  name: string;
+  description?: string;
+  category?: string;
+}
+
+interface MetadataFormProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: MetadataFormData) => void;
+  elapsedTime: number;
+  isLoading?: boolean;
+}
+
+export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading = false }: MetadataFormProps) {
+  const [categories, setCategories] = useState<UserCategory[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+    setValue,
+  } = useForm<MetadataFormData>();
+
+  // Load categories when component mounts or when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      loadCategories();
+    }
+  }, [isOpen]);
+
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const userCategories = await CategoryService.getUserCategories();
+      setCategories(userCategories);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      // Don't show error to user, just show no categories
+      setCategories([]);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const handleCreateNewCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    
+    try {
+      setCreatingCategory(true);
+      const newCategory = await CategoryService.createCategory({
+        name: newCategoryName.trim(),
+      });
+      setCategories([...categories, newCategory]);
+      setValue('category', newCategory.name);
+      setShowNewCategoryInput(false);
+      setNewCategoryName('');
+    } catch (err) {
+      console.error('Failed to create category:', err);
+      // Could show error but for now just log it
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  const formatTime = (totalSeconds: number): string => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleFormSubmit = (data: MetadataFormData) => {
+    onSubmit(data);
+    reset();
+    setShowNewCategoryInput(false);
+    setNewCategoryName('');
+    onClose();
+  };
+
+  const handleCancel = () => {
+    reset();
+    setShowNewCategoryInput(false);
+    setNewCategoryName('');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Activity Details</h2>
+        
+        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+          <div className="text-sm text-gray-600">Time tracked:</div>
+          <div className="text-lg font-mono font-semibold text-gray-900">
+            {formatTime(elapsedTime)}
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              Activity Name *
+            </label>
+            <input
+              type="text"
+              id="name"
+              {...register('name', { required: 'Activity name is required' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="What were you working on?"
+            />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              id="description"
+              {...register('description')}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Optional details about the activity..."
+            />
+          </div>
+
+          <div>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+              Category (Optional)
+            </label>
+            <div className="space-y-2">
+              <select
+                id="category"
+                {...register('category')}
+                disabled={loadingCategories || showNewCategoryInput}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+              >
+                <option value="">No category</option>
+                {loadingCategories ? (
+                  <option disabled>Loading categories...</option>
+                ) : (
+                  categories.map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))
+                )}
+              </select>
+              
+              {!showNewCategoryInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowNewCategoryInput(true)}
+                  disabled={loadingCategories}
+                  className="w-full text-left px-3 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  + Create new category
+                </button>
+              ) : (
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Category name"
+                    disabled={creatingCategory}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleCreateNewCategory();
+                      } else if (e.key === 'Escape') {
+                        setShowNewCategoryInput(false);
+                        setNewCategoryName('');
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCreateNewCategory}
+                    disabled={!newCategoryName.trim() || creatingCategory}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {creatingCategory ? '...' : 'Add'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewCategoryInput(false);
+                      setNewCategoryName('');
+                    }}
+                    disabled={creatingCategory}
+                    className="px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isLoading ? 'Saving...' : 'Save Activity'}
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={isLoading}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+} 
