@@ -86,17 +86,17 @@ export function TimerView() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="text-center space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="text-center space-y-6 sm:space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Time Tracker</h1>
-          <p className="text-gray-600">Track your activities and productivity</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Time Tracker</h1>
+          <p className="text-sm sm:text-base text-gray-600">Track your activities and productivity</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
           <TimerDisplay elapsedTime={state.elapsedTime} />
           
-          <div className="mt-8">
+          <div className="mt-6 sm:mt-8">
             <TimerControls
               isRunning={state.isRunning}
               onStart={handleStart}
@@ -118,7 +118,7 @@ export function TimerView() {
           )}
 
           {state.entryId && (
-            <div className="mt-4 text-sm text-gray-500">
+            <div className="mt-4 text-xs sm:text-sm text-gray-500 break-all">
               Entry ID: {state.entryId}
             </div>
           )}
@@ -126,7 +126,7 @@ export function TimerView() {
 
         {!state.isRunning && state.elapsedTime === 0 && (
           <div className="text-center text-gray-500">
-            <p>Click &ldquo;Start&rdquo; to begin tracking your time</p>
+            <p className="text-sm sm:text-base">Click &ldquo;Start&rdquo; to begin tracking your time</p>
           </div>
         )}
       </div>
