@@ -4,6 +4,283 @@ import { CSVExportService } from '../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import type { TimeEntry } from '../lib/supabase';
 
+// New component for the file upload modal
+function FileUploadModal({ 
+  isOpen, 
+  onClose, 
+  onFileUpload 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onFileUpload: (file: File) => Promise<{
+    imported: number;
+    skipped: number;
+    errors: string[];
+  }>; 
+}) {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{
+    imported: number;
+    skipped: number;
+    errors: string[];
+  } | null>(null);
+
+  if (!isOpen) return null;
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const csvFile = files.find(file => file.type === 'text/csv' || file.name.endsWith('.csv'));
+    
+    if (csvFile) {
+      handleFileSelect(csvFile);
+    }
+  };
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileSelect(file);
+    }
+  };
+
+  const handleFileSelect = async (file: File) => {
+    setIsProcessing(true);
+    setUploadResult(null);
+    
+    try {
+      const result = await onFileUpload(file);
+      setUploadResult(result);
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setUploadResult({
+        imported: 0,
+        skipped: 0,
+        errors: [error instanceof Error ? error.message : 'Upload failed']
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleClose = () => {
+    setUploadResult(null);
+    setIsProcessing(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Upload Data</h3>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+                 {uploadResult ? (
+           <div className="space-y-4">
+             <div className="text-center">
+               <div className="text-3xl mb-3">
+                 {uploadResult.errors.length === 0 && uploadResult.imported > 0 ? '🎉' : 
+                  uploadResult.imported > 0 ? '⚠️' : '❌'}
+               </div>
+               <h4 className="text-lg font-medium text-gray-900">
+                 {uploadResult.imported > 0 ? 'Upload Successful!' : 'Upload Complete'}
+               </h4>
+               {uploadResult.imported > 0 && (
+                 <p className="text-sm text-gray-600 mt-1">
+                   Your activities list has been updated
+                 </p>
+               )}
+             </div>
+             
+             <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+               {uploadResult.imported > 0 && (
+                 <div className="flex justify-between items-center">
+                   <span className="text-gray-600">✅ Successfully imported:</span>
+                   <span className="font-bold text-green-600 text-lg">{uploadResult.imported}</span>
+                 </div>
+               )}
+               {uploadResult.skipped > 0 && (
+                 <div className="flex justify-between items-center">
+                   <span className="text-gray-600">⏭️ Skipped (duplicates):</span>
+                   <span className="font-medium text-yellow-600">{uploadResult.skipped}</span>
+                 </div>
+               )}
+               {uploadResult.errors.length > 0 && (
+                 <div className="mt-3">
+                   <p className="text-red-600 font-medium flex items-center">
+                     ❌ Errors ({uploadResult.errors.length}):
+                   </p>
+                   <div className="max-h-32 overflow-y-auto text-sm text-red-600 mt-2 bg-red-50 rounded p-2">
+                     {uploadResult.errors.map((error, index) => (
+                       <div key={index} className="mt-1">• {error}</div>
+                     ))}
+                   </div>
+                 </div>
+               )}
+               
+               {uploadResult.imported === 0 && uploadResult.skipped === 0 && uploadResult.errors.length === 0 && (
+                 <div className="text-center text-gray-600">
+                   No data to import from the file
+                 </div>
+               )}
+             </div>
+           </div>
+        ) : (
+          <>
+            <div 
+              className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileInputChange}
+                className="hidden"
+                id="file-upload"
+              />
+              
+              {isProcessing ? (
+                <div className="space-y-4">
+                  <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto"></div>
+                  <p className="text-gray-600">Processing file...</p>
+                </div>
+              ) : (
+                <>
+                  <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <h4 className="text-lg font-medium text-gray-900 mb-2">Drag file here</h4>
+                  <p className="text-gray-500 mb-4">Or click to browse files</p>
+                  <label
+                    htmlFor="file-upload"
+                    className="inline-block bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 cursor-pointer transition-colors"
+                  >
+                    Choose File
+                  </label>
+                  <p className="text-sm text-gray-400 mt-2">CSV files only</p>
+                </>
+              )}
+            </div>
+          </>
+        )}
+        
+        <div className="mt-6 flex justify-end space-x-3">
+          <button
+            onClick={handleClose}
+            className={`px-6 py-2 rounded-md font-medium focus:outline-none focus:ring-2 transition-colors ${
+              uploadResult 
+                ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500' 
+                : 'text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-gray-500'
+            }`}
+          >
+            {uploadResult ? 'Done' : 'Cancel'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// New component for the manage data dropdown
+function ManageDataDropdown({ 
+  entries, 
+  isExporting, 
+  onExportCSV, 
+  onUploadData 
+}: { 
+  entries: TimeEntry[]; 
+  isExporting: boolean; 
+  onExportCSV: () => void; 
+  onUploadData: () => void; 
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium flex items-center space-x-2"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 1.79 4 4 4h8c0 2.21 1.79 4 4 4h8c0-2.21-1.79-4-4-4H8c-2.21 0-4-1.79-4-4V7" />
+        </svg>
+        <span>Manage Data</span>
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+          <div className="py-1">
+            <button
+              onClick={() => {
+                onExportCSV();
+                setIsOpen(false);
+              }}
+              disabled={isExporting || entries.length === 0}
+              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isExporting ? (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full mr-3"></div>
+                  <span>Exporting...</span>
+                </>
+              ) : (
+                <>
+                  <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Download as CSV</span>
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={() => {
+                onUploadData();
+                setIsOpen(false);
+              }}
+              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span>Upload Data</span>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Activities() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -14,6 +291,7 @@ export function Activities() {
   const [modalLoading, setModalLoading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
   useEffect(() => {
     loadEntries();
@@ -226,6 +504,51 @@ export function Activities() {
     }
   };
 
+  const handleUploadData = () => {
+    setIsUploadModalOpen(true);
+  };
+
+  const handleUploadModalClose = () => {
+    setIsUploadModalOpen(false);
+  };
+
+  const handleFileUpload = async (file: File): Promise<{
+    imported: number;
+    skipped: number;
+    errors: string[];
+  }> => {
+    try {
+      setError(null);
+      
+      // Validate file type
+      if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+        throw new Error('Please select a CSV file');
+      }
+
+      // Read file content
+      const csvContent = await CSVExportService.readFileAsText(file);
+      
+      // Import the data
+      const result = await CSVExportService.importTimeEntriesFromCSV(csvContent, entries);
+      
+      // Refresh the entries list silently without showing loading state
+      if (result.imported > 0) {
+        try {
+          const data = await TimeEntryService.getAllEntries();
+          setEntries(data);
+        } catch (refreshError) {
+          console.error('Failed to refresh entries after import:', refreshError);
+          // Don't throw here - the import was successful, just refresh failed
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('File upload failed:', error);
+      throw error;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -248,26 +571,12 @@ export function Activities() {
           </div>
           <div className="flex space-x-3">
             {entries.length > 0 && (
-              <button
-                onClick={handleExportCSV}
-                disabled={isExporting}
-                className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Download all activities as CSV file"
-              >
-                {isExporting ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    <span>Exporting...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span>Download as CSV</span>
-                  </div>
-                )}
-              </button>
+              <ManageDataDropdown
+                entries={entries}
+                isExporting={isExporting}
+                onExportCSV={handleExportCSV}
+                onUploadData={handleUploadData}
+              />
             )}
             {import.meta.env.DEV && (
               <button
@@ -412,6 +721,12 @@ export function Activities() {
           isLoading={modalLoading}
           existingEntry={editingEntry}
           mode={modalMode}
+        />
+
+        <FileUploadModal
+          isOpen={isUploadModalOpen}
+          onClose={handleUploadModalClose}
+          onFileUpload={handleFileUpload}
         />
       </div>
     </div>

@@ -1,15 +1,64 @@
-# Marqness Frontend
+# Marqness - Personal Time Tracking App
 
-A modern React application built with **Vite**, **TypeScript**, and **TailwindCSS v4**.
+**Marqness** is a simple, elegant time tracking application designed to help you monitor and analyze how you spend your time. Built with modern web technologies, it provides a seamless experience for tracking activities, categorizing your work, and gaining insights into your productivity patterns.
+
+## 🎯 What is Marqness?
+
+Marqness is a personal time tracking tool that allows you to:
+
+- **⏱️ Track Time**: Start and stop timers for any activity with a simple click
+- **📝 Add Context**: Describe your activities with names, descriptions, and custom categories  
+- **📊 Analyze Patterns**: View detailed analytics and insights about your time usage
+- **🔒 Keep Data Private**: Your time tracking data is completely private and secure
+- **📱 Access Anywhere**: Responsive design works on desktop, tablet, and mobile devices
+
+## ✨ Key Features
+
+### Simple Time Tracking Workflow
+
+1. **🚀 Start**: Click "Start" to begin timing any activity
+2. **⏹️ Stop**: Click "Stop" when you're done 
+3. **📋 Describe**: Add a name, description, and category for your activity
+4. **💾 Save**: Your time entry is automatically saved to your personal database
+
+### Dashboard & Analytics
+
+- **📈 Summary Statistics**: See total entries, total time tracked, and average session length
+- **📊 Category Breakdown**: Visual breakdown of time spent across different categories
+- **📋 Activity History**: Complete list of all your time entries with details
+- **⏰ Recent Activity**: Quick view of your most recent time tracking sessions
+
+### User Management
+
+- **🔐 Secure Authentication**: Sign up with email and password
+- **👤 Personal Data**: Each user's data is completely isolated and private
+- **🔄 Session Persistence**: Stay logged in across browser sessions
+- **📱 Cross-Device Sync**: Access your data from any device
+
+### Organization Tools
+
+- **🏷️ Custom Categories**: Create and manage your own activity categories
+- **📝 Rich Descriptions**: Add detailed descriptions to your time entries
+- **🔍 Easy Navigation**: Tab-based interface for quick access to all features
+- **📊 Export Options**: Export your data for external analysis (CSV format)
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### For Users
 
+1. **Visit the Application**: Navigate to your Marqness instance
+2. **Create Account**: Sign up with your email and password
+3. **Start Tracking**: Click the "Start" button to begin your first time entry
+4. **Add Details**: When you stop the timer, describe your activity
+5. **View Analytics**: Check the Dashboard tab to see your time tracking insights
+
+### For Developers
+
+#### Prerequisites
 - **Node.js** (version 18+ recommended)
 - **npm** or **yarn**
 
-### Installation
+#### Installation
 
 ```bash
 # Clone the repository
@@ -19,11 +68,40 @@ cd marqness-server/marqness-front
 # Install dependencies
 npm install
 
+# Set up environment
+cp .env.example .env
+
+# Start local Supabase (for development)
+npx supabase start
+
 # Start development server
 npm run dev
 ```
 
 The application will be available at `http://localhost:5173/`
+
+## 🛠 Tech Stack
+
+Marqness is built with modern, reliable technologies:
+
+### Frontend
+- **⚡ Vite** - Fast build tool and dev server for optimal development experience
+- **⚛️ React 19** - Latest React with improved performance and developer experience
+- **📘 TypeScript** - Type-safe JavaScript for better code quality and developer productivity
+- **🎨 TailwindCSS v4** - Latest utility-first CSS framework for rapid UI development
+- **🔍 ESLint** - Code linting and formatting for consistent code quality
+
+### Backend & Database
+- **🗄️ Supabase** - Backend-as-a-Service with PostgreSQL database
+- **🔒 Row Level Security** - Database-level security ensuring user data isolation
+- **🔐 Supabase Auth** - Secure user authentication and session management
+- **📊 Real-time Features** - Live updates and synchronization across devices
+
+### Development Tools
+- **📦 NPM** - Package management
+- **🔧 React Context** - State management for timer and authentication
+- **📋 React Hook Form** - Form handling and validation
+- **🎯 TypeScript Strict Mode** - Enhanced type safety with verbatimModuleSyntax
 
 ## 📋 Available Scripts
 
@@ -35,185 +113,80 @@ The application will be available at `http://localhost:5173/`
 | `npm run lint` | Run ESLint to check code quality |
 | `npm run lint:fix` | Run ESLint and auto-fix issues |
 
-## 🛠 Tech Stack
-
-- **⚡ Vite** - Fast build tool and dev server
-- **⚛️ React 19** - UI framework with latest features
-- **📘 TypeScript** - Type-safe JavaScript
-- **🎨 TailwindCSS v4** - Utility-first CSS framework (latest version)
-- **🔍 ESLint** - Code linting and formatting
-
-## 🎨 TailwindCSS v4 Setup
-
-This project uses **TailwindCSS v4**, which has a completely different architecture from v3:
-
-### Key Differences from v3:
-
-| Feature | TailwindCSS v3 | TailwindCSS v4 |
-|---------|----------------|----------------|
-| **Configuration** | `tailwind.config.js` | CSS-first with `@theme` directive |
-| **CLI Package** | `tailwindcss` | `@tailwindcss/cli` |
-| **Import** | `@tailwind base;`<br/>`@tailwind components;`<br/>`@tailwind utilities;` | `@import "tailwindcss";` |
-| **Setup** | PostCSS plugin | Vite plugin (faster) |
-
-### Configuration
-
-- **Main CSS file**: `src/index.css`
-- **Vite plugin**: Configured in `vite.config.ts`
-- **No config files needed** - TailwindCSS v4 uses CSS-based configuration
-
-### Custom Theme (Optional)
-
-Add custom theme variables in `src/index.css`:
-
-```css
-@import "tailwindcss";
-
-@theme {
-  --font-display: "Inter", sans-serif;
-  --color-primary: #3b82f6;
-  --color-secondary: #10b981;
-  --breakpoint-3xl: 1920px;
-}
-```
-
-### Using TailwindCSS Classes
-
-```jsx
-// Example usage
-<h1 className="text-4xl font-bold text-blue-600">
-  Hello TailwindCSS v4!
-</h1>
-
-<div className="bg-primary p-8 rounded-lg shadow-lg">
-  <p className="text-white">Custom themed component</p>
-</div>
-```
-
-## 🔧 Development Setup
-
-### ESLint Configuration
-
-The project uses modern ESLint configuration with:
-- React-specific rules
-- TypeScript support
-- Security recommendations
-
-**Important ESLint Rules:**
-- Add `rel="noreferrer"` to external links with `target="_blank"`
-- React 19 doesn't require `import React` in every file
-
-### File Structure
+## 🏗 Project Structure
 
 ```
 marqness-front/
 ├── src/
-│   ├── components/          # Reusable components
-│   ├── assets/             # Static assets
-│   ├── App.tsx             # Main app component
-│   ├── main.tsx            # App entry point
-│   ├── index.css           # Global styles + TailwindCSS
-│   └── App.css             # Component-specific styles
-├── public/                 # Public assets
-├── vite.config.ts          # Vite configuration
-├── tsconfig.json           # TypeScript configuration
-├── eslint.config.js        # ESLint configuration
-└── package.json            # Dependencies and scripts
+│   ├── components/          # React components
+│   │   ├── TimerView.tsx   # Main timer interface
+│   │   ├── Dashboard.tsx   # Analytics and insights
+│   │   ├── Activities.tsx  # Time entry management
+│   │   ├── AuthGuard.tsx   # Authentication protection
+│   │   └── ...
+│   ├── contexts/           # React Context providers
+│   │   ├── AuthContext.tsx # User authentication state
+│   │   └── TimerContext.tsx # Timer state management
+│   ├── services/           # API and business logic
+│   │   ├── timeEntryService.ts # Time entry CRUD operations
+│   │   ├── categoryService.ts  # Category management
+│   │   └── csvExportService.ts # Data export functionality
+│   └── lib/
+│       └── supabase.ts     # Database configuration
+├── docs/                   # Documentation
+│   └── troubleshooting.md  # Technical troubleshooting guide
+└── supabase/              # Database migrations and config
+    └── migrations/        # SQL migration files
 ```
 
-## 🚨 Common Issues & Solutions
+## 🔒 Security & Privacy
 
-### ESLint Errors
+- **🛡️ Row Level Security**: Database policies ensure users can only access their own data
+- **🔐 Secure Authentication**: Industry-standard authentication with Supabase Auth
+- **📊 Data Isolation**: Complete separation of user data at the database level
+- **🔒 Session Management**: Secure session handling with automatic token refresh
 
-**Issue**: `'React' must be in scope when using JSX`
-```bash
-# This is expected in React 19 - you don't need to import React
-# The error will be resolved by updating ESLint config
-```
+## 📚 Additional Documentation
 
-**Issue**: External links security warning
-```jsx
-// ❌ Incorrect
-<a href="https://example.com" target="_blank">Link</a>
-
-// ✅ Correct
-<a href="https://example.com" target="_blank" rel="noreferrer">Link</a>
-```
-
-### TailwindCSS Not Working
-
-1. **Check import**: Ensure `@import "tailwindcss";` is in `src/index.css`
-2. **Check Vite config**: Verify `tailwindcss()` plugin is in `vite.config.ts`
-3. **Restart dev server**: `npm run dev`
-
-### Build Issues
-
-```bash
-# Clear cache and reinstall
-rm -rf node_modules package-lock.json
-npm install
-npm run dev
-```
-
-## 📦 Dependencies
-
-### Core Dependencies
-- `react`: ^19.1.0
-- `react-dom`: ^19.1.0
-
-### Build Tools
-- `vite`: ^7.0.4
-- `@vitejs/plugin-react`: ^4.6.0
-- `typescript`: ~5.8.3
-
-### Styling
-- `tailwindcss`: ^4.1.11
-- `@tailwindcss/vite`: Latest
-- `@tailwindcss/cli`: Latest
-- `autoprefixer`: ^10.4.21
-- `postcss`: ^8.5.6
-
-### Linting
-- `eslint`: ^9.30.1
-- `eslint-plugin-react`: Latest
-- `typescript-eslint`: ^8.35.1
-
-## 🔄 Migration Notes
-
-### From TailwindCSS v3 to v4
-
-If migrating from v3, key changes:
-1. **Remove** `tailwind.config.js`
-2. **Replace** `@tailwind` directives with `@import "tailwindcss"`
-3. **Update** Vite config to use `@tailwindcss/vite`
-4. **No PostCSS config** needed (handled by Vite plugin)
-
-### Auto Migration Tool
-
-TailwindCSS provides an upgrade tool:
-```bash
-npx @tailwindcss/upgrade@next
-```
-
-## 📚 Resources
-
-- [TailwindCSS v4 Documentation](https://tailwindcss.com/docs)
-- [Vite Documentation](https://vitejs.dev/)
-- [React Documentation](https://react.dev/)
-- [TypeScript Documentation](https://www.typescriptlang.org/)
+- **[Troubleshooting Guide](docs/troubleshooting.md)** - Solutions for common development issues
+- **[Authentication Setup](README-AUTHENTICATION.md)** - Detailed authentication system guide
+- **[Supabase Integration](README-SUPABASE.md)** - Backend setup and configuration
+- **[Feature Tracker](feature-tracker.md)** - Detailed feature implementation status
 
 ## 🤝 Development Workflow
 
-1. **Start development**: `npm run dev`
-2. **Make changes**: Edit files in `src/`
-3. **Check linting**: `npm run lint`
-4. **Build for production**: `npm run build`
-5. **Preview build**: `npm run preview`
+1. **Start Development**: `npm run dev`
+2. **Make Changes**: Edit files in `src/` directory
+3. **Check Code Quality**: `npm run lint`
+4. **Build for Production**: `npm run build`
+5. **Preview Build**: `npm run preview`
 
-## 📄 License
+## 🎨 UI/UX Design Principles
 
-[Add your license here]
+- **🎯 Simplicity**: Clean, intuitive interface focused on the core workflow
+- **📱 Responsive**: Works seamlessly across all device sizes
+- **⚡ Performance**: Fast loading times and smooth interactions
+- **♿ Accessibility**: Designed with accessibility best practices
+- **🌙 Modern Design**: Contemporary UI with thoughtful use of color and spacing
+
+## 📈 Use Cases
+
+**Perfect for:**
+- Freelancers tracking billable hours
+- Students monitoring study time
+- Professionals analyzing productivity patterns
+- Anyone wanting to understand their time usage better
+- Teams needing individual time tracking data
+
+**Key Benefits:**
+- Simple, distraction-free interface
+- Automatic data backup and synchronization
+- Detailed analytics and insights
+- Complete privacy and data ownership
+- Cross-platform compatibility
 
 ---
 
-**Happy coding! 🚀**
+**Ready to start tracking your time more effectively?** 🚀
+
+*Marqness helps you understand where your time goes, so you can make better decisions about how you spend it.*
