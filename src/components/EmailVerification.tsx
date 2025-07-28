@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import type { AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 interface EmailVerificationProps {
