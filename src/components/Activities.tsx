@@ -83,8 +83,8 @@ function FileUploadModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Upload Data</h3>
           <button
@@ -225,19 +225,20 @@ function ManageDataDropdown({
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium flex items-center space-x-2"
+        className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 font-medium flex items-center space-x-1 sm:space-x-2"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 1.79 4 4 4h8c0 2.21 1.79 4 4 4h8c0-2.21-1.79-4-4-4H8c-2.21 0-4-1.79-4-4V7" />
         </svg>
-        <span>Manage Data</span>
+        <span className="hidden sm:inline">Manage Data</span>
+        <span className="sm:hidden">Manage</span>
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+        <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
           <div className="py-1">
             <button
               onClick={() => {
@@ -245,7 +246,7 @@ function ManageDataDropdown({
                 setIsOpen(false);
               }}
               disabled={isExporting || entries.length === 0}
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center w-full px-3 sm:px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isExporting ? (
                 <>
@@ -257,7 +258,7 @@ function ManageDataDropdown({
                   <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span>Download as CSV</span>
+                  <span>Download CSV</span>
                 </>
               )}
             </button>
@@ -267,7 +268,7 @@ function ManageDataDropdown({
                 onUploadData();
                 setIsOpen(false);
               }}
-              className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+              className="flex items-center w-full px-3 sm:px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
             >
               <svg className="h-4 w-4 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -561,15 +562,15 @@ export function Activities() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Activities</h1>
-            <p className="text-gray-600">Manage all your time tracking entries</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Activities</h1>
+            <p className="text-sm sm:text-base text-gray-600">Manage all your time tracking entries</p>
           </div>
-          <div className="flex space-x-3">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
             {entries.length > 0 && (
               <ManageDataDropdown
                 entries={entries}
@@ -581,24 +582,26 @@ export function Activities() {
             {import.meta.env.DEV && (
               <button
                 onClick={generateSampleActivities}
-                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 font-medium text-sm"
+                className="bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 font-medium text-sm order-2 sm:order-none"
                 title="Development only: Generate sample data"
               >
-                Generate Sample Data
+                <span className="sm:hidden">Sample Data</span>
+                <span className="hidden sm:inline">Generate Sample Data</span>
               </button>
             )}
             <button
               onClick={handleCreateActivity}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+              className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium order-1 sm:order-none"
             >
-              Create Activity
+              <span className="sm:hidden">+ Activity</span>
+              <span className="hidden sm:inline">Create Activity</span>
             </button>
           </div>
         </div>
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
-            <p className="text-red-600">{error}</p>
+            <p className="text-sm sm:text-base text-red-600">{error}</p>
             <button
               onClick={() => setError(null)}
               className="mt-2 text-sm text-red-500 hover:text-red-700 underline"
@@ -609,13 +612,13 @@ export function Activities() {
         )}
 
         {entries.length === 0 && !error ? (
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">📝</div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+            <div className="text-center py-8 sm:py-12">
+              <div className="text-4xl sm:text-6xl mb-4">📝</div>
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                 No Activities Yet
               </h2>
-              <p className="text-gray-600 max-w-md mx-auto mb-6">
+              <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto mb-6">
                 Create your first activity manually or start using the timer to track your time.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -638,18 +641,18 @@ export function Activities() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">
+            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
                 All Activities ({entries.length})
               </h2>
             </div>
             
             <div className="divide-y divide-gray-200">
               {entries.map((entry) => (
-                <div key={entry.id} className="p-6 hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
+                <div key={entry.id} className="p-4 sm:p-6 hover:bg-gray-50">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-medium text-gray-900 truncate">
+                      <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
                         {entry.name}
                       </h3>
                       {entry.description && (
@@ -657,34 +660,34 @@ export function Activities() {
                           {entry.description}
                         </p>
                       )}
-                      <div className="flex items-center space-x-4 mt-2">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
                         {entry.category && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             {entry.category}
                           </span>
                         )}
-                        <span className="text-sm text-gray-500">
+                        <span className="text-xs sm:text-sm text-gray-500">
                           {formatDate(entry.created_at)}
                         </span>
                         {entry.end_time && entry.start_time && (
-                          <span className="text-sm text-gray-500">
+                          <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
                             {new Date(entry.start_time).toLocaleTimeString()} - {new Date(entry.end_time).toLocaleTimeString()}
                           </span>
                         )}
                       </div>
                     </div>
                     
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center justify-between lg:justify-end lg:space-x-4">
                       <div className="text-right">
-                        <div className="text-lg font-semibold text-gray-900">
+                        <div className="text-base sm:text-lg font-semibold text-gray-900">
                           {entry.elapsed_time ? formatTime(entry.elapsed_time) : 'In progress...'}
                         </div>
                       </div>
                       
-                      <div className="flex space-x-2">
+                      <div className="flex space-x-2 ml-4 lg:ml-0">
                         <button
                           onClick={() => handleEditActivity(entry)}
-                          className="text-blue-600 hover:text-blue-800 p-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="text-blue-600 hover:text-blue-800 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
                           title="Edit activity"
                         >
                           <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -694,7 +697,7 @@ export function Activities() {
                         <button
                           onClick={() => handleDeleteActivity(entry.entry_id)}
                           disabled={deletingId === entry.entry_id}
-                          className="text-red-600 hover:text-red-800 p-1 rounded focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50"
+                          className="text-red-600 hover:text-red-800 p-2 rounded focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 touch-manipulation"
                           title="Delete activity"
                         >
                           {deletingId === entry.entry_id ? (
