@@ -15,8 +15,5 @@ jobs:
         with:
           version: latest
 
-      - name: Set database URL based on branch
-        run: echo "SUPABASE_DB_URL=${{ secrets.SUPABASE_DB_URL }}" >> $GITHUB_ENV
-
       - name: Apply Supabase migrations
-        run: supabase db push --db-url $SUPABASE_DB_URL
+        run: supabase db push --db-url ${{ secrets.SUPABASE_DB_URL }}
