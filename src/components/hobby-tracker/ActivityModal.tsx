@@ -9,7 +9,7 @@ export interface ActivityFormData {
   description?: string;
   category?: string;
   startTime: string;
-  endTime: string;
+  duration: number; // duration in minutes
 }
 
 interface ActivityModalProps {
@@ -29,21 +29,13 @@ export function ActivityModal({
   existingEntry,
   mode
 }: ActivityModalProps) {
+  
+  const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<ActivityFormData>();
   const [categories, setCategories] = useState<UserCategory[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState(false);
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [creatingCategory, setCreatingCategory] = useState(false);
-  
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    setValue,
-  } = useForm<ActivityFormData>();
 
-  // Load categories when modal opens
   useEffect(() => {
     if (isOpen) {
       loadCategories();
@@ -52,15 +44,10 @@ export function ActivityModal({
 
   const loadCategories = async () => {
     try {
-      setLoadingCategories(true);
-      const userCategories = await CategoryService.getUserCategories();
-      setCategories(userCategories);
-    } catch (err) {
-      console.error('Failed to load categories:', err);
-      // Don't show error to user, just show no categories
-      setCategories([]);
-    } finally {
-      setLoadingCategories(false);
+      const data = await CategoryService.getUserCategories();
+      setCategories(data);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
     }
   };
 
@@ -71,14 +58,15 @@ export function ActivityModal({
       setCreatingCategory(true);
       const newCategory = await CategoryService.createCategory({
         name: newCategoryName.trim(),
+        color: '#3B82F6' // Default blue color
       });
+      
       setCategories([...categories, newCategory]);
       setValue('category', newCategory.name);
       setShowNewCategoryInput(false);
       setNewCategoryName('');
-    } catch (err) {
-      console.error('Failed to create category:', err);
-      // Could show error but for now just log it
+    } catch (error) {
+      console.error('Failed to create category:', error);
     } finally {
       setCreatingCategory(false);
     }
@@ -92,19 +80,27 @@ export function ActivityModal({
         setValue('description', existingEntry.description || '');
         setValue('category', existingEntry.category || '');
         
-        // Format dates for datetime-local input - convert UTC to local time
+        // Set start time - convert UTC to local time
         if (existingEntry.start_time) {
           setValue('startTime', toLocalDateTimeString(existingEntry.start_time));
         }
-        if (existingEntry.end_time) {
-          setValue('endTime', toLocalDateTimeString(existingEntry.end_time));
+        
+        // Calculate duration from start and end time
+        if (existingEntry.start_time && existingEntry.end_time) {
+          const startTime = new Date(existingEntry.start_time);
+          const endTime = new Date(existingEntry.end_time);
+          const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+          setValue('duration', durationMinutes);
+        } else if (existingEntry.elapsed_time) {
+          // Fallback to elapsed_time if available
+          setValue('duration', Math.round(existingEntry.elapsed_time / 60));
         }
       } else if (mode === 'create') {
-        // Set default times for new entries (1 hour ago to now) in local time
+        // Set default start time to 1 hour ago and duration to 60 minutes
         const now = new Date();
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
         setValue('startTime', toLocalDateTimeString(oneHourAgo.toISOString()));
-        setValue('endTime', toLocalDateTimeString(now.toISOString()));
+        setValue('duration', 60); // 1 hour default
         setValue('name', '');
         setValue('description', '');
         setValue('category', '');
@@ -133,185 +129,185 @@ export function ActivityModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-        <div className="mt-3">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-gray-900">
-              {mode === 'create' ? 'Create Activity' : 'Edit Activity'}
-            </h3>
-            <button
-              onClick={handleClose}
-              className="text-gray-400 hover:text-gray-600"
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 
+                    flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            {mode === 'create' ? 'Create Activity' : 'Edit Activity'}
+          </h3>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600"
+            disabled={isLoading}
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+              Activity Name *
+            </label>
+            <input
+              {...register('name', { required: 'Activity name is required' })}
+              type="text"
+              id="name"
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="What did you work on?"
               disabled={isLoading}
-            >
-              <span className="sr-only">Close</span>
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            />
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+            )}
           </div>
 
-          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              Description
+            </label>
+            <textarea
+              {...register('description')}
+              id="description"
+              rows={3}
+              className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Additional details..."
+              disabled={isLoading}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="category" className="block text-sm font-medium text-gray-700">
+              Category
+            </label>
+            
+            {!showNewCategoryInput ? (
+              <div className="flex items-center space-x-2">
+                <select
+                  {...register('category')}
+                  id="category"
+                  className="flex-1 mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  disabled={isLoading}
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowNewCategoryInput(true)}
+                  className="mt-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  disabled={isLoading}
+                >
+                  New
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="flex-1 mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Category name"
+                  disabled={isLoading || creatingCategory}
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateNewCategory}
+                  disabled={isLoading || creatingCategory || !newCategoryName.trim()}
+                  className="mt-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  {creatingCategory ? '...' : 'Add'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNewCategoryInput(false);
+                    setNewCategoryName('');
+                  }}
+                  className="mt-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                Activity Name *
+              <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
+                Start Time *
               </label>
               <input
-                {...register('name', { required: 'Activity name is required' })}
-                type="text"
-                id="name"
+                {...register('startTime', { required: 'Start time is required' })}
+                type="datetime-local"
+                id="startTime"
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="What did you work on?"
                 disabled={isLoading}
               />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+              {errors.startTime && (
+                <p className="mt-1 text-sm text-red-600">{errors.startTime.message}</p>
               )}
             </div>
 
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Description
+              <label htmlFor="duration" className="block text-sm font-medium text-gray-700">
+                Duration (minutes) *
               </label>
-              <textarea
-                {...register('description')}
-                id="description"
-                rows={3}
+              <input
+                {...register('duration', { 
+                  required: 'Duration is required',
+                  min: { value: 1, message: 'Duration must be at least 1 minute' },
+                  max: { value: 1440, message: 'Duration cannot exceed 24 hours' }
+                })}
+                type="number"
+                id="duration"
+                min="1"
+                max="1440"
+                step="1"
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Additional details..."
+                placeholder="60"
                 disabled={isLoading}
               />
+              {errors.duration && (
+                <p className="mt-1 text-sm text-red-600">{errors.duration.message}</p>
+              )}
             </div>
+          </div>
 
-            <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                Category (Optional)
-              </label>
-              <div className="mt-1 space-y-2">
-                <select
-                  {...register('category')}
-                  id="category"
-                  className="block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
-                  disabled={isLoading || loadingCategories || showNewCategoryInput}
-                >
-                  <option value="">No category</option>
-                  {loadingCategories ? (
-                    <option disabled>Loading categories...</option>
-                  ) : (
-                    categories.map((category) => (
-                      <option key={category.id} value={category.name}>
-                        {category.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-                
-                {!showNewCategoryInput ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowNewCategoryInput(true)}
-                    disabled={isLoading || loadingCategories}
-                    className="w-full text-left px-3 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    + Create new category
-                  </button>
-                ) : (
-                  <div className="flex space-x-2">
-                    <input
-                      type="text"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      placeholder="Category name"
-                      disabled={creatingCategory}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleCreateNewCategory();
-                        } else if (e.key === 'Escape') {
-                          setShowNewCategoryInput(false);
-                          setNewCategoryName('');
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleCreateNewCategory}
-                      disabled={!newCategoryName.trim() || creatingCategory}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {creatingCategory ? '...' : 'Add'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowNewCategoryInput(false);
-                        setNewCategoryName('');
-                      }}
-                      disabled={creatingCategory}
-                      className="px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
-                  Start Time *
-                </label>
-                <input
-                  {...register('startTime', { required: 'Start time is required' })}
-                  type="datetime-local"
-                  id="startTime"
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  disabled={isLoading}
-                />
-                {errors.startTime && (
-                  <p className="mt-1 text-sm text-red-600">{errors.startTime.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
-                  End Time *
-                </label>
-                <input
-                  {...register('endTime', { required: 'End time is required' })}
-                  type="datetime-local"
-                  id="endTime"
-                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  disabled={isLoading}
-                />
-                {errors.endTime && (
-                  <p className="mt-1 text-sm text-red-600">{errors.endTime.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex space-x-3 pt-4">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="flex-1 bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                disabled={isLoading}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 bg-blue-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isLoading}
-              >
-                {isLoading ? 'Saving...' : mode === 'create' ? 'Create Activity' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="flex space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex-1 py-2 px-4 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              disabled={isLoading}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                  {mode === 'create' ? 'Creating...' : 'Saving...'}
+                </div>
+              ) : (
+                mode === 'create' ? 'Create Activity' : 'Save Changes'
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

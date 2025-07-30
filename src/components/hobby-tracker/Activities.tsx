@@ -321,11 +321,7 @@ export function Activities() {
     return formatDateTime(dateString);
   };
 
-  const calculateElapsedTime = (startTime: string, endTime: string): number => {
-    const start = new Date(startTime).getTime();
-    const end = new Date(endTime).getTime();
-    return Math.floor((end - start) / 1000);
-  };
+
 
   const handleCreateActivity = () => {
     setModalMode('create');
@@ -362,13 +358,13 @@ export function Activities() {
       setError(null);
 
       const startTime = new Date(data.startTime);
-      const endTime = new Date(data.endTime);
+      const endTime = new Date(startTime.getTime() + data.duration * 60 * 1000); // Add duration in milliseconds
       
-      if (endTime <= startTime) {
-        throw new Error('End time must be after start time');
+      if (data.duration <= 0) {
+        throw new Error('Duration must be greater than 0');
       }
 
-      const elapsedTime = calculateElapsedTime(data.startTime, data.endTime);
+      const elapsedTime = data.duration * 60; // Convert duration to seconds
 
       if (modalMode === 'create') {
         const manualEntryData: ManualTimeEntryData = {
