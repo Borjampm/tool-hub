@@ -1,9 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useEffect } from 'react';
 
 export function AccountManagement() {
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
+
+  // Handle redirect if user is not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/');
+    }
+  }, [user, loading, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -19,8 +27,12 @@ export function AccountManagement() {
   }
 
   if (!user) {
-    navigate('/');
-    return null;
+    // Show loading while redirect happens
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Redirecting...</div>
+      </div>
+    );
   }
 
   return (
