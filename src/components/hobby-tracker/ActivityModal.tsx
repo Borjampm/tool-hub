@@ -34,7 +34,22 @@ export function ActivityModal({
   const [categories, setCategories] = useState<UserCategory[]>([]);
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
   const [creatingCategory, setCreatingCategory] = useState(false);
+
+  // Predefined color options for categories
+  const colorOptions = [
+    '#3B82F6', // Blue
+    '#EF4444', // Red
+    '#10B981', // Green
+    '#F59E0B', // Amber
+    '#8B5CF6', // Purple
+    '#EC4899', // Pink
+    '#06B6D4', // Cyan
+    '#84CC16', // Lime
+    '#F97316', // Orange
+    '#6B7280', // Gray
+  ];
 
   useEffect(() => {
     if (isOpen) {
@@ -58,13 +73,14 @@ export function ActivityModal({
       setCreatingCategory(true);
       const newCategory = await CategoryService.createCategory({
         name: newCategoryName.trim(),
-        color: '#3B82F6' // Default blue color
+        color: newCategoryColor
       });
       
       setCategories([...categories, newCategory]);
       setValue('category', newCategory.name);
       setShowNewCategoryInput(false);
       setNewCategoryName('');
+      setNewCategoryColor('#3B82F6'); // Reset to default
     } catch (error) {
       console.error('Failed to create category:', error);
     } finally {
@@ -114,6 +130,7 @@ export function ActivityModal({
       reset();
       setShowNewCategoryInput(false);
       setNewCategoryName('');
+      setNewCategoryColor('#3B82F6');
     } catch (error) {
       console.error('Error submitting form:', error);
     }
@@ -123,6 +140,7 @@ export function ActivityModal({
     reset();
     setShowNewCategoryInput(false);
     setNewCategoryName('');
+    setNewCategoryColor('#3B82F6');
     onClose();
   };
 
@@ -209,34 +227,59 @@ export function ActivityModal({
                 </button>
               </div>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="mt-1 space-y-3">
                 <input
                   type="text"
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="flex-1 mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Category name"
                   disabled={isLoading || creatingCategory}
                 />
-                <button
-                  type="button"
-                  onClick={handleCreateNewCategory}
-                  disabled={isLoading || creatingCategory || !newCategoryName.trim()}
-                  className="mt-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                >
-                  {creatingCategory ? '...' : 'Add'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowNewCategoryInput(false);
-                    setNewCategoryName('');
-                  }}
-                  className="mt-1 px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                  disabled={isLoading}
-                >
-                  Cancel
-                </button>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Choose Color
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {colorOptions.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setNewCategoryColor(color)}
+                        className={`w-8 h-8 rounded-full border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 ${
+                          newCategoryColor === color ? 'border-gray-900' : 'border-gray-300'
+                        }`}
+                        style={{ backgroundColor: color }}
+                        disabled={isLoading || creatingCategory}
+                        title={`Select ${color}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleCreateNewCategory}
+                    disabled={isLoading || creatingCategory || !newCategoryName.trim()}
+                    className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  >
+                    {creatingCategory ? 'Creating...' : 'Create Category'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewCategoryInput(false);
+                      setNewCategoryName('');
+                      setNewCategoryColor('#3B82F6');
+                    }}
+                    className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                    disabled={isLoading}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
           </div>
