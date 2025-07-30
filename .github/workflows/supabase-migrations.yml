@@ -1,9 +1,10 @@
 name: Deploy Migrations to Production
 on:
-  push:
+  pull_request:
+    types:
+      - closed
     branches:
-      - main
-  workflow_dispatch:
+      - main 
 jobs:
   deploy:
     runs-on: ubuntu-latest
