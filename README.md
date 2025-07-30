@@ -9,7 +9,7 @@ Marqness is a personal time tracking tool that allows you to:
 - **⏱️ Track Time**: Start and stop timers for any activity with a simple click
 - **📝 Add Context**: Describe your activities with names, descriptions, and custom categories  
 - **📊 Analyze Patterns**: View detailed analytics and insights about your time usage
-- **🔒 Keep Data Private**: Your time tracking data is completely private and secure
+- **🔒 Keep Data Private**: Yxour time tracking data is completely private and secure
 - **📱 Access Anywhere**: Responsive design works on desktop, tablet, and mobile devices
 
 ## ✨ Key Features

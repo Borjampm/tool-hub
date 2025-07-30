@@ -1,4 +1,5 @@
 
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface NavbarProps {
@@ -7,6 +8,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ activeTab, onTabChange }: NavbarProps) {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
 
   const handleSignOut = async () => {
