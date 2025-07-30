@@ -17,10 +17,10 @@ export function TimerDisplay({ elapsedTime }: TimerDisplayProps) {
 
   return (
     <div className="text-center">
-      <div className="text-6xl font-mono font-bold text-gray-900 mb-4">
+      <div className="text-4xl sm:text-5xl lg:text-6xl font-mono font-bold text-gray-900 mb-2 sm:mb-4">
         {formatTime(elapsedTime)}
       </div>
-      <div className="text-sm text-gray-500">
+      <div className="text-xs sm:text-sm text-gray-500">
         {elapsedTime === 0 ? 'Ready to start' : 'Time elapsed'}
       </div>
     </div>

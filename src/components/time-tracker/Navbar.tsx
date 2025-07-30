@@ -10,6 +10,7 @@ interface NavbarProps {
 export function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -18,6 +19,18 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
       console.error('Error signing out:', error);
     }
   };
+
+  const handleTabChange = (tab: 'timer' | 'activities' | 'dashboard' | 'settings') => {
+    onTabChange(tab);
+    setIsMobileMenuOpen(false); // Close mobile menu when tab is selected
+  };
+
+  const navigationItems = [
+    { id: 'timer' as const, label: 'Timer' },
+    { id: 'activities' as const, label: 'Activities' },
+    { id: 'dashboard' as const, label: 'Dashboard' },
+    { id: 'settings' as const, label: 'Settings' },
+  ];
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
@@ -73,10 +86,12 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
               </button>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+
+          {/* Desktop User Menu */}
+          <div className="hidden md:flex items-center space-x-4">
             {user && (
               <>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 truncate max-w-48">
                   {user.email}
                 </span>
                 <button
@@ -88,7 +103,60 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
               </>
             )}
           </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-gray-500 hover:text-gray-700 focus:outline-none focus:text-gray-700 p-2"
+              aria-label="Toggle navigation menu"
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
+
+        {/* Mobile Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-200">
+            <div className="pt-2 pb-3 space-y-1">
+              {navigationItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleTabChange(item.id)}
+                  className={`block w-full text-left px-3 py-2 text-base font-medium ${
+                    activeTab === item.id
+                      ? 'text-blue-600 bg-blue-50 border-r-4 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+              
+              {/* Mobile User Section */}
+              {user && (
+                <div className="border-t border-gray-200 pt-3 mt-3">
+                  <div className="px-3 py-2">
+                    <p className="text-sm text-gray-600 truncate">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={handleSignOut}
+                    className="block w-full text-left px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

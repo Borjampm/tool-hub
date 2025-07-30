@@ -121,20 +121,20 @@ export function Settings() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading settings...</p>
+          <p className="mt-4 text-sm sm:text-base text-gray-600">Loading settings...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-        <p className="mt-2 text-gray-600">Manage your categories and preferences</p>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
+        <p className="mt-2 text-sm sm:text-base text-gray-600">Manage your categories and preferences</p>
       </div>
 
       {error && (
@@ -153,16 +153,16 @@ export function Settings() {
       )}
 
       <div className="bg-white shadow-lg rounded-lg">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Categories</h2>
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Categories</h2>
           <p className="mt-1 text-sm text-gray-600">Create and manage your activity categories</p>
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Category Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="md:col-span-2">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2">
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                   Category Name
                 </label>
@@ -173,7 +173,7 @@ export function Settings() {
                     minLength: { value: 1, message: 'Category name cannot be empty' },
                     maxLength: { value: 50, message: 'Category name must be 50 characters or less' }
                   })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
                   placeholder="Enter category name"
                   disabled={isCreating}
                 />
@@ -195,11 +195,11 @@ export function Settings() {
               </div>
             </div>
 
-            <div className="mt-4 flex space-x-3">
+            <div className="mt-4 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
               <button
                 type="submit"
                 disabled={isCreating}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-blue-600 text-white px-4 py-3 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               >
                 {isCreating ? 'Saving...' : editingCategory ? 'Update Category' : 'Create Category'}
               </button>
@@ -209,7 +209,7 @@ export function Settings() {
                   type="button"
                   onClick={cancelEditing}
                   disabled={isCreating}
-                  className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-gray-300 text-gray-700 px-4 py-3 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
                 >
                   Cancel
                 </button>
@@ -219,48 +219,48 @@ export function Settings() {
 
           {/* Categories List */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900">Your Categories</h3>
+            <h3 className="text-base sm:text-lg font-medium text-gray-900">Your Categories</h3>
             
             {categories.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
-                <p className="mt-2">No categories yet</p>
-                <p className="text-sm">Create your first category to organize your activities</p>
+                <p className="mt-2 text-sm sm:text-base">No categories yet</p>
+                <p className="text-xs sm:text-sm">Create your first category to organize your activities</p>
               </div>
             ) : (
               <div className="grid gap-3">
                 {categories.map((category) => (
                   <div
                     key={category.id}
-                    className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors space-y-3 sm:space-y-0"
                   >
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 min-w-0 flex-1">
                       {category.color && (
                         <div
-                          className="w-4 h-4 rounded-full border border-gray-300"
+                          className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0"
                           style={{ backgroundColor: category.color }}
                         />
                       )}
-                      <span className="font-medium text-gray-900">{category.name}</span>
-                      <span className="text-sm text-gray-500">
+                      <span className="font-medium text-gray-900 truncate">{category.name}</span>
+                      <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
                         Created {new Date(category.created_at).toLocaleDateString()}
                       </span>
                     </div>
                     
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-4 sm:space-x-2 self-end sm:self-auto">
                       <button
                         onClick={() => startEditing(category)}
                         disabled={isCreating || !!editingCategory}
-                        className="text-blue-600 hover:text-blue-800 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-blue-600 hover:text-blue-800 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation p-1"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteCategory(category.id)}
                         disabled={isCreating || deletingCategoryId === category.id}
-                        className="text-red-600 hover:text-red-800 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-red-600 hover:text-red-800 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation p-1"
                       >
                         {deletingCategoryId === category.id ? 'Deleting...' : 'Delete'}
                       </button>

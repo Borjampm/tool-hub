@@ -103,12 +103,12 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Activity Details</h2>
+      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Activity Details</h2>
         
         <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-          <div className="text-sm text-gray-600">Time tracked:</div>
-          <div className="text-lg font-mono font-semibold text-gray-900">
+          <div className="text-xs sm:text-sm text-gray-600">Time tracked:</div>
+          <div className="text-base sm:text-lg font-mono font-semibold text-gray-900">
             {formatTime(elapsedTime)}
           </div>
         </div>
@@ -122,7 +122,7 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
               type="text"
               id="name"
               {...register('name', { required: 'Activity name is required' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
               placeholder="What were you working on?"
             />
             {errors.name && (
@@ -138,7 +138,7 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
               id="description"
               {...register('description')}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base resize-y"
               placeholder="Optional details about the activity..."
             />
           </div>
@@ -152,7 +152,7 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
                 id="category"
                 {...register('category')}
                 disabled={loadingCategories || showNewCategoryInput}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-base"
               >
                 <option value="">No category</option>
                 {loadingCategories ? (
@@ -171,19 +171,19 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
                   type="button"
                   onClick={() => setShowNewCategoryInput(true)}
                   disabled={loadingCategories}
-                  className="w-full text-left px-3 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full text-left px-3 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                 >
                   + Create new category
                 </button>
               ) : (
-                <div className="flex space-x-2">
+                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                   <input
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="Category name"
                     disabled={creatingCategory}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-base"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -194,35 +194,37 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
                       }
                     }}
                   />
-                  <button
-                    type="button"
-                    onClick={handleCreateNewCategory}
-                    disabled={!newCategoryName.trim() || creatingCategory}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {creatingCategory ? '...' : 'Add'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowNewCategoryInput(false);
-                      setNewCategoryName('');
-                    }}
-                    disabled={creatingCategory}
-                    className="px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Cancel
-                  </button>
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={handleCreateNewCategory}
+                      disabled={!newCategoryName.trim() || creatingCategory}
+                      className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    >
+                      {creatingCategory ? '...' : 'Add'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNewCategoryInput(false);
+                        setNewCategoryName('');
+                      }}
+                      disabled={creatingCategory}
+                      className="px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex space-x-3 pt-4">
+          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 pt-4">
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
               {isLoading ? 'Saving...' : 'Save Activity'}
             </button>
@@ -230,7 +232,7 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
               type="button"
               onClick={handleCancel}
               disabled={isLoading}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-gray-300 text-gray-700 py-3 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
             >
               Cancel
             </button>
