@@ -25,6 +25,11 @@ export function ExpenseNavbar({ activeTab, onTabChange }: ExpenseNavbarProps) {
     setIsMobileMenuOpen(false); // Close mobile menu when tab is selected
   };
 
+  const handleAccountClick = () => {
+    navigate('/account');
+    setIsMobileMenuOpen(false); // Close mobile menu if open
+  };
+
   const navigationItems = [
     { id: 'add' as const, label: 'Add Transaction' },
     { id: 'transactions' as const, label: 'Transactions' },
@@ -66,9 +71,13 @@ export function ExpenseNavbar({ activeTab, onTabChange }: ExpenseNavbarProps) {
           <div className="hidden md:flex items-center space-x-4">
             {user && (
               <>
-                <span className="text-sm text-gray-600 truncate max-w-32 lg:max-w-48">
+                <button
+                  onClick={handleAccountClick}
+                  className="text-sm text-gray-600 hover:text-emerald-600 hover:underline truncate max-w-32 lg:max-w-48 transition-colors duration-200 cursor-pointer"
+                  title="Click to manage your account"
+                >
                   {user.email}
-                </span>
+                </button>
                 <button
                   onClick={handleSignOut}
                   className="text-sm text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-md transition-colors touch-manipulation min-h-[44px]"
@@ -118,9 +127,13 @@ export function ExpenseNavbar({ activeTab, onTabChange }: ExpenseNavbarProps) {
               {/* Mobile User Section */}
               {user && (
                 <div className="border-t border-gray-200 pt-3 mt-3">
-                  <div className="px-3 py-2">
-                    <p className="text-sm text-gray-600 truncate">{user.email}</p>
-                  </div>
+                  <button
+                    onClick={handleAccountClick}
+                    className="block w-full text-left px-3 py-2 text-sm text-gray-600 hover:text-emerald-600 hover:bg-gray-50 truncate transition-colors duration-200 touch-manipulation min-h-[44px]"
+                    title="Tap to manage your account"
+                  >
+                    {user.email}
+                  </button>
                   <button
                     onClick={handleSignOut}
                     className="block w-full text-left px-3 py-3 text-base font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 touch-manipulation min-h-[44px]"
