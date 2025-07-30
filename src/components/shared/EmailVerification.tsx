@@ -106,7 +106,7 @@ export function EmailVerification({ onComplete }: EmailVerificationProps) {
                 Email Verified Successfully!
               </h1>
               <p className="text-gray-600 mb-6">
-                Welcome to Marqness! Your account has been confirmed and you're ready to start tracking your time.
+                Welcome to Marqness! Your account has been confirmed and you&apos;re ready to start tracking your time.
               </p>
               <div className="mb-4">
                 <p className="text-sm text-gray-500">
@@ -129,7 +129,7 @@ export function EmailVerification({ onComplete }: EmailVerificationProps) {
                 Verification Failed
               </h1>
               <p className="text-gray-600 mb-4">
-                We couldn't verify your email address. This might happen if:
+                We couldn&apos;t verify your email address. This might happen if:
               </p>
               <ul className="text-left text-sm text-gray-600 mb-6 space-y-1">
                 <li>• The verification link has expired</li>

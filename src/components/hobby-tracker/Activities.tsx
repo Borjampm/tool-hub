@@ -3,7 +3,7 @@ import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } 
 import { CSVExportService } from '../../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import type { TimeEntry } from '../../lib/supabase';
-import { formatDateTime, formatDateTimeRounded, formatTimeRange, formatTimeRangeRounded, formatDuration, formatTime as formatTimeFromDate } from '../../lib/dateUtils';
+import { formatDateTimeRounded, formatTimeRangeRounded, formatDuration } from '../../lib/dateUtils';
 
 // New component for the file upload modal
 function FileUploadModal({ 
