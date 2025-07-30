@@ -7,7 +7,7 @@ description: Import path conventions for component organization
 
 ## Import Patterns Based on Component Location
 
-### From Time Tracker Components (`src/components/time-tracker/`)
+### From Hobby Tracker Components (`src/components/hobby-tracker/`)
 ```typescript
 // Services (go up two levels)
 import { TimeEntryService } from '../../services/timeEntryService';
@@ -46,7 +46,7 @@ import { useNavigate } from 'react-router-dom';
 // Router navigation
 import { useNavigate } from 'react-router-dom';
 
-// Future: Services and contexts will follow same pattern as time-tracker
+// Future: Services and contexts will follow same pattern as hobby-tracker
 // import { ExpenseService } from '../../services/expenseService';
 ```
 

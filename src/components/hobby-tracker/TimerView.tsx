@@ -89,8 +89,8 @@ export function TimerView() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       <div className="text-center space-y-6 sm:space-y-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Time Tracker</h1>
-          <p className="text-sm sm:text-base text-gray-600">Track your activities and productivity</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Hobby Tracker</h1>
+                      <p className="text-sm sm:text-base text-gray-600">Track your hobbies and interests</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">

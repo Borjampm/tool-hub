@@ -568,7 +568,7 @@ export function Activities() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Activities</h1>
-            <p className="text-sm sm:text-base text-gray-600">Manage all your time tracking entries</p>
+            <p className="text-sm sm:text-base text-gray-600">Manage all your hobby tracking entries</p>
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
             {entries.length > 0 && (

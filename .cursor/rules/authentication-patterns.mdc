@@ -1,6 +1,6 @@
 ---
 globs: *.ts,*.tsx
-description: Authentication patterns and security rules for Marqness time tracking app
+description: Authentication patterns and security rules for Marqness hobby tracking app
 ---
 
 # Authentication & Security Patterns

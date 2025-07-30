@@ -9,7 +9,7 @@ import { Activities } from './Activities';
 import { Dashboard } from './Dashboard';
 import { Settings } from './Settings';
 
-export function TimeTrackerApp() {
+export function HobbyTrackerApp() {
   const [activeTab, setActiveTab] = useState<'timer' | 'activities' | 'dashboard' | 'settings'>('timer');
   const [isEmailVerification, setIsEmailVerification] = useState(false);
 

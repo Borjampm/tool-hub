@@ -1,32 +1,32 @@
-# Marqness - Personal Time Tracking App
+# Marqness - Personal Hobby Tracking App
 
-**Marqness** is a simple, elegant time tracking application designed to help you monitor and analyze how you spend your time. Built with modern web technologies, it provides a seamless experience for tracking activities, categorizing your work, and gaining insights into your productivity patterns.
+**Marqness** is a simple, elegant hobby tracking application designed to help you monitor and analyze how you spend time on your personal interests. Built with modern web technologies, it provides a seamless experience for tracking hobby activities, categorizing your interests, and gaining insights into your hobby engagement patterns.
 
 ## 🎯 What is Marqness?
 
-Marqness is a personal time tracking tool that allows you to:
+Marqness is a personal hobby tracking tool that allows you to:
 
-- **⏱️ Track Time**: Start and stop timers for any activity with a simple click
-- **📝 Add Context**: Describe your activities with names, descriptions, and custom categories  
-- **📊 Analyze Patterns**: View detailed analytics and insights about your time usage
-- **🔒 Keep Data Private**: Yxour time tracking data is completely private and secure
+- **⏱️ Track Time**: Start and stop timers for any hobby activity with a simple click
+- **📝 Add Context**: Describe your hobby sessions with names, descriptions, and custom categories  
+- **📊 Analyze Patterns**: View detailed analytics and insights about your hobby engagement
+- **🔒 Keep Data Private**: Your hobby tracking data is completely private and secure
 - **📱 Access Anywhere**: Responsive design works on desktop, tablet, and mobile devices
 
 ## ✨ Key Features
 
-### Simple Time Tracking Workflow
+### Simple Hobby Tracking Workflow
 
-1. **🚀 Start**: Click "Start" to begin timing any activity
+1. **🚀 Start**: Click "Start" to begin timing any hobby activity
 2. **⏹️ Stop**: Click "Stop" when you're done 
-3. **📋 Describe**: Add a name, description, and category for your activity
-4. **💾 Save**: Your time entry is automatically saved to your personal database
+3. **📋 Describe**: Add a name, description, and category for your hobby session
+4. **💾 Save**: Your hobby entry is automatically saved to your personal database
 
 ### Dashboard & Analytics
 
 - **📈 Summary Statistics**: See total entries, total time tracked, and average session length
-- **📊 Category Breakdown**: Visual breakdown of time spent across different categories
-- **📋 Activity History**: Complete list of all your time entries with details
-- **⏰ Recent Activity**: Quick view of your most recent time tracking sessions
+- **📊 Category Breakdown**: Visual breakdown of time spent across different hobby categories
+- **📋 Activity History**: Complete list of all your hobby entries with details
+- **⏰ Recent Activity**: Quick view of your most recent hobby tracking sessions
 
 ### User Management
 
@@ -37,8 +37,8 @@ Marqness is a personal time tracking tool that allows you to:
 
 ### Organization Tools
 
-- **🏷️ Custom Categories**: Create and manage your own activity categories
-- **📝 Rich Descriptions**: Add detailed descriptions to your time entries
+- **🏷️ Custom Categories**: Create and manage your own hobby categories
+- **📝 Rich Descriptions**: Add detailed descriptions to your hobby entries
 - **🔍 Easy Navigation**: Tab-based interface for quick access to all features
 - **📊 Export Options**: Export your data for external analysis (CSV format)
 
@@ -48,9 +48,9 @@ Marqness is a personal time tracking tool that allows you to:
 
 1. **Visit the Application**: Navigate to your Marqness instance
 2. **Create Account**: Sign up with your email and password
-3. **Start Tracking**: Click the "Start" button to begin your first time entry
-4. **Add Details**: When you stop the timer, describe your activity
-5. **View Analytics**: Check the Dashboard tab to see your time tracking insights
+3. **Start Tracking**: Click the "Start" button to begin your first hobby session
+4. **Add Details**: When you stop the timer, describe your hobby activity
+5. **View Analytics**: Check the Dashboard tab to see your hobby tracking insights
 
 ### For Developers
 
@@ -121,14 +121,14 @@ marqness-front/
 │   ├── components/          # React components
 │   │   ├── TimerView.tsx   # Main timer interface
 │   │   ├── Dashboard.tsx   # Analytics and insights
-│   │   ├── Activities.tsx  # Time entry management
+│   │   ├── Activities.tsx  # Hobby entry management
 │   │   ├── AuthGuard.tsx   # Authentication protection
 │   │   └── ...
 │   ├── contexts/           # React Context providers
 │   │   ├── AuthContext.tsx # User authentication state
 │   │   └── TimerContext.tsx # Timer state management
 │   ├── services/           # API and business logic
-│   │   ├── timeEntryService.ts # Time entry CRUD operations
+│   │   ├── timeEntryService.ts # Hobby entry CRUD operations
 │   │   ├── categoryService.ts  # Category management
 │   │   └── csvExportService.ts # Data export functionality
 │   └── lib/
@@ -172,11 +172,11 @@ marqness-front/
 ## 📈 Use Cases
 
 **Perfect for:**
-- Freelancers tracking billable hours
-- Students monitoring study time
-- Professionals analyzing productivity patterns
-- Anyone wanting to understand their time usage better
-- Teams needing individual time tracking data
+- Hobbyists tracking time spent on personal interests
+- Creatives monitoring time on projects
+- People wanting to balance multiple hobbies
+- Anyone wanting to understand their hobby engagement patterns
+- Individuals looking to optimize their leisure time
 
 **Key Benefits:**
 - Simple, distraction-free interface
@@ -187,6 +187,6 @@ marqness-front/
 
 ---
 
-**Ready to start tracking your time more effectively?** 🚀
+**Ready to start tracking your hobbies more effectively?** 🚀
 
-*Marqness helps you understand where your time goes, so you can make better decisions about how you spend it.*
+*Marqness helps you understand where your hobby time goes, so you can make better decisions about how you engage with your interests.*

@@ -15,14 +15,14 @@ Components are organized by application and functionality:
 - [AuthModal.tsx](mdc:src/components/shared/AuthModal.tsx) - User authentication modal
 - [EmailVerification.tsx](mdc:src/components/shared/EmailVerification.tsx) - Email verification component
 
-### Time Tracker App (`src/components/time-tracker/`)
-- [TimeTrackerApp.tsx](mdc:src/components/time-tracker/TimeTrackerApp.tsx) - Main time tracker application
-- [Activities.tsx](mdc:src/components/time-tracker/Activities.tsx) - Activity management and history
-- [Dashboard.tsx](mdc:src/components/time-tracker/Dashboard.tsx) - Analytics and insights
-- [Settings.tsx](mdc:src/components/time-tracker/Settings.tsx) - User settings and categories
-- [Navbar.tsx](mdc:src/components/time-tracker/Navbar.tsx) - Navigation bar
-- Timer components: [TimerView.tsx](mdc:src/components/time-tracker/TimerView.tsx), [TimerControls.tsx](mdc:src/components/time-tracker/TimerControls.tsx), [TimerDisplay.tsx](mdc:src/components/time-tracker/TimerDisplay.tsx)
-- Modals: [ActivityModal.tsx](mdc:src/components/time-tracker/ActivityModal.tsx), [MetadataForm.tsx](mdc:src/components/time-tracker/MetadataForm.tsx)
+### Hobby Tracker App (`src/components/hobby-tracker/`)
+- [HobbyTrackerApp.tsx](mdc:src/components/hobby-tracker/HobbyTrackerApp.tsx) - Main hobby tracker application
+- [Activities.tsx](mdc:src/components/hobby-tracker/Activities.tsx) - Activity management and history
+- [Dashboard.tsx](mdc:src/components/hobby-tracker/Dashboard.tsx) - Analytics and insights
+- [Settings.tsx](mdc:src/components/hobby-tracker/Settings.tsx) - User settings and categories
+- [Navbar.tsx](mdc:src/components/hobby-tracker/Navbar.tsx) - Navigation bar
+- Timer components: [TimerView.tsx](mdc:src/components/hobby-tracker/TimerView.tsx), [TimerControls.tsx](mdc:src/components/hobby-tracker/TimerControls.tsx), [TimerDisplay.tsx](mdc:src/components/hobby-tracker/TimerDisplay.tsx)
+- Modals: [ActivityModal.tsx](mdc:src/components/hobby-tracker/ActivityModal.tsx), [MetadataForm.tsx](mdc:src/components/hobby-tracker/MetadataForm.tsx)
 
 ### Expense Tracker App (`src/components/expense-tracker/`)
 - [ExpenseTracker.tsx](mdc:src/components/expense-tracker/ExpenseTracker.tsx) - Under construction page
@@ -31,5 +31,5 @@ Components are organized by application and functionality:
 
 1. **App-Specific Components**: Place components that are only used by one app in that app's folder
 2. **Shared Components**: Place components used by multiple apps in the `shared/` folder
-3. **Main App Components**: Each app should have a main component (e.g., `TimeTrackerApp.tsx`)
+3. **Main App Components**: Each app should have a main component (e.g., `HobbyTrackerApp.tsx`)
 4. **Related Components**: Group related components together (e.g., timer components, modal components)

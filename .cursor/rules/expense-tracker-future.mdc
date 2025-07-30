@@ -11,12 +11,12 @@ Currently contains only [ExpenseTracker.tsx](mdc:src/components/expense-tracker/
 
 ## Future Component Structure
 
-When implementing the expense tracker, follow these patterns based on the time tracker structure:
+When implementing the expense tracker, follow these patterns based on the hobby tracker structure:
 
 ### Core Components (Planned)
 ```
 src/components/expense-tracker/
-├── ExpenseTrackerApp.tsx     # Main app with providers (like TimeTrackerApp)
+├── ExpenseTrackerApp.tsx     # Main app with providers (like HobbyTrackerApp)
 ├── ExpenseView.tsx           # Main expense entry interface
 ├── ExpenseHistory.tsx        # Expense history and management (like Activities)
 ├── ExpenseDashboard.tsx      # Analytics and insights (like Dashboard)  
@@ -28,7 +28,7 @@ src/components/expense-tracker/
 ```
 
 ### Service Integration
-Follow the same service pattern as time tracker:
+Follow the same service pattern as hobby tracker:
 ```typescript
 // Future services to create
 import { ExpenseService } from '../../services/expenseService';
@@ -44,7 +44,7 @@ import { ExpenseProvider } from '../../contexts/ExpenseContext';
 
 ## Design Principles
 
-1. **Consistency**: Follow time tracker patterns for similar functionality
+1. **Consistency**: Follow hobby tracker patterns for similar functionality
 2. **Independence**: Expense tracker should be self-contained in its folder
 3. **Shared Components**: Reuse [AuthGuard](mdc:src/components/shared/AuthGuard.tsx), [Navbar](mdc:src/components/shared/Navbar.tsx) when appropriate
 4. **Services**: Create expense-specific services following existing patterns

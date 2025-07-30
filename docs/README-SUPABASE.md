@@ -1,6 +1,6 @@
 # Supabase Integration Setup
 
-This guide explains how to set up and run the time tracking app with Supabase.
+This guide explains how to set up and run the hobby tracking app with Supabase.
 
 ## Prerequisites
 
@@ -75,11 +75,11 @@ The app now requires user authentication. When you first visit:
 2. **Sign In**: Use existing credentials to access your data
 3. **Protected Data**: Each user can only see their own time entries
 
-### Time Tracking Flow
+### Hobby Tracking Flow
 1. **Start Timer**: Click "Start" to begin tracking time (creates entry in database)
 2. **Stop Timer**: Click "Stop" to pause and open the metadata form
 3. **Save Entry**: Fill in the activity details and save to your account
-4. **View Dashboard**: Check your personal time tracking history and statistics
+4. **View Dashboard**: Check your personal hobby tracking history and statistics
 5. **Sign Out**: Use the sign out button when done
 
 ## Supabase Studio

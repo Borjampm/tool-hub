@@ -14,7 +14,7 @@ Shared components in `src/components/shared/` are designed to be used across mul
 #### [LandingPage.tsx](mdc:src/components/shared/LandingPage.tsx)
 - **Purpose**: Main entry point with app selection buttons
 - **Usage**: Root route ("/") component
-- **Navigation**: Routes to `/time-tracker` and `/expense-tracker`
+- **Navigation**: Routes to `/hobby-tracker` and `/expense-tracker`
 - **Dependencies**: React Router (`useNavigate`)
 
 #### [AuthGuard.tsx](mdc:src/components/shared/AuthGuard.tsx) 

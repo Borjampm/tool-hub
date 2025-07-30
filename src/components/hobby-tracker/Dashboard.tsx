@@ -89,7 +89,7 @@ export function Dashboard() {
       <div className="space-y-6 sm:space-y-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-sm sm:text-base text-gray-600">Your time tracking analytics and insights</p>
+                      <p className="text-sm sm:text-base text-gray-600">Your hobby tracking analytics and insights</p>
         </div>
 
         {error && (
@@ -112,7 +112,7 @@ export function Dashboard() {
                 No Time Entries Yet
               </h2>
               <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto">
-                Start your first timer session to see your time tracking data here.
+                Start your first timer session to see your hobby tracking data here.
               </p>
             </div>
           </div>
