@@ -3,6 +3,7 @@ import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } 
 import { CSVExportService } from '../../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import type { TimeEntry } from '../../lib/supabase';
+import { formatDateTime, formatTimeRange, formatDuration } from '../../lib/dateUtils';
 
 // New component for the file upload modal
 function FileUploadModal({ 
@@ -89,7 +90,8 @@ function FileUploadModal({
           <h3 className="text-lg font-semibold text-gray-900">Upload Data</h3>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 p-1 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Close modal"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -313,34 +315,14 @@ export function Activities() {
   };
 
   const formatTime = (totalSeconds: number): string => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
+    return formatDuration(totalSeconds);
   };
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateTime(dateString);
   };
 
-  const calculateElapsedTime = (startTime: string, endTime: string): number => {
-    const start = new Date(startTime).getTime();
-    const end = new Date(endTime).getTime();
-    return Math.floor((end - start) / 1000);
-  };
+
 
   const handleCreateActivity = () => {
     setModalMode('create');
@@ -377,13 +359,13 @@ export function Activities() {
       setError(null);
 
       const startTime = new Date(data.startTime);
-      const endTime = new Date(data.endTime);
+      const endTime = new Date(startTime.getTime() + data.duration * 60 * 1000); // Add duration in milliseconds
       
-      if (endTime <= startTime) {
-        throw new Error('End time must be after start time');
+      if (data.duration <= 0) {
+        throw new Error('Duration must be greater than 0');
       }
 
-      const elapsedTime = calculateElapsedTime(data.startTime, data.endTime);
+      const elapsedTime = data.duration * 60; // Convert duration to seconds
 
       if (modalMode === 'create') {
         const manualEntryData: ManualTimeEntryData = {
@@ -568,7 +550,7 @@ export function Activities() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Activities</h1>
-            <p className="text-sm sm:text-base text-gray-600">Manage all your time tracking entries</p>
+            <p className="text-sm sm:text-base text-gray-600">Manage all your hobby tracking entries</p>
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
             {entries.length > 0 && (
@@ -671,7 +653,7 @@ export function Activities() {
                         </span>
                         {entry.end_time && entry.start_time && (
                           <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
-                            {new Date(entry.start_time).toLocaleTimeString()} - {new Date(entry.end_time).toLocaleTimeString()}
+                            {formatTimeRange(entry.start_time, entry.end_time)}
                           </span>
                         )}
                       </div>

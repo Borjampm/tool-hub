@@ -78,14 +78,15 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+      <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold text-gray-900">
             {isSignUp ? 'Create Account' : 'Sign In'}
           </h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-gray-600 p-1 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Close modal"
           >
             ✕
           </button>
@@ -118,7 +119,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   message: 'Invalid email address'
                 }
               })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="your@email.com"
             />
             {errors.email && (
@@ -140,7 +141,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   message: 'Password must be at least 6 characters'
                 }
               })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
             />
             {errors.password && (
@@ -148,11 +149,11 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             )}
           </div>
 
-          <div className="flex space-x-3 pt-4">
+          <div className="pt-4">
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
             >
               {isLoading ? (isSignUp ? 'Creating Account...' : 'Signing In...') : (isSignUp ? 'Create Account' : 'Sign In')}
             </button>
@@ -163,7 +164,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <button
             onClick={toggleMode}
             disabled={isLoading}
-            className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50"
+            className="text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 py-2 px-4 touch-manipulation min-h-[44px]"
           >
             {isSignUp ? 'Already have an account? Sign in' : "Don't have an account? Sign up"}
           </button>

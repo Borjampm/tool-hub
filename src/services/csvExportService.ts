@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import type { TimeEntry } from '../lib/supabase';
 import { TimeEntryService, type ManualTimeEntryData } from './timeEntryService';
+import { formatDateTime } from '../lib/dateUtils';
 
 export class CSVExportService {
   /**
@@ -12,10 +13,10 @@ export class CSVExportService {
       'Name',
       'Description',
       'Category',
-      'Start Time',
-      'End Time',
-      'Duration (seconds)',
-      'Duration (formatted)',
+      'Start Time (Unix)',
+      'End Time (Unix)',
+      'Elapsed Time (Seconds)',
+      'Duration',
       'Created At',
       'Entry ID'
     ];
@@ -59,7 +60,7 @@ export class CSVExportService {
         entry.end_time ? new Date(entry.end_time).getTime().toString() : '',
         entry.elapsed_time?.toString() || '0',
         formatDuration(entry.elapsed_time),
-        new Date(entry.created_at).toLocaleString(),
+        formatDateTime(entry.created_at),
         entry.entry_id
       ];
       
@@ -324,7 +325,7 @@ export class CSVExportService {
             continue;
           }
 
-          await TimeEntryService.createManualEntry(entry);
+                      await TimeEntryService.createManualEntry(entry);
           imported++;
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : 'Unknown error';

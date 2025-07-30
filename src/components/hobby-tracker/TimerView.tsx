@@ -3,7 +3,8 @@ import { useTimer } from '../../contexts/TimerContext';
 import { TimerDisplay } from './TimerDisplay';
 import { TimerControls } from './TimerControls';
 import { MetadataForm } from './MetadataForm';
-import { TimeEntryService } from '../../services/timeEntryService';
+import { ActivityModal, type ActivityFormData } from './ActivityModal';
+import { TimeEntryService, type ManualTimeEntryData } from '../../services/timeEntryService';
 
 interface MetadataFormData {
   name: string;
@@ -14,7 +15,9 @@ interface MetadataFormData {
 export function TimerView() {
   const { state, startTimer, stopTimer, resetTimer } = useTimer();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isManualEntryOpen, setIsManualEntryOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isManualEntryLoading, setIsManualEntryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const generateEntryId = () => {
@@ -85,12 +88,52 @@ export function TimerView() {
     resetTimer();
   };
 
+  const handleManualEntrySubmit = async (data: ActivityFormData) => {
+    try {
+      setIsManualEntryLoading(true);
+      setError(null);
+
+      const startTime = new Date(data.startTime);
+      const endTime = new Date(startTime.getTime() + data.duration * 60 * 1000); // Add duration in milliseconds
+      
+      if (data.duration <= 0) {
+        throw new Error('Duration must be greater than 0');
+      }
+
+      const elapsedTime = data.duration * 60; // Convert duration to seconds
+
+      const manualEntryData: ManualTimeEntryData = {
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        startTime,
+        endTime,
+        elapsedTime,
+      };
+      
+      await TimeEntryService.createManualEntry(manualEntryData);
+      console.log('✅ Manual time entry created successfully');
+      
+      setIsManualEntryOpen(false);
+    } catch (err) {
+      console.error('Failed to save manual entry:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save manual entry');
+    } finally {
+      setIsManualEntryLoading(false);
+    }
+  };
+
+  const handleManualEntryClose = () => {
+    setIsManualEntryOpen(false);
+    setIsManualEntryLoading(false);
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       <div className="text-center space-y-6 sm:space-y-8">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Time Tracker</h1>
-          <p className="text-sm sm:text-base text-gray-600">Track your activities and productivity</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Hobby Tracker</h1>
+          <p className="text-sm sm:text-base text-gray-600">Track your hobbies and interests</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-lg p-6 sm:p-8">
@@ -103,6 +146,23 @@ export function TimerView() {
               onStop={handleStop}
               isLoading={isLoading}
             />
+          </div>
+
+          {/* Manual Entry Button */}
+          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200">
+            <div className="flex flex-col items-center space-y-3">
+              <p className="text-sm text-gray-600">Already completed an activity?</p>
+              <button
+                onClick={() => setIsManualEntryOpen(true)}
+                disabled={isLoading || isManualEntryLoading}
+                className="inline-flex items-center px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 transition-colors"
+              >
+                <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Manual Entry
+              </button>
+            </div>
           </div>
           
           {error && (
@@ -137,6 +197,14 @@ export function TimerView() {
         onSubmit={handleFormSubmit}
         elapsedTime={state.elapsedTime}
         isLoading={isLoading}
+      />
+
+      <ActivityModal
+        isOpen={isManualEntryOpen}
+        onClose={handleManualEntryClose}
+        onSubmit={handleManualEntrySubmit}
+        isLoading={isManualEntryLoading}
+        mode="create"
       />
     </div>
   );

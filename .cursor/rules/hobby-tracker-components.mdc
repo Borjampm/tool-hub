@@ -1,0 +1,42 @@
+---
+globs: src/components/hobby-tracker/*.tsx
+description: Hobby tracker component patterns and usage guidelines
+---
+
+# Hobby Tracker Component Guidelines
+
+## Component Responsibilities
+
+### Main Application
+- [HobbyTrackerApp.tsx](mdc:src/components/hobby-tracker/HobbyTrackerApp.tsx) - Root component with auth providers and routing logic
+
+### Core Timer Functionality
+- [TimerView.tsx](mdc:src/components/hobby-tracker/TimerView.tsx) - Main timer interface with start/stop/metadata flow
+- [TimerDisplay.tsx](mdc:src/components/hobby-tracker/TimerDisplay.tsx) - Shows current timer state and elapsed time
+- [TimerControls.tsx](mdc:src/components/hobby-tracker/TimerControls.tsx) - Start/stop buttons and controls
+
+### Data Management
+- [Activities.tsx](mdc:src/components/hobby-tracker/Activities.tsx) - Activity history, editing, and CSV export
+- [Dashboard.tsx](mdc:src/components/hobby-tracker/Dashboard.tsx) - Analytics and hobby tracking insights
+- [Settings.tsx](mdc:src/components/hobby-tracker/Settings.tsx) - Category management and user preferences
+
+### User Interface
+- [Navbar.tsx](mdc:src/components/hobby-tracker/Navbar.tsx) - Navigation between timer tabs and user menu
+- [ActivityModal.tsx](mdc:src/components/hobby-tracker/ActivityModal.tsx) - Modal for editing existing activities
+- [MetadataForm.tsx](mdc:src/components/hobby-tracker/MetadataForm.tsx) - Form for adding metadata to timer sessions
+
+## Service Dependencies
+
+All hobby tracker components use:
+- [TimeEntryService](mdc:src/services/timeEntryService.ts) - Core time entry CRUD operations
+- [CategoryService](mdc:src/services/categoryService.ts) - Category management
+- [CSVExportService](mdc:src/services/csvExportService.ts) - Data export functionality
+
+## Context Usage
+
+- **TimerContext**: Used by timer-related components for state management
+- **AuthContext**: Used by all components for user authentication state
+
+## Authentication Requirements
+
+All hobby tracker components require authentication through [AuthGuard](mdc:src/components/shared/AuthGuard.tsx) wrapper in the main app component.

@@ -1,6 +1,6 @@
 # Authentication System Guide
 
-This document explains how user authentication works in the Marqness time tracking application.
+This document explains how user authentication works in the Marqness hobby tracking application.
 
 ## 🔐 Authentication Overview
 

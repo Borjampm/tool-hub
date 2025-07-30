@@ -27,10 +27,10 @@ export function ExpenseTracker() {
 
           <div className="space-y-4">
             <button
-              onClick={() => navigate('/time-tracker')}
+              onClick={() => navigate('/hobby-tracker')}
               className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium"
             >
-              Try Time Tracker Instead
+              Try Hobby Tracker Instead
             </button>
             <button
               onClick={() => navigate('/')}

@@ -23,7 +23,21 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
   const [creatingCategory, setCreatingCategory] = useState(false);
+  
+  // Predefined color options for categories
+  const colorOptions = [
+    '#3B82F6', // Blue
+    '#EF4444', // Red
+    '#10B981', // Green
+    '#F59E0B', // Amber
+    '#8B5CF6', // Purple
+    '#EC4899', // Pink
+    '#06B6D4', // Cyan
+    '#84CC16', // Lime
+    '#F97316', // Orange
+  ];
   
   const {
     register,
@@ -61,11 +75,13 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
       setCreatingCategory(true);
       const newCategory = await CategoryService.createCategory({
         name: newCategoryName.trim(),
+        color: newCategoryColor
       });
       setCategories([...categories, newCategory]);
       setValue('category', newCategory.name);
       setShowNewCategoryInput(false);
       setNewCategoryName('');
+      setNewCategoryColor('#3B82F6'); // Reset to default
     } catch (err) {
       console.error('Failed to create category:', err);
       // Could show error but for now just log it
@@ -89,6 +105,7 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
     reset();
     setShowNewCategoryInput(false);
     setNewCategoryName('');
+    setNewCategoryColor('#3B82F6');
     onClose();
   };
 
@@ -96,6 +113,7 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
     reset();
     setShowNewCategoryInput(false);
     setNewCategoryName('');
+    setNewCategoryColor('#3B82F6');
     onClose();
   };
 
@@ -171,19 +189,19 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
                   type="button"
                   onClick={() => setShowNewCategoryInput(true)}
                   disabled={loadingCategories}
-                  className="w-full text-left px-3 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  className="w-full text-left px-3 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:border-blue-500 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-sm touch-manipulation min-h-[44px]"
                 >
                   + Create new category
                 </button>
               ) : (
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                <div className="space-y-3">
                   <input
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
                     placeholder="Category name"
                     disabled={creatingCategory}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-base"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 text-base"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
@@ -191,26 +209,51 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
                       } else if (e.key === 'Escape') {
                         setShowNewCategoryInput(false);
                         setNewCategoryName('');
+                        setNewCategoryColor('#3B82F6');
                       }
                     }}
                   />
-                  <div className="flex space-x-2">
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Choose Color
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {colorOptions.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setNewCategoryColor(color)}
+                          className={`w-8 h-8 rounded-full border-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 touch-manipulation ${
+                            newCategoryColor === color ? 'border-gray-900' : 'border-gray-300'
+                          }`}
+                          style={{ backgroundColor: color }}
+                          disabled={creatingCategory}
+                          title={`Select ${color}`}
+                          aria-label={`Select color ${color}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
                     <button
                       type="button"
                       onClick={handleCreateNewCategory}
                       disabled={!newCategoryName.trim() || creatingCategory}
-                      className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                      className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
                     >
-                      {creatingCategory ? '...' : 'Add'}
+                      {creatingCategory ? 'Creating...' : 'Add Category'}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
                         setShowNewCategoryInput(false);
                         setNewCategoryName('');
+                        setNewCategoryColor('#3B82F6');
                       }}
                       disabled={creatingCategory}
-                      className="px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                      className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
                     >
                       Cancel
                     </button>

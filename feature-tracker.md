@@ -2,7 +2,7 @@ Frontend Feature Tracker
 
 ## Project Context
 
-This React-based front-end is part of a simple time-tracking MVP application with Supabase backend and PostgreSQL database. The core user flow is:
+This React-based front-end is part of a simple hobby-tracking MVP application with Supabase backend and PostgreSQL database. The core user flow is:
 	1.	Start: User presses the "Start" button to begin timing an activity. A new entry is created in the database.
 	2.	Stop: User presses the "Stop" button to end timing. The app pauses the timer and opens a metadata form.
 	3.	Metadata: User provides a Name (required), Description (optional), and Category (optional). The form submits to complete the entry.
@@ -104,13 +104,13 @@ This React-based front-end is part of a simple time-tracking MVP application wit
 - [ ] **Time Charts** - Visual graphs of time spent by category/day/week
 - [ ] **Productivity Insights** - Daily/weekly/monthly summaries
 - [ ] **Goal Setting** - Daily/weekly time targets per category
-- [ ] **Time Tracking Streaks** - Gamification elements
-- [ ] **Export Data** - CSV/PDF export of time tracking data
+- [ ] **Hobby Tracking Streaks** - Gamification elements
+- [ ] **Export Data** - CSV/PDF export of hobby tracking data
 - [ ] **Advanced Filtering** - Filter by date ranges, categories, duration
 
 ### Phase 3: Collaboration & Sync
 - [ ] **Real-time Updates** - Live sync across multiple devices
-- [ ] **Team Features** - Shared categories and time tracking
+- [ ] **Team Features** - Shared categories and hobby tracking
 - [ ] **Calendar Integration** - Sync with Google Calendar or similar
 - [ ] **Time Blocking** - Schedule and track planned activities
 - [ ] **Notifications** - Reminders for breaks and tracking
@@ -119,7 +119,7 @@ This React-based front-end is part of a simple time-tracking MVP application wit
 - [ ] **PWA Support** - Install as mobile app
 - [ ] **Mobile Optimization** - Touch-friendly controls and mobile-specific UI
 - [ ] **API Integration** - Connect with project management tools
-- [ ] **Webhooks** - Trigger actions based on time tracking events
+- [ ] **Webhooks** - Trigger actions based on hobby tracking events
 - [ ] **Backup & Sync** - Cloud backup and multi-device sync
 
 ### Phase 5: Advanced Features
@@ -149,4 +149,4 @@ This React-based front-end is part of a simple time-tracking MVP application wit
 ---
 
 **Last Updated:** January 2025  
-**Current Version:** v2.0.0 - Full-Featured Time Tracking with Custom Categories & Activity Management
+**Current Version:** v2.0.0 - Full-Featured Hobby Tracking with Custom Categories & Activity Management
