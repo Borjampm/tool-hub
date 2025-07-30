@@ -3,7 +3,7 @@ import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } 
 import { CSVExportService } from '../../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import type { TimeEntry } from '../../lib/supabase';
-import { formatDateTime, formatTimeRange, formatDuration } from '../../lib/dateUtils';
+import { formatDateTimeRounded, formatTimeRangeRounded, formatDuration } from '../../lib/dateUtils';
 
 // New component for the file upload modal
 function FileUploadModal({ 
@@ -318,8 +318,8 @@ export function Activities() {
     return formatDuration(totalSeconds);
   };
 
-  const formatDate = (dateString: string): string => {
-    return formatDateTime(dateString);
+  const formatStartTime = (dateString: string): string => {
+    return formatDateTimeRounded(dateString);
   };
 
 
@@ -649,11 +649,11 @@ export function Activities() {
                           </span>
                         )}
                         <span className="text-xs sm:text-sm text-gray-500">
-                          {formatDate(entry.created_at)}
+                          {entry.start_time ? formatStartTime(entry.start_time) : formatStartTime(entry.created_at)}
                         </span>
                         {entry.end_time && entry.start_time && (
                           <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
-                            {formatTimeRange(entry.start_time, entry.end_time)}
+                            {formatTimeRangeRounded(entry.start_time, entry.end_time)}
                           </span>
                         )}
                       </div>

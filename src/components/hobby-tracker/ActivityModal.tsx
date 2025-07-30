@@ -37,19 +37,9 @@ export function ActivityModal({
   const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
   const [creatingCategory, setCreatingCategory] = useState(false);
 
-  // Detect touch/mobile devices for better UX
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-  // Helper function to round time to nearest 5-minute increment for touch devices
-  const roundToNearestFiveMinutes = (date: Date): Date => {
-    if (!isTouchDevice) return date;
-    
-    const minutes = date.getMinutes();
-    const roundedMinutes = Math.round(minutes / 5) * 5;
-    const newDate = new Date(date);
-    newDate.setMinutes(roundedMinutes, 0, 0); // Also reset seconds and milliseconds
-    return newDate;
-  };
+
+
 
   // Predefined color options for categories
   const colorOptions = [
@@ -113,8 +103,7 @@ export function ActivityModal({
         // Set start time - convert UTC to local time
         if (existingEntry.start_time) {
           const startDate = new Date(existingEntry.start_time);
-          const roundedStartDate = roundToNearestFiveMinutes(startDate);
-          setValue('startTime', toLocalDateTimeString(roundedStartDate.toISOString()));
+          setValue('startTime', toLocalDateTimeString(startDate.toISOString()));
         }
         
         // Calculate duration from start and end time
@@ -122,22 +111,17 @@ export function ActivityModal({
           const startTime = new Date(existingEntry.start_time);
           const endTime = new Date(existingEntry.end_time);
           const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-          // Round to nearest 5-minute increment on touch devices
-          const finalDuration = isTouchDevice ? Math.round(durationMinutes / 5) * 5 : durationMinutes;
-          setValue('duration', finalDuration);
+          setValue('duration', durationMinutes);
         } else if (existingEntry.elapsed_time) {
           // Fallback to elapsed_time if available
           const durationMinutes = Math.round(existingEntry.elapsed_time / 60);
-          // Round to nearest 5-minute increment on touch devices
-          const finalDuration = isTouchDevice ? Math.round(durationMinutes / 5) * 5 : durationMinutes;
-          setValue('duration', finalDuration);
+          setValue('duration', durationMinutes);
         }
       } else if (mode === 'create') {
         // Set default start time to 1 hour ago and duration to 60 minutes
         const now = new Date();
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-        const roundedStartTime = roundToNearestFiveMinutes(oneHourAgo);
-        setValue('startTime', toLocalDateTimeString(roundedStartTime.toISOString()));
+        setValue('startTime', toLocalDateTimeString(oneHourAgo.toISOString()));
         setValue('duration', 60); // 1 hour default
         setValue('name', '');
         setValue('description', '');
@@ -315,16 +299,14 @@ export function ActivityModal({
                 {...register('startTime', { required: 'Start time is required' })}
                 type="datetime-local"
                 id="startTime"
-                step={isTouchDevice ? "300" : "60"}
+                step="60"
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                 disabled={isLoading}
               />
               {errors.startTime && (
                 <p className="mt-1 text-sm text-red-600">{errors.startTime.message}</p>
               )}
-              {isTouchDevice && (
-                <p className="mt-1 text-xs text-gray-500">Time adjusts in 5-minute increments on touch devices</p>
-              )}
+
             </div>
 
             <div>
@@ -334,14 +316,15 @@ export function ActivityModal({
               <input
                 {...register('duration', { 
                   required: 'Duration is required',
-                  min: { value: isTouchDevice ? 5 : 1, message: `Duration must be at least ${isTouchDevice ? 5 : 1} minute${isTouchDevice ? 's' : ''}` },
+                  min: { value: 1, message: 'Duration must be at least 1 minute' },
                   max: { value: 1440, message: 'Duration cannot exceed 24 hours' }
                 })}
                 type="number"
                 id="duration"
-                min={isTouchDevice ? "5" : "1"}
+                min="1"
                 max="1440"
-                step={isTouchDevice ? "5" : "1"}
+                step="1"
+                inputMode="numeric"
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                 placeholder="60"
                 disabled={isLoading}
@@ -349,9 +332,7 @@ export function ActivityModal({
               {errors.duration && (
                 <p className="mt-1 text-sm text-red-600">{errors.duration.message}</p>
               )}
-              {isTouchDevice && (
-                <p className="mt-1 text-xs text-gray-500">Duration adjusts in 5-minute increments on touch devices</p>
-              )}
+
             </div>
           </div>
 
