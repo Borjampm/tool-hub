@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { TimeEntryService } from '../../services/timeEntryService';
+import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } from '../../services/timeEntryService';
 import { CSVExportService } from '../../services/csvExportService';
-import { ActivityModal } from './ActivityModal';
+import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import type { TimeEntry } from '../../lib/supabase';
-import type { ManualTimeEntryData } from '../../services/csvExportService';
 import { formatDateTime, formatTimeRange, formatDuration } from '../../lib/dateUtils';
 
 // New component for the file upload modal
