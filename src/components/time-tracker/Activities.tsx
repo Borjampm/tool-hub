@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } from '../services/timeEntryService';
-import { CSVExportService } from '../services/csvExportService';
+import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } from '../../services/timeEntryService';
+import { CSVExportService } from '../../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
-import type { TimeEntry } from '../lib/supabase';
+import type { TimeEntry } from '../../lib/supabase';
 
 // New component for the file upload modal
 function FileUploadModal({ 

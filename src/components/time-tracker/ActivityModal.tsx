@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { CategoryService } from '../services/categoryService';
-import type { TimeEntry, UserCategory } from '../lib/supabase';
+import { CategoryService } from '../../services/categoryService';
+import type { TimeEntry, UserCategory } from '../../lib/supabase';
 
 export interface ActivityFormData {
   name: string;

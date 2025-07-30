@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { AuthProvider } from '../contexts/AuthContext';
-import { TimerProvider } from '../contexts/TimerContext';
-import { AuthGuard } from './AuthGuard';
-import { EmailVerification } from './EmailVerification';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { TimerProvider } from '../../contexts/TimerContext';
+import { AuthGuard } from '../shared/AuthGuard';
+import { EmailVerification } from '../shared/EmailVerification';
 import { Navbar } from './Navbar';
 import { TimerView } from './TimerView';
 import { Activities } from './Activities';

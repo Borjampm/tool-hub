@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { LandingPage } from './components/LandingPage';
-import { TimeTrackerApp } from './components/TimeTrackerApp';
-import { ExpenseTracker } from './components/ExpenseTracker';
+import { LandingPage } from './components/shared/LandingPage';
+import { TimeTrackerApp } from './components/time-tracker/TimeTrackerApp';
+import { ExpenseTracker } from './components/expense-tracker/ExpenseTracker';
 
 function App() {
   return (

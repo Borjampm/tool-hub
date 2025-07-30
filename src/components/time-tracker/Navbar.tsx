@@ -1,6 +1,6 @@
 
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface NavbarProps {
   activeTab: 'timer' | 'activities' | 'dashboard' | 'settings';
@@ -24,7 +24,12 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-gray-900 mr-8">Marqness</h1>
+            <button 
+              onClick={() => navigate('/')}
+              className="text-xl font-semibold text-gray-900 mr-8 hover:text-indigo-600 transition-colors duration-200 cursor-pointer"
+            >
+              Marqness
+            </button>
             <div className="flex space-x-8">
               <button
                 onClick={() => onTabChange('timer')}

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useTimer } from '../contexts/TimerContext';
+import { useTimer } from '../../contexts/TimerContext';
 import { TimerDisplay } from './TimerDisplay';
 import { TimerControls } from './TimerControls';
 import { MetadataForm } from './MetadataForm';
-import { TimeEntryService } from '../services/timeEntryService';
+import { TimeEntryService } from '../../services/timeEntryService';
 
 interface MetadataFormData {
   name: string;

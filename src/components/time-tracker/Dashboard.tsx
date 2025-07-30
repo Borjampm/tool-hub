@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { TimeEntryService } from '../services/timeEntryService';
-import type { TimeEntry } from '../lib/supabase';
+import { TimeEntryService } from '../../services/timeEntryService';
+import type { TimeEntry } from '../../lib/supabase';
 
 export function Dashboard() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);

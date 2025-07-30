@@ -1,8 +1,8 @@
 
 import { useForm } from 'react-hook-form';
 import { useState, useEffect } from 'react';
-import { CategoryService } from '../services/categoryService';
-import type { UserCategory } from '../lib/supabase';
+import { CategoryService } from '../../services/categoryService';
+import type { UserCategory } from '../../lib/supabase';
 
 interface MetadataFormData {
   name: string;
