@@ -21,20 +21,20 @@ export class CSVExportService {
       'Entry ID'
     ];
 
-    // Helper function to format duration
+    // Helper function to format duration (no seconds shown)
     const formatDuration = (totalSeconds: number | null | undefined): string => {
-      if (!totalSeconds) return '0s';
+      if (!totalSeconds) return '0m';
       
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
-      const seconds = totalSeconds % 60;
 
       if (hours > 0) {
-        return `${hours}h ${minutes}m ${seconds}s`;
+        return `${hours}h ${minutes}m`;
       } else if (minutes > 0) {
-        return `${minutes}m ${seconds}s`;
+        return `${minutes}m`;
       } else {
-        return `${seconds}s`;
+        // For durations less than 1 minute, round up to 1 minute
+        return '1m';
       }
     };
 

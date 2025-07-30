@@ -4,7 +4,7 @@
  */
 
 /**
- * Format a date string to show in user's local timezone with date and time
+ * Format a date string to show in user's local timezone with date and time (24-hour format)
  */
 export function formatDateTime(dateString: string): string {
   return new Date(dateString).toLocaleString(undefined, {
@@ -13,6 +13,31 @@ export function formatDateTime(dateString: string): string {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
+  });
+}
+
+/**
+ * Format a date string to show in user's local timezone with date and time, 
+ * rounded to the nearest minute (no seconds, 24-hour format)
+ */
+export function formatDateTimeRounded(dateString: string): string {
+  const date = new Date(dateString);
+  // Round to nearest minute
+  const roundedDate = new Date(date);
+  const seconds = date.getSeconds();
+  if (seconds >= 30) {
+    roundedDate.setMinutes(date.getMinutes() + 1);
+  }
+  roundedDate.setSeconds(0, 0); // Remove seconds and milliseconds
+  
+  return roundedDate.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
   });
 }
 
@@ -28,12 +53,34 @@ export function formatDate(dateString: string): string {
 }
 
 /**
- * Format a date string to show only the time in user's local timezone
+ * Format a date string to show only the time in user's local timezone (24-hour format)
  */
 export function formatTime(dateString: string): string {
   return new Date(dateString).toLocaleTimeString(undefined, {
     hour: '2-digit',
     minute: '2-digit',
+    hour12: false,
+  });
+}
+
+/**
+ * Format a date string to show only the time in user's local timezone, 
+ * rounded to the nearest minute (no seconds, 24-hour format)
+ */
+export function formatTimeRounded(dateString: string): string {
+  const date = new Date(dateString);
+  // Round to nearest minute
+  const roundedDate = new Date(date);
+  const seconds = date.getSeconds();
+  if (seconds >= 30) {
+    roundedDate.setMinutes(date.getMinutes() + 1);
+  }
+  roundedDate.setSeconds(0, 0); // Remove seconds and milliseconds
+  
+  return roundedDate.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
   });
 }
 
@@ -47,21 +94,31 @@ export function formatTimeRange(startTime: string, endTime: string): string {
 }
 
 /**
- * Format elapsed time duration from seconds to human readable format
+ * Format a time range (start and end times) in user's local timezone,
+ * rounded to the nearest minute (no seconds)
+ */
+export function formatTimeRangeRounded(startTime: string, endTime: string): string {
+  const start = formatTimeRounded(startTime);
+  const end = formatTimeRounded(endTime);
+  return `${start} - ${end}`;
+}
+
+/**
+ * Format elapsed time duration from seconds to human readable format (no seconds shown)
  */
 export function formatDuration(totalSeconds: number | undefined): string {
-  if (!totalSeconds) return '0s';
+  if (!totalSeconds) return '0m';
   
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return `${hours}h ${minutes}m`;
   } else if (minutes > 0) {
-    return `${minutes}m ${seconds}s`;
+    return `${minutes}m`;
   } else {
-    return `${seconds}s`;
+    // For durations less than 1 minute, round up to 1 minute
+    return '1m';
   }
 }
 
