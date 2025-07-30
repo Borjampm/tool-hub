@@ -1,7 +1,26 @@
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { useEffect } from 'react';
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  // Check for email verification callback and redirect
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash) {
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
+      
+      // If this is an email verification callback, redirect to verification handler
+      if (type === 'signup' && accessToken) {
+        navigate('/verify-email');
+        return;
+      }
+    }
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -11,6 +30,36 @@ export function LandingPage() {
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 md:mb-4">
               Welcome to <span className="text-indigo-600">Marqness</span>
             </h1>
+            
+            {/* Authentication Status */}
+            <div className="mb-4">
+              {loading ? (
+                <p className="text-sm text-gray-500">Loading...</p>
+              ) : user ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-700">
+                    Currently signed in as <span className="font-medium">{user.email}</span>
+                  </p>
+                  <button
+                    onClick={() => navigate('/account')}
+                    className="text-sm text-indigo-600 hover:text-indigo-700 underline transition-colors"
+                  >
+                    Manage Account
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">Currently not signed in</p>
+                  <button
+                    onClick={() => navigate('/signin')}
+                    className="text-sm text-indigo-600 hover:text-indigo-700 underline transition-colors"
+                  >
+                    Sign in?
+                  </button>
+                </div>
+              )}
+            </div>
+            
             <p className="text-base sm:text-lg md:text-xl text-gray-600 md:max-w-2xl md:mx-auto">
               <span className="md:hidden">Your personal productivity hub</span>
               <span className="hidden md:inline">Your personal productivity hub for tracking hobbies and managing expenses</span>

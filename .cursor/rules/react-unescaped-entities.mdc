@@ -1,0 +1,112 @@
+---
+globs: *.tsx,*.jsx
+description: React unescaped entities prevention and HTML entity usage guidelines
+---
+
+# React Unescaped Entities Prevention
+
+## 🚫 ESLint Rule: `react/no-unescaped-entities`
+
+**ALWAYS escape special characters in JSX text content** to prevent linter errors and ensure proper HTML rendering.
+
+## ⚠️ Common Characters That Need Escaping
+
+### Apostrophes and Quotes
+- **Single quotes/apostrophes (`'`)** → Use `&apos;`
+- **Double quotes (`"`)** → Use `&quot;` (when needed)
+- **Left single quote (`'`)** → Use `&lsquo;`
+- **Right single quote (`'`)** → Use `&rsquo;`
+
+## ✅ Correct Usage Examples
+
+```tsx
+// ❌ WRONG - Will cause linter error
+<p>Don't see the email? Check your spam folder.</p>
+<p>We've sent a verification email.</p>
+<p>You're ready to start tracking.</p>
+
+// ✅ CORRECT - Properly escaped
+<p>Don&apos;t see the email? Check your spam folder.</p>
+<p>We&apos;ve sent a verification email.</p>
+<p>You&apos;re ready to start tracking.</p>
+```
+
+## 📝 Common Patterns to Watch For
+
+### Error Messages and User-Facing Text
+```tsx
+// ❌ WRONG
+{error && (
+  <div className="error">
+    We couldn't process your request
+  </div>
+)}
+
+// ✅ CORRECT
+{error && (
+  <div className="error">
+    We couldn&apos;t process your request
+  </div>
+)}
+```
+
+### Success Messages
+```tsx
+// ❌ WRONG
+<p>You'll be redirected automatically</p>
+
+// ✅ CORRECT  
+<p>You&apos;ll be redirected automatically</p>
+```
+
+### Form Labels and Help Text
+```tsx
+// ❌ WRONG
+<label>Enter your company's name</label>
+
+// ✅ CORRECT
+<label>Enter your company&apos;s name</label>
+```
+
+## 🎯 When Escaping Is NOT Required
+
+### Inside JavaScript Strings
+```tsx
+// ✅ These are fine - inside JS expressions
+const message = "Don't worry, this is fine";
+const title = `You're all set!`;
+```
+
+### String Literals in Attributes
+```tsx
+// ✅ These are fine - inside attribute values
+<input placeholder="Enter your company's name" />
+<button title="User's profile menu" />
+```
+
+## 🔧 Quick Fix Strategy
+
+1. **Find text content** between JSX tags: `<p>text here</p>`
+2. **Look for apostrophes** (`'`) in the text
+3. **Replace with `&apos;`** for proper escaping
+4. **Test with linter** to confirm fix
+
+## 📋 HTML Entity Reference
+
+| Character | Entity Code | Usage |
+|-----------|-------------|--------|
+| `'` | `&apos;` | Apostrophes, contractions |
+| `"` | `&quot;` | Double quotes in text |
+| `'` | `&lsquo;` | Left single quote |
+| `'` | `&rsquo;` | Right single quote |
+| `"` | `&ldquo;` | Left double quote |
+| `"` | `&rdquo;` | Right double quote |
+
+## ⚡ Pro Tips
+
+- **VS Code Extensions**: Some extensions can auto-fix these on save
+- **ESLint Auto-fix**: Use `npm run lint:fix` to automatically fix many of these
+- **Search Pattern**: Use regex `'` to find unescaped apostrophes in JSX
+- **Consistent Style**: Always use `&apos;` for apostrophes in this codebase
+
+Remember: **Any text content directly inside JSX tags needs proper HTML entity escaping!**

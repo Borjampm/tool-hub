@@ -40,27 +40,6 @@ The platform is designed to grow with additional productivity applications:
 - **🔐 Secure Authentication**: Industry-standard authentication system
 - **📱 Cross-Device Sync**: Access your data from any device
 
-## ✨ Current Applications
-
-### Hobby Tracker - Feature Complete ✅
-
-**Simple Tracking Workflow:**
-1. **🚀 Start**: Click "Start" to begin timing any hobby activity
-2. **⏹️ Stop**: Click "Stop" when you're done 
-3. **📋 Describe**: Add a name, description, and category for your session
-4. **💾 Save**: Your entry is automatically saved to your personal database
-
-**Analytics & Insights:**
-- **📈 Summary Statistics**: Total entries, total time tracked, and average session length
-- **📊 Category Breakdown**: Visual breakdown of time spent across different hobby categories
-- **📋 Activity History**: Complete list of all your hobby entries with details
-- **⏰ Recent Activity**: Quick view of your most recent sessions
-- **📊 Export Options**: Export your data for external analysis (CSV format)
-
-### Expense Tracker - Under Development 🚧
-
-The expense tracking application is currently in development and will provide comprehensive financial tracking capabilities with the same level of polish and attention to detail as the hobby tracker.
-
 ## 🚀 Quick Start
 
 ### For Users
