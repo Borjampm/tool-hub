@@ -1,0 +1,50 @@
+---
+globs: src/components/shared/*.tsx
+description: Shared component usage patterns and guidelines
+---
+
+# Shared Component Guidelines
+
+## Purpose and Usage
+
+Shared components in `src/components/shared/` are designed to be used across multiple apps in the Marqness platform.
+
+### Available Shared Components
+
+#### [LandingPage.tsx](mdc:src/components/shared/LandingPage.tsx)
+- **Purpose**: Main entry point with app selection buttons
+- **Usage**: Root route ("/") component
+- **Navigation**: Routes to `/time-tracker` and `/expense-tracker`
+- **Dependencies**: React Router (`useNavigate`)
+
+#### [AuthGuard.tsx](mdc:src/components/shared/AuthGuard.tsx) 
+- **Purpose**: Wraps protected content, shows auth modal if not authenticated
+- **Usage**: Wrap around app components that require authentication
+- **Dependencies**: [AuthContext](mdc:src/contexts/AuthContext.tsx), [AuthModal](mdc:src/components/shared/AuthModal.tsx)
+
+#### [AuthModal.tsx](mdc:src/components/shared/AuthModal.tsx)
+- **Purpose**: Handles user login and signup
+- **Usage**: Displayed by AuthGuard when user is not authenticated
+- **Dependencies**: [AuthContext](mdc:src/contexts/AuthContext.tsx), React Hook Form
+
+#### [EmailVerification.tsx](mdc:src/components/shared/EmailVerification.tsx)
+- **Purpose**: Handles email verification flow after signup
+- **Usage**: Shown when auth callback contains verification token
+- **Dependencies**: [Supabase client](mdc:src/lib/supabase.ts)
+
+## Usage Rules
+
+1. **Import Path**: Always use `../shared/ComponentName` from app folders
+2. **Reusability**: Components should not contain app-specific logic
+3. **Dependencies**: Keep external dependencies minimal and common
+4. **State Management**: Use React state or props, avoid app-specific contexts
+5. **Styling**: Use consistent Tailwind classes that work across apps
+
+## Adding New Shared Components
+
+When creating new shared components:
+- Place in `src/components/shared/`
+- Ensure they work across multiple apps
+- Document purpose and usage patterns
+- Keep dependencies minimal
+- Follow established import patterns

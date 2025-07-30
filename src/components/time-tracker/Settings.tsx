@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { CategoryService } from '../services/categoryService';
-import type { CreateCategoryData, UpdateCategoryData } from '../services/categoryService';
-import type { UserCategory } from '../lib/supabase';
+import { CategoryService } from '../../services/categoryService';
+import type { CreateCategoryData, UpdateCategoryData } from '../../services/categoryService';
+import type { UserCategory } from '../../lib/supabase';
 
 interface CategoryFormData {
   name: string;

@@ -1,0 +1,60 @@
+---
+globs: src/components/**/*.tsx,src/components/**/*.ts
+description: Import path conventions for component organization
+---
+
+# Import Path Conventions
+
+## Import Patterns Based on Component Location
+
+### From Time Tracker Components (`src/components/time-tracker/`)
+```typescript
+// Services (go up two levels)
+import { TimeEntryService } from '../../services/timeEntryService';
+import { CategoryService } from '../../services/categoryService';
+
+// Contexts (go up two levels) 
+import { useAuth } from '../../contexts/AuthContext';
+import { useTimer } from '../../contexts/TimerContext';
+
+// Shared components (go up one level, then to shared)
+import { AuthGuard } from '../shared/AuthGuard';
+import { EmailVerification } from '../shared/EmailVerification';
+
+// Same folder components (relative)
+import { TimerDisplay } from './TimerDisplay';
+import { ActivityModal } from './ActivityModal';
+
+// Types from lib (go up two levels)
+import type { TimeEntry, UserCategory } from '../../lib/supabase';
+```
+
+### From Shared Components (`src/components/shared/`)
+```typescript
+// Services (go up two levels)
+import { supabase } from '../../lib/supabase';
+
+// Contexts (go up two levels)
+import { useAuth } from '../../contexts/AuthContext';
+
+// Router (from react-router-dom)
+import { useNavigate } from 'react-router-dom';
+```
+
+### From Expense Tracker Components (`src/components/expense-tracker/`)
+```typescript
+// Router navigation
+import { useNavigate } from 'react-router-dom';
+
+// Future: Services and contexts will follow same pattern as time-tracker
+// import { ExpenseService } from '../../services/expenseService';
+```
+
+## Key Rules
+
+1. **Services**: Always `../../services/` from component folders
+2. **Contexts**: Always `../../contexts/` from component folders  
+3. **Lib**: Always `../../lib/` from component folders
+4. **Shared Components**: Use `../shared/` from app folders
+5. **Same Folder**: Use `./ComponentName` for components in same directory
+6. **Cross-App**: Avoid importing components from other app folders directly

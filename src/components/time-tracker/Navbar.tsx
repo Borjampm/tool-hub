@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface NavbarProps {
   activeTab: 'timer' | 'activities' | 'dashboard' | 'settings';
@@ -8,6 +9,7 @@ interface NavbarProps {
 }
 
 export function Navbar({ activeTab, onTabChange }: NavbarProps) {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -36,23 +38,53 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <h1 className="text-xl font-semibold text-gray-900 mr-4 sm:mr-8">Marqness</h1>
-            
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex space-x-8">
-              {navigationItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleTabChange(item.id)}
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    activeTab === item.id
-                      ? 'border-blue-500 text-gray-900'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
+            <button 
+              onClick={() => navigate('/')}
+              className="text-xl font-semibold text-gray-900 mr-8 hover:text-indigo-600 transition-colors duration-200 cursor-pointer"
+            >
+              Marqness
+            </button>
+            <div className="flex space-x-8">
+              <button
+                onClick={() => onTabChange('timer')}
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  activeTab === 'timer'
+                    ? 'border-blue-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Timer
+              </button>
+              <button
+                onClick={() => onTabChange('activities')}
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  activeTab === 'activities'
+                    ? 'border-blue-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Activities
+              </button>
+              <button
+                onClick={() => onTabChange('dashboard')}
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  activeTab === 'dashboard'
+                    ? 'border-blue-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => onTabChange('settings')}
+                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                  activeTab === 'settings'
+                    ? 'border-blue-500 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                }`}
+              >
+                Settings
+              </button>
             </div>
           </div>
 
