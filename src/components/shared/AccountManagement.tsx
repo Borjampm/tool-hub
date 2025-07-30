@@ -27,6 +27,16 @@ export function AccountManagement() {
     navigate('/');
   };
 
+  const handleGoBack = () => {
+    // Go back to the previous page in browser history
+    // If there's no previous page, fall back to home
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate('/');
+    }
+  };
+
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError(null);
@@ -109,10 +119,10 @@ export function AccountManagement() {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate('/')}
+            onClick={handleGoBack}
             className="text-indigo-600 hover:text-indigo-700 mb-4 flex items-center gap-2 transition-colors"
           >
-            ← Back to Home
+            ← Back
           </button>
           <h1 className="text-3xl font-bold text-gray-900">Account Management</h1>
         </div>
