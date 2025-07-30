@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } from '../../services/timeEntryService';
+import { TimeEntryService } from '../../services/timeEntryService';
 import { CSVExportService } from '../../services/csvExportService';
-import { ActivityModal, type ActivityFormData } from './ActivityModal';
+import { ActivityModal } from './ActivityModal';
 import type { TimeEntry } from '../../lib/supabase';
+import type { ManualTimeEntryData } from '../../services/csvExportService';
+import { formatDateTime, formatTimeRange, formatDuration } from '../../lib/dateUtils';
 
 // New component for the file upload modal
 function FileUploadModal({ 
@@ -313,27 +315,11 @@ export function Activities() {
   };
 
   const formatTime = (totalSeconds: number): string => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
+    return formatDuration(totalSeconds);
   };
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateTime(dateString);
   };
 
   const calculateElapsedTime = (startTime: string, endTime: string): number => {
@@ -671,7 +657,7 @@ export function Activities() {
                         </span>
                         {entry.end_time && entry.start_time && (
                           <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
-                            {new Date(entry.start_time).toLocaleTimeString()} - {new Date(entry.end_time).toLocaleTimeString()}
+                            {formatTimeRange(entry.start_time, entry.end_time)}
                           </span>
                         )}
                       </div>

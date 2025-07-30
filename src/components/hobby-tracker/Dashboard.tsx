@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { TimeEntryService } from '../../services/timeEntryService';
 import type { TimeEntry } from '../../lib/supabase';
+import { formatDateTime, formatDuration } from '../../lib/dateUtils';
 
 export function Dashboard() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
@@ -26,27 +27,11 @@ export function Dashboard() {
   };
 
   const formatTime = (totalSeconds: number): string => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    } else {
-      return `${seconds}s`;
-    }
+    return formatDuration(totalSeconds);
   };
 
   const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateTime(dateString);
   };
 
   const getTotalTime = (): number => {

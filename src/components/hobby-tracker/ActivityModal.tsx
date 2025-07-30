@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CategoryService } from '../../services/categoryService';
 import type { TimeEntry, UserCategory } from '../../lib/supabase';
+import { toLocalDateTimeString } from '../../lib/dateUtils';
 
 export interface ActivityFormData {
   name: string;
@@ -91,21 +92,19 @@ export function ActivityModal({
         setValue('description', existingEntry.description || '');
         setValue('category', existingEntry.category || '');
         
-        // Format dates for datetime-local input
+        // Format dates for datetime-local input - convert UTC to local time
         if (existingEntry.start_time) {
-          const startDate = new Date(existingEntry.start_time);
-          setValue('startTime', startDate.toISOString().slice(0, 16));
+          setValue('startTime', toLocalDateTimeString(existingEntry.start_time));
         }
         if (existingEntry.end_time) {
-          const endDate = new Date(existingEntry.end_time);
-          setValue('endTime', endDate.toISOString().slice(0, 16));
+          setValue('endTime', toLocalDateTimeString(existingEntry.end_time));
         }
       } else if (mode === 'create') {
-        // Set default times for new entries (1 hour ago to now)
+        // Set default times for new entries (1 hour ago to now) in local time
         const now = new Date();
         const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-        setValue('startTime', oneHourAgo.toISOString().slice(0, 16));
-        setValue('endTime', now.toISOString().slice(0, 16));
+        setValue('startTime', toLocalDateTimeString(oneHourAgo.toISOString()));
+        setValue('endTime', toLocalDateTimeString(now.toISOString()));
         setValue('name', '');
         setValue('description', '');
         setValue('category', '');
