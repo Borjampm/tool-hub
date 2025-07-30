@@ -1,9 +1,26 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useEffect } from 'react';
 
 export function LandingPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+
+  // Check for email verification callback and redirect
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash) {
+      const hashParams = new URLSearchParams(hash.substring(1));
+      const type = hashParams.get('type');
+      const accessToken = hashParams.get('access_token');
+      
+      // If this is an email verification callback, redirect to verification handler
+      if (type === 'signup' && accessToken) {
+        navigate('/verify-email');
+        return;
+      }
+    }
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

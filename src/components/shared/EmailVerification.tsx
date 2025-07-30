@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 interface EmailVerificationProps {
@@ -6,9 +7,10 @@ interface EmailVerificationProps {
 }
 
 export function EmailVerification({ onComplete }: EmailVerificationProps) {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [error, setError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
     const verifyEmail = async () => {
@@ -24,12 +26,12 @@ export function EmailVerification({ onComplete }: EmailVerificationProps) {
           // User is authenticated, verification was successful
           setStatus('success');
           
-          // Start countdown to redirect
+          // Start countdown to redirect to EmailVerified page
           const timer = setInterval(() => {
             setCountdown((prev) => {
               if (prev <= 1) {
                 clearInterval(timer);
-                onComplete();
+                navigate('/email-verified');
                 return 0;
               }
               return prev - 1;
@@ -48,12 +50,12 @@ export function EmailVerification({ onComplete }: EmailVerificationProps) {
             // The AuthContext should handle the session automatically
             setStatus('success');
             
-            // Start countdown to redirect
+            // Start countdown to redirect to EmailVerified page
             const timer = setInterval(() => {
               setCountdown((prev) => {
                 if (prev <= 1) {
                   clearInterval(timer);
-                  onComplete();
+                  navigate('/email-verified');
                   return 0;
                 }
                 return prev - 1;
@@ -73,10 +75,14 @@ export function EmailVerification({ onComplete }: EmailVerificationProps) {
     };
 
     verifyEmail();
-  }, [onComplete]);
+  }, [navigate]);
 
   const handleManualContinue = () => {
-    onComplete();
+    if (status === 'success') {
+      navigate('/email-verified');
+    } else {
+      onComplete();
+    }
   };
 
   const handleRetry = () => {
@@ -106,18 +112,18 @@ export function EmailVerification({ onComplete }: EmailVerificationProps) {
                 Email Verified Successfully!
               </h1>
               <p className="text-gray-600 mb-6">
-                Welcome to Marqness! Your account has been confirmed and you&apos;re ready to start tracking your time.
+                Welcome to Marqness! Your account has been confirmed and you're ready to start tracking your time.
               </p>
               <div className="mb-4">
                 <p className="text-sm text-gray-500">
-                  Redirecting to your dashboard in {countdown} seconds...
+                  Redirecting in {countdown} seconds...
                 </p>
               </div>
               <button
                 onClick={handleManualContinue}
                 className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
               >
-                Continue to App
+                Continue Now
               </button>
             </>
           )}
@@ -129,7 +135,7 @@ export function EmailVerification({ onComplete }: EmailVerificationProps) {
                 Verification Failed
               </h1>
               <p className="text-gray-600 mb-4">
-                We couldn&apos;t verify your email address. This might happen if:
+                We couldn't verify your email address. This might happen if:
               </p>
               <ul className="text-left text-sm text-gray-600 mb-6 space-y-1">
                 <li>• The verification link has expired</li>
