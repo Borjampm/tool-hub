@@ -37,19 +37,9 @@ export function ActivityModal({
   const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
   const [creatingCategory, setCreatingCategory] = useState(false);
 
-  // Detect touch/mobile devices for better UX
-  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-  // Helper function to round time to nearest 5-minute increment for touch devices
-  const roundToNearestFiveMinutes = (date: Date): Date => {
-    if (!isTouchDevice) return date;
-    
-    const minutes = date.getMinutes();
-    const roundedMinutes = Math.round(minutes / 5) * 5;
-    const newDate = new Date(date);
-    newDate.setMinutes(roundedMinutes, 0, 0); // Also reset seconds and milliseconds
-    return newDate;
-  };
+
+
 
   // Predefined color options for categories
   const colorOptions = [
@@ -309,16 +299,14 @@ export function ActivityModal({
                 {...register('startTime', { required: 'Start time is required' })}
                 type="datetime-local"
                 id="startTime"
-                step={isTouchDevice ? "300" : "60"}
+                step="60"
                 className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-base"
                 disabled={isLoading}
               />
               {errors.startTime && (
                 <p className="mt-1 text-sm text-red-600">{errors.startTime.message}</p>
               )}
-              {isTouchDevice && (
-                <p className="mt-1 text-xs text-gray-500">Time picker offers 5-minute increments on mobile devices</p>
-              )}
+
             </div>
 
             <div>
