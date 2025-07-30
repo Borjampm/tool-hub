@@ -1,0 +1,42 @@
+---
+globs: src/components/time-tracker/*.tsx
+description: Time tracker component patterns and usage guidelines
+---
+
+# Time Tracker Component Guidelines
+
+## Component Responsibilities
+
+### Main Application
+- [TimeTrackerApp.tsx](mdc:src/components/time-tracker/TimeTrackerApp.tsx) - Root component with auth providers and routing logic
+
+### Core Timer Functionality
+- [TimerView.tsx](mdc:src/components/time-tracker/TimerView.tsx) - Main timer interface with start/stop/metadata flow
+- [TimerDisplay.tsx](mdc:src/components/time-tracker/TimerDisplay.tsx) - Shows current timer state and elapsed time
+- [TimerControls.tsx](mdc:src/components/time-tracker/TimerControls.tsx) - Start/stop buttons and controls
+
+### Data Management
+- [Activities.tsx](mdc:src/components/time-tracker/Activities.tsx) - Activity history, editing, and CSV export
+- [Dashboard.tsx](mdc:src/components/time-tracker/Dashboard.tsx) - Analytics and time tracking insights
+- [Settings.tsx](mdc:src/components/time-tracker/Settings.tsx) - Category management and user preferences
+
+### User Interface
+- [Navbar.tsx](mdc:src/components/time-tracker/Navbar.tsx) - Navigation between timer tabs and user menu
+- [ActivityModal.tsx](mdc:src/components/time-tracker/ActivityModal.tsx) - Modal for editing existing activities
+- [MetadataForm.tsx](mdc:src/components/time-tracker/MetadataForm.tsx) - Form for adding metadata to timer sessions
+
+## Service Dependencies
+
+All time tracker components use:
+- [TimeEntryService](mdc:src/services/timeEntryService.ts) - Core time entry CRUD operations
+- [CategoryService](mdc:src/services/categoryService.ts) - Category management
+- [CSVExportService](mdc:src/services/csvExportService.ts) - Data export functionality
+
+## Context Usage
+
+- **TimerContext**: Used by timer-related components for state management
+- **AuthContext**: Used by all components for user authentication state
+
+## Authentication Requirements
+
+All time tracker components require authentication through [AuthGuard](mdc:src/components/shared/AuthGuard.tsx) wrapper in the main app component.

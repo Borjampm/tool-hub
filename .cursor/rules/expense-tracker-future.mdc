@@ -1,0 +1,55 @@
+---
+globs: src/components/expense-tracker/*.tsx
+description: Future development patterns for expense tracker components
+---
+
+# Expense Tracker Development Guidelines
+
+## Current State
+
+Currently contains only [ExpenseTracker.tsx](mdc:src/components/expense-tracker/ExpenseTracker.tsx) showing "under construction" message.
+
+## Future Component Structure
+
+When implementing the expense tracker, follow these patterns based on the time tracker structure:
+
+### Core Components (Planned)
+```
+src/components/expense-tracker/
+├── ExpenseTrackerApp.tsx     # Main app with providers (like TimeTrackerApp)
+├── ExpenseView.tsx           # Main expense entry interface
+├── ExpenseHistory.tsx        # Expense history and management (like Activities)
+├── ExpenseDashboard.tsx      # Analytics and insights (like Dashboard)  
+├── ExpenseSettings.tsx       # Categories and preferences (like Settings)
+├── ExpenseNavbar.tsx         # Navigation bar (like Navbar)
+└── modals/
+    ├── ExpenseModal.tsx      # Edit expenses (like ActivityModal)
+    └── ExpenseForm.tsx       # Add new expenses (like MetadataForm)
+```
+
+### Service Integration
+Follow the same service pattern as time tracker:
+```typescript
+// Future services to create
+import { ExpenseService } from '../../services/expenseService';
+import { ExpenseCategoryService } from '../../services/expenseCategoryService';
+import { ReceiptService } from '../../services/receiptService';
+```
+
+### Context Usage
+```typescript
+// Future contexts to create
+import { ExpenseProvider } from '../../contexts/ExpenseContext';
+```
+
+## Design Principles
+
+1. **Consistency**: Follow time tracker patterns for similar functionality
+2. **Independence**: Expense tracker should be self-contained in its folder
+3. **Shared Components**: Reuse [AuthGuard](mdc:src/components/shared/AuthGuard.tsx), [Navbar](mdc:src/components/shared/Navbar.tsx) when appropriate
+4. **Services**: Create expense-specific services following existing patterns
+5. **Import Paths**: Use same `../../` pattern for services, contexts, and lib
+
+## Current Under Construction
+
+The current [ExpenseTracker.tsx](mdc:src/components/expense-tracker/ExpenseTracker.tsx) serves as a placeholder showing planned features and navigation back to working apps.
