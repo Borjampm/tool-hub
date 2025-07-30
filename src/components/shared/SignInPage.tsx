@@ -44,7 +44,7 @@ export function SignInPage() {
           navigate('/');
         }
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -84,7 +84,7 @@ export function SignInPage() {
                 Verification Email Sent!
               </h2>
               <p className="text-gray-600 mb-6">
-                We've sent a verification email to <strong>{email}</strong>. 
+                We&apos;ve sent a verification email to <strong>{email}</strong>. 
                 Please check your inbox and click the verification link to activate your account.
               </p>
               
@@ -111,7 +111,7 @@ export function SignInPage() {
             </div>
 
             <div className="mt-6 text-center text-sm text-gray-600">
-              <p>Don't see the email? Check your spam folder.</p>
+              <p>Don&apos;t see the email? Check your spam folder.</p>
             </div>
           </div>
         </div>
@@ -222,7 +222,7 @@ export function SignInPage() {
               >
                 {isSignUp 
                   ? 'Already have an account? Sign in instead' 
-                  : "Don't have an account? Create one now"
+                  : "Don&apos;t have an account? Create one now"
                 }
               </button>
             </div>

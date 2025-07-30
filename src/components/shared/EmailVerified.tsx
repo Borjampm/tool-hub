@@ -49,7 +49,7 @@ export function EmailVerified() {
 
             {/* Auto-redirect notice */}
             <p className="text-sm text-gray-500 mt-6">
-              You'll be automatically redirected to the app hub in 10 seconds
+              You&apos;ll be automatically redirected to the app hub in 10 seconds
             </p>
           </div>
 

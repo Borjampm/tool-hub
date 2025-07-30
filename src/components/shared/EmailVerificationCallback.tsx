@@ -108,7 +108,7 @@ export function EmailVerificationCallback() {
                   Verification Failed
                 </h1>
                 <p className="text-gray-600 mb-4">
-                  We couldn't verify your email address. This might happen if:
+                  We couldn&apos;t verify your email address. This might happen if:
                 </p>
                 <ul className="text-left text-sm text-gray-600 mb-6 space-y-1">
                   <li>• The verification link has expired</li>

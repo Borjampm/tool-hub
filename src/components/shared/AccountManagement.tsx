@@ -89,7 +89,7 @@ export function AccountManagement() {
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error) {
+    } catch {
       setPasswordError('An unexpected error occurred. Please try again.');
     } finally {
       setIsUpdatingPassword(false);
