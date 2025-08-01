@@ -43,8 +43,24 @@ export function formatDateTimeRounded(dateString: string): string {
 
 /**
  * Format a date string to show only the date in day/month/year format
+ * This function handles timezone-safe date parsing for date-only values (YYYY-MM-DD)
  */
 export function formatDate(dateString: string): string {
+  // Check if this is a date-only string (YYYY-MM-DD format)
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    // Parse date components manually to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    // Create a date in local timezone (month is 0-indexed in Date constructor)
+    const date = new Date(year, month - 1, day);
+    
+    return date.toLocaleDateString('en-GB', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  }
+  
+  // For datetime strings, use the original method
   return new Date(dateString).toLocaleDateString('en-GB', {
     year: 'numeric',
     month: '2-digit',
