@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ExpenseCategoryService } from '../../services/expenseCategoryService';
 import { UserAccountService } from '../../services/userAccountService';
-import type { UserExpenseCategory, UserAccount } from '../../lib/supabase';
+import type { UserExpenseCategory, UserAccount, ExpenseCategory } from '../../lib/supabase';
 
 export function ExpenseSettings() {
-  const [userCategories, setUserCategories] = useState<UserExpenseCategory[]>([]);
+  const [allCategories, setAllCategories] = useState<(ExpenseCategory | UserExpenseCategory)[]>([]);
+  const [defaultAccounts, setDefaultAccounts] = useState<{ name: string; type: string; emoji: string; color: string }[]>([]);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,12 +33,19 @@ export function ExpenseSettings() {
       const loadData = async () => {
       try {
         setIsLoading(true);
-        const [categories, accounts] = await Promise.all([
-          ExpenseCategoryService.getUserExpenseCategories(),
+        const [allCategoriesData, accounts] = await Promise.all([
+          ExpenseCategoryService.getAllAvailableExpenseCategories(),
           UserAccountService.getUserAccounts()
         ]);
-        setUserCategories(categories);
+        
+        setAllCategories(allCategoriesData);
         setUserAccounts(accounts);
+        
+        // Set up default accounts (bank and cash)
+        setDefaultAccounts([
+          { name: 'bank', type: 'Bank', emoji: '🏦', color: '#3B82F6' },
+          { name: 'cash', type: 'Cash', emoji: '💵', color: '#10B981' }
+        ]);
     } catch (err) {
       console.error('Error loading settings data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load settings');
@@ -90,6 +98,11 @@ export function ExpenseSettings() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete category');
     }
+  };
+
+  // Helper function to check if category is default (non-editable)
+  const isDefaultCategory = (category: ExpenseCategory | UserExpenseCategory): boolean => {
+    return !('user_id' in category);
   };
 
   // Account functions
@@ -198,74 +211,99 @@ export function ExpenseSettings() {
           </div>
         )}
 
-        {/* Custom Categories Section */}
+        {/* All Categories Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Custom Categories</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Categories</h3>
             <button
               onClick={() => openCategoryModal()}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200 text-sm font-medium"
             >
-              Add Category
+              Add Custom Category
             </button>
           </div>
           
-          {userCategories.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">📝</div>
-              <p>No custom categories yet</p>
-              <p className="text-sm">Create your first custom category to get started</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {userCategories.map((category) => (
-                <div
-                  key={category.id}
-                  className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">{category.emoji || '📝'}</span>
-                      <span className="font-medium text-gray-900 capitalize">{category.name}</span>
-                      <div
-                        className="w-3 h-3 rounded-full ml-2"
-                        style={{ backgroundColor: category.color || '#6B7280' }}
-                      ></div>
-                    </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allCategories.map((category) => (
+              <div
+                key={category.id}
+                className={`border rounded-lg p-4 transition-colors ${
+                  isDefaultCategory(category) 
+                    ? 'border-blue-200 bg-blue-50' 
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">{category.emoji}</span>
+                    <span className="font-medium text-gray-900">{category.name}</span>
+                    <div
+                      className="w-3 h-3 rounded-full ml-2"
+                      style={{ backgroundColor: category.color || '#6B7280' }}
+                    ></div>
+                    {isDefaultCategory(category) && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Default</span>
+                    )}
+                  </div>
+                  {!isDefaultCategory(category) && (
                     <div className="flex space-x-2">
                       <button
-                        onClick={() => openCategoryModal(category)}
+                        onClick={() => openCategoryModal(category as UserExpenseCategory)}
                         className="text-indigo-600 hover:text-indigo-700 text-sm"
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDeleteCategory(category)}
+                        onClick={() => handleDeleteCategory(category as UserExpenseCategory)}
                         className="text-red-600 hover:text-red-700 text-sm"
                       >
                         Delete
                       </button>
                     </div>
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Custom Accounts Section */}
+        {/* All Accounts Section */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Account Management</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Accounts</h3>
             <button
               onClick={() => openAccountModal()}
               className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200 text-sm font-medium"
             >
-              Add Account
+              Add Custom Account
             </button>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Default Accounts */}
+            {defaultAccounts.map((account) => (
+              <div
+                key={account.name}
+                className="border border-blue-200 bg-blue-50 rounded-lg p-4 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2 mb-1">
+                      <span className="text-lg">{account.emoji}</span>
+                      <span className="font-medium text-gray-900 capitalize">{account.name}</span>
+                      <div
+                        className="w-3 h-3 rounded-full ml-2"
+                        style={{ backgroundColor: account.color }}
+                      ></div>
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Default</span>
+                    </div>
+                    <p className="text-sm text-gray-600">{account.type}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {/* Custom Accounts */}
             {userAccounts.map((account) => (
               <div
                 key={account.id}
