@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ExpenseCategoryService } from '../../services/expenseCategoryService';
 import { UserAccountService } from '../../services/userAccountService';
 import type { UserExpenseCategory, UserAccount, ExpenseCategory } from '../../lib/supabase';
@@ -16,6 +16,9 @@ export function ExpenseSettings() {
   const [editingCategory, setEditingCategory] = useState<UserExpenseCategory | null>(null);
   const [editingAccount, setEditingAccount] = useState<UserAccount | null>(null);
 
+  // Dropdown states
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
   // Form states
   const [categoryForm, setCategoryForm] = useState({ name: '', emoji: '📝', color: '#6B7280' });
   const [accountForm, setAccountForm] = useState({ 
@@ -30,7 +33,31 @@ export function ExpenseSettings() {
     loadData();
   }, []);
 
-      const loadData = async () => {
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.dropdown-container')) {
+        setOpenDropdown(null);
+      }
+    };
+
+    if (openDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [openDropdown]);
+
+  // Dropdown functions
+  const toggleDropdown = (id: string) => {
+    setOpenDropdown(openDropdown === id ? null : id);
+  };
+
+  const closeDropdown = () => {
+    setOpenDropdown(null);
+  };
+
+  const loadData = async () => {
       try {
         setIsLoading(true);
         const [allCategoriesData, accounts] = await Promise.all([
@@ -90,6 +117,7 @@ export function ExpenseSettings() {
   };
 
   const handleDeleteCategory = async (category: UserExpenseCategory) => {
+    closeDropdown();
     if (!confirm(`Are you sure you want to delete "${category.name}"?`)) return;
     try {
       setError('');
@@ -143,6 +171,7 @@ export function ExpenseSettings() {
   };
 
   const handleDeleteAccount = async (account: UserAccount) => {
+    closeDropdown();
     if (!confirm(`Are you sure you want to delete "${account.name}"?`)) return;
     try {
       setError('');
@@ -154,14 +183,25 @@ export function ExpenseSettings() {
   };
 
   // Modal functions
-  const openCategoryModal = (category?: UserExpenseCategory) => {
+  const openCategoryModal = (category?: ExpenseCategory | UserExpenseCategory) => {
+    closeDropdown();
     if (category) {
-      setEditingCategory(category);
-      setCategoryForm({ 
-        name: category.name, 
-        emoji: category.emoji || '📝',
-        color: category.color || '#6B7280' 
-      });
+      // If it's a default category, treat it as creating a new custom category based on it
+      if (isDefaultCategory(category)) {
+        setEditingCategory(null);
+        setCategoryForm({ 
+          name: `${category.name} (Custom)`, 
+          emoji: category.emoji || '📝',
+          color: category.color || '#6B7280' 
+        });
+      } else {
+        setEditingCategory(category as UserExpenseCategory);
+        setCategoryForm({ 
+          name: category.name, 
+          emoji: category.emoji || '📝',
+          color: category.color || '#6B7280' 
+        });
+      }
     } else {
       setEditingCategory(null);
       setCategoryForm({ name: '', emoji: '📝', color: '#6B7280' });
@@ -171,6 +211,7 @@ export function ExpenseSettings() {
   };
 
   const openAccountModal = (account?: UserAccount) => {
+    closeDropdown();
     if (account) {
       setEditingAccount(account);
       setAccountForm({ 
@@ -188,10 +229,10 @@ export function ExpenseSettings() {
   };
 
   if (isLoading) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="text-center">
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading settings...</p>
           </div>
@@ -227,40 +268,50 @@ export function ExpenseSettings() {
             {allCategories.map((category) => (
               <div
                 key={category.id}
-                className={`border rounded-lg p-4 transition-colors ${
-                  isDefaultCategory(category) 
-                    ? 'border-blue-200 bg-blue-50' 
-                    : 'border-gray-200 hover:bg-gray-50'
-                }`}
+                className="border-2 rounded-lg p-4 transition-all hover:shadow-lg"
+                style={{ 
+                  backgroundColor: category.color || '#6B7280',
+                  borderColor: category.color || '#6B7280'
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <span className="text-lg">{category.emoji}</span>
-                    <span className="font-medium text-gray-900">{category.name}</span>
-                    <div
-                      className="w-3 h-3 rounded-full ml-2"
-                      style={{ backgroundColor: category.color || '#6B7280' }}
-                    ></div>
+                    <span className="font-medium text-white text-shadow">{category.name}</span>
                     {isDefaultCategory(category) && (
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Default</span>
+                      <span className="text-xs bg-white text-gray-800 px-2 py-0.5 rounded-full font-medium shadow-sm">
+                        Default
+                      </span>
                     )}
                   </div>
-                  {!isDefaultCategory(category) && (
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => openCategoryModal(category as UserExpenseCategory)}
-                        className="text-indigo-600 hover:text-indigo-700 text-sm"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCategory(category as UserExpenseCategory)}
-                        className="text-red-600 hover:text-red-700 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  )}
+                  <div className="dropdown-container relative">
+                    <button
+                      onClick={() => toggleDropdown(`category-${category.id}`)}
+                      className="text-white hover:text-gray-200 p-2 rounded-full bg-black bg-opacity-20 hover:bg-opacity-40 transition-all shadow-sm"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+                    {openDropdown === `category-${category.id}` && (
+                      <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+                        <button
+                          onClick={() => openCategoryModal(category)}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          {isDefaultCategory(category) ? 'Create Custom Copy' : 'Edit'}
+                        </button>
+                        {!isDefaultCategory(category) && (
+                          <button
+                            onClick={() => handleDeleteCategory(category as UserExpenseCategory)}
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -284,20 +335,42 @@ export function ExpenseSettings() {
             {defaultAccounts.map((account) => (
               <div
                 key={account.name}
-                className="border border-blue-200 bg-blue-50 rounded-lg p-4 transition-colors"
+                className="border-2 rounded-lg p-4 transition-all hover:shadow-lg"
+                style={{ 
+                  backgroundColor: account.color,
+                  borderColor: account.color
+                }}
               >
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center space-x-2 mb-1">
                       <span className="text-lg">{account.emoji}</span>
-                      <span className="font-medium text-gray-900 capitalize">{account.name}</span>
-                      <div
-                        className="w-3 h-3 rounded-full ml-2"
-                        style={{ backgroundColor: account.color }}
-                      ></div>
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Default</span>
+                      <span className="font-medium text-white text-shadow capitalize">{account.name}</span>
+                      <span className="text-xs bg-white text-gray-800 px-2 py-0.5 rounded-full font-medium shadow-sm">
+                        Default
+                      </span>
                     </div>
-                    <p className="text-sm text-gray-600">{account.type}</p>
+                    <p className="text-sm text-white text-shadow">{account.type}</p>
+                  </div>
+                  <div className="dropdown-container relative ml-2">
+                    <button
+                      onClick={() => toggleDropdown(`default-account-${account.name}`)}
+                      className="text-white hover:text-gray-200 p-2 rounded-full bg-black bg-opacity-20 hover:bg-opacity-40 transition-all shadow-sm"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
+                    </button>
+                    {openDropdown === `default-account-${account.name}` && (
+                      <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+                        <button
+                          onClick={() => alert('Editing default accounts is not yet implemented')}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -307,40 +380,52 @@ export function ExpenseSettings() {
             {userAccounts.map((account) => (
               <div
                 key={account.id}
-                className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                className="border-2 rounded-lg p-4 transition-all hover:shadow-lg"
+                style={{ 
+                  backgroundColor: account.color || '#6B7280',
+                  borderColor: account.color || '#6B7280'
+                }}
               >
                 <div className="flex items-start justify-between">
-                  <div>
+                  <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-1">
                       <span className="text-lg">
                         {UserAccountService.getAccountTypeEmoji(account.type)}
                       </span>
-                      <span className="font-medium text-gray-900">{account.name}</span>
-                      <div
-                        className="w-3 h-3 rounded-full ml-2"
-                        style={{ backgroundColor: account.color || '#6B7280' }}
-                      ></div>
+                      <span className="font-medium text-white text-shadow">{account.name}</span>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-white text-shadow">
                       {UserAccountService.getAccountTypeDisplayName(account.type)}
                     </p>
                     {account.description && (
-                      <p className="text-xs text-gray-500 mt-1">{account.description}</p>
+                      <p className="text-xs text-white text-shadow mt-1">{account.description}</p>
                     )}
                   </div>
-                  <div className="flex flex-col space-y-1">
+                  <div className="dropdown-container relative ml-2">
                     <button
-                      onClick={() => openAccountModal(account)}
-                      className="text-indigo-600 hover:text-indigo-700 text-sm"
+                      onClick={() => toggleDropdown(`account-${account.id}`)}
+                      className="text-white hover:text-gray-200 p-2 rounded-full bg-black bg-opacity-20 hover:bg-opacity-40 transition-all shadow-sm"
                     >
-                      Edit
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                      </svg>
                     </button>
-                    <button
-                      onClick={() => handleDeleteAccount(account)}
-                      className="text-red-600 hover:text-red-700 text-sm"
-                    >
-                      Delete
-                    </button>
+                    {openDropdown === `account-${account.id}` && (
+                      <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+                        <button
+                          onClick={() => openAccountModal(account)}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAccount(account)}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -475,7 +560,7 @@ export function ExpenseSettings() {
                 </label>
                 <select
                   value={accountForm.type}
-                  onChange={(e) => setAccountForm(prev => ({ ...prev, type: e.target.value as any }))}
+                  onChange={(e) => setAccountForm(prev => ({ ...prev, type: e.target.value as 'bank' | 'cash' | 'credit_card' | 'investment' | 'other' }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="bank">🏦 Bank Account</option>

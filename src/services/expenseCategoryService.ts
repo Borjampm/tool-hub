@@ -17,7 +17,7 @@ export class ExpenseCategoryService {
   /**
    * Get all available expense categories (both default expense categories and user custom expense categories)
    */
-  static async getAllAvailableExpenseCategories(): Promise<(ExpenseCategory | { id: string; name: string; emoji: string; color?: string; created_at: string })[]> {
+  static async getAllAvailableExpenseCategories(): Promise<(ExpenseCategory | { id: string; name: string; emoji: string; color?: string; created_at: string; user_id?: string })[]> {
     const [defaultCategories, userCategories] = await Promise.all([
       this.getDefaultExpenseCategories(),
       this.getUserExpenseCategories()
@@ -29,7 +29,8 @@ export class ExpenseCategoryService {
       name: cat.name,
       emoji: cat.emoji,
       color: cat.color,
-      created_at: cat.created_at
+      created_at: cat.created_at,
+      user_id: cat.user_id  // Keep user_id to identify as custom category
     }));
 
     return [...defaultCategories, ...formattedUserCategories];
