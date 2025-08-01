@@ -141,10 +141,10 @@ export class ExpenseCategoryService {
       ]);
 
       const existingDefault = defaultCategories.find(cat => 
-        cat.name.toLowerCase() === data.name.toLowerCase()
+        cat.name.toLowerCase() === data.name!.toLowerCase()
       );
       const existingUser = userCategories.find(cat => 
-        cat.name.toLowerCase() === data.name.toLowerCase() && cat.id !== categoryId
+        cat.name.toLowerCase() === data.name!.toLowerCase() && cat.id !== categoryId
       );
 
       if (existingDefault || existingUser) {

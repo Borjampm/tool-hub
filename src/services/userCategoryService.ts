@@ -27,7 +27,7 @@ export class UserCategoryService {
     const formattedUserCategories = userCategories.map(cat => ({
       id: cat.id,
       name: cat.name,
-      emoji: cat.emoji || '📝', // Use user's chosen emoji or fallback
+      emoji: '📝', // UserCategory doesn't have emoji, use fallback
       created_at: cat.created_at
     }));
 
@@ -139,10 +139,10 @@ export class UserCategoryService {
       ]);
 
       const existingDefault = defaultCategories.find(cat => 
-        cat.name.toLowerCase() === data.name.toLowerCase()
+        cat.name.toLowerCase() === data.name!.toLowerCase()
       );
       const existingUser = userCategories.find(cat => 
-        cat.name.toLowerCase() === data.name.toLowerCase() && cat.id !== categoryId
+        cat.name.toLowerCase() === data.name!.toLowerCase() && cat.id !== categoryId
       );
 
       if (existingDefault || existingUser) {

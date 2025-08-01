@@ -130,7 +130,7 @@ export class TransactionService {
       amount?: number;
       currency?: string;
       category?: string;
-      account?: 'bank' | 'cash';
+      account?: string;
       title?: string;
       description?: string;
       transaction_date?: string;
