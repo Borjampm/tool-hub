@@ -8,15 +8,15 @@ CREATE TABLE IF NOT EXISTS expense_categories (
 
 -- Insert default expense categories with emojis
 INSERT INTO expense_categories (name, emoji) VALUES
-    ('food', '🍔'),
-    ('social life', '🎉'),
-    ('transport', '🚗'),
-    ('clothes', '👕'),
-    ('health', '🏥'),
-    ('education', '📚'),
-    ('gift', '🎁'),
-    ('entertainment', '🎬'),
-    ('trip', '✈️')
+    ('Food', '🍔'),
+    ('Social Life', '🎉'),
+    ('Transport', '🚗'),
+    ('Clothes', '👕'),
+    ('Health', '🏥'),
+    ('Education', '📚'),
+    ('Gift', '🎁'),
+    ('Entertainment', '🎬'),
+    ('Trip', '✈️')
 ON CONFLICT (name) DO NOTHING;
 
 -- This table is read-only for users, no RLS policies needed since it's shared data

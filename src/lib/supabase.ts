@@ -28,6 +28,15 @@ export interface UserCategory {
   id: string;
   user_id: string;
   name: string;
+  color?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserExpenseCategory {
+  id: string;
+  user_id: string;
+  name: string;
   emoji: string;
   color?: string;
   created_at: string;
@@ -55,6 +64,7 @@ export interface UserAccount {
   user_id: string;
   name: string;
   type: 'bank' | 'cash' | 'credit_card' | 'investment' | 'other';
+  color?: string;
   description?: string;
   is_active: boolean;
   created_at: string;

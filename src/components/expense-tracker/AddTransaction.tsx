@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TransactionService } from '../../services/transactionService';
-import { UserCategoryService } from '../../services/userCategoryService';
+import { ExpenseCategoryService } from '../../services/expenseCategoryService';
 import { UserAccountService } from '../../services/userAccountService';
 import type { CreateTransactionData } from '../../services/transactionService';
 import type { UserAccount } from '../../lib/supabase';
@@ -69,7 +69,7 @@ export function AddTransaction() {
     const loadData = async () => {
       try {
         const [allCategories, userAccounts] = await Promise.all([
-          UserCategoryService.getAllAvailableCategories(),
+          ExpenseCategoryService.getAllAvailableExpenseCategories(),
           UserAccountService.getUserAccounts()
         ]);
         
@@ -334,7 +334,10 @@ export function AddTransaction() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                🏦 Bank
+                <div className="flex flex-col items-center space-y-1">
+                  <span className="text-lg">🏦</span>
+                  <span className="text-xs truncate max-w-full">Bank</span>
+                </div>
               </button>
               
               {/* Default Cash Account */}
@@ -347,7 +350,10 @@ export function AddTransaction() {
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                💵 Cash
+                <div className="flex flex-col items-center space-y-1">
+                  <span className="text-lg">💵</span>
+                  <span className="text-xs truncate max-w-full">Cash</span>
+                </div>
               </button>
               
               {/* Custom Accounts */}
@@ -358,9 +364,10 @@ export function AddTransaction() {
                   onClick={() => handleInputChange('account', account.name)}
                   className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 text-center ${
                     formData.account === account.name
-                      ? 'bg-indigo-600 text-white'
+                      ? 'text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
+                  style={formData.account === account.name ? { backgroundColor: account.color || '#6B7280' } : {}}
                   title={account.description || account.name}
                 >
                   <div className="flex flex-col items-center space-y-1">

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { UserCategoryService } from '../../services/userCategoryService';
+import { ExpenseCategoryService } from '../../services/expenseCategoryService';
 import { UserAccountService } from '../../services/userAccountService';
-import type { UserCategory, UserAccount } from '../../lib/supabase';
+import type { UserExpenseCategory, UserAccount } from '../../lib/supabase';
 
 export function ExpenseSettings() {
-  const [userCategories, setUserCategories] = useState<UserCategory[]>([]);
+  const [userCategories, setUserCategories] = useState<UserExpenseCategory[]>([]);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -12,7 +12,7 @@ export function ExpenseSettings() {
   // Modal states
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<UserCategory | null>(null);
+  const [editingCategory, setEditingCategory] = useState<UserExpenseCategory | null>(null);
   const [editingAccount, setEditingAccount] = useState<UserAccount | null>(null);
 
   // Form states
@@ -20,6 +20,7 @@ export function ExpenseSettings() {
   const [accountForm, setAccountForm] = useState({ 
     name: '', 
     type: 'bank' as 'bank' | 'cash' | 'credit_card' | 'investment' | 'other', 
+    color: '#6B7280',
     description: '' 
   });
 
@@ -28,15 +29,15 @@ export function ExpenseSettings() {
     loadData();
   }, []);
 
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-      const [categories, accounts] = await Promise.all([
-        UserCategoryService.getUserCategories(),
-        UserAccountService.getUserAccounts()
-      ]);
-      setUserCategories(categories);
-      setUserAccounts(accounts);
+      const loadData = async () => {
+      try {
+        setIsLoading(true);
+        const [categories, accounts] = await Promise.all([
+          ExpenseCategoryService.getUserExpenseCategories(),
+          UserAccountService.getUserAccounts()
+        ]);
+        setUserCategories(categories);
+        setUserAccounts(accounts);
     } catch (err) {
       console.error('Error loading settings data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load settings');
@@ -49,7 +50,7 @@ export function ExpenseSettings() {
   const handleCreateCategory = async () => {
     try {
       setError('');
-      await UserCategoryService.createUserCategory({
+      await ExpenseCategoryService.createUserExpenseCategory({
         name: categoryForm.name,
         emoji: categoryForm.emoji,
         color: categoryForm.color
@@ -66,7 +67,7 @@ export function ExpenseSettings() {
     if (!editingCategory) return;
     try {
       setError('');
-      await UserCategoryService.updateUserCategory(editingCategory.id, {
+      await ExpenseCategoryService.updateUserExpenseCategory(editingCategory.id, {
         name: categoryForm.name,
         emoji: categoryForm.emoji,
         color: categoryForm.color
@@ -80,11 +81,11 @@ export function ExpenseSettings() {
     }
   };
 
-  const handleDeleteCategory = async (category: UserCategory) => {
+  const handleDeleteCategory = async (category: UserExpenseCategory) => {
     if (!confirm(`Are you sure you want to delete "${category.name}"?`)) return;
     try {
       setError('');
-      await UserCategoryService.deleteUserCategory(category.id);
+      await ExpenseCategoryService.deleteUserExpenseCategory(category.id);
       loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete category');
@@ -98,9 +99,10 @@ export function ExpenseSettings() {
       await UserAccountService.createAccount({
         name: accountForm.name,
         type: accountForm.type,
+        color: accountForm.color,
         description: accountForm.description || undefined
       });
-      setAccountForm({ name: '', type: 'bank', description: '' });
+      setAccountForm({ name: '', type: 'bank', color: '#6B7280', description: '' });
       setShowAccountModal(false);
       loadData();
     } catch (err) {
@@ -115,9 +117,10 @@ export function ExpenseSettings() {
       await UserAccountService.updateAccount(editingAccount.id, {
         name: accountForm.name,
         type: accountForm.type,
+        color: accountForm.color,
         description: accountForm.description || undefined
       });
-      setAccountForm({ name: '', type: 'bank', description: '' });
+      setAccountForm({ name: '', type: 'bank', color: '#6B7280', description: '' });
       setEditingAccount(null);
       setShowAccountModal(false);
       loadData();
@@ -138,7 +141,7 @@ export function ExpenseSettings() {
   };
 
   // Modal functions
-  const openCategoryModal = (category?: UserCategory) => {
+  const openCategoryModal = (category?: UserExpenseCategory) => {
     if (category) {
       setEditingCategory(category);
       setCategoryForm({ 
@@ -160,11 +163,12 @@ export function ExpenseSettings() {
       setAccountForm({ 
         name: account.name, 
         type: account.type, 
+        color: account.color || '#6B7280',
         description: account.description || '' 
       });
     } else {
       setEditingAccount(null);
-      setAccountForm({ name: '', type: 'bank', description: '' });
+      setAccountForm({ name: '', type: 'bank', color: '#6B7280', description: '' });
     }
     setShowAccountModal(true);
     setError('');
@@ -274,6 +278,10 @@ export function ExpenseSettings() {
                         {UserAccountService.getAccountTypeEmoji(account.type)}
                       </span>
                       <span className="font-medium text-gray-900">{account.name}</span>
+                      <div
+                        className="w-3 h-3 rounded-full ml-2"
+                        style={{ backgroundColor: account.color || '#6B7280' }}
+                      ></div>
                     </div>
                     <p className="text-sm text-gray-600">
                       {UserAccountService.getAccountTypeDisplayName(account.type)}
@@ -438,6 +446,18 @@ export function ExpenseSettings() {
                   <option value="investment">📈 Investment</option>
                   <option value="other">💰 Other</option>
                 </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Color
+                </label>
+                <input
+                  type="color"
+                  value={accountForm.color}
+                  onChange={(e) => setAccountForm(prev => ({ ...prev, color: e.target.value }))}
+                  className="w-20 h-10 border border-gray-300 rounded-md cursor-pointer"
+                />
               </div>
               
               <div>

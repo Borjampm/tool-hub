@@ -4,12 +4,14 @@ import type { UserAccount } from '../lib/supabase';
 export interface CreateUserAccountData {
   name: string;
   type: 'bank' | 'cash' | 'credit_card' | 'investment' | 'other';
+  color?: string;
   description?: string;
 }
 
 export interface UpdateUserAccountData {
   name?: string;
   type?: 'bank' | 'cash' | 'credit_card' | 'investment' | 'other';
+  color?: string;
   description?: string;
   is_active?: boolean;
 }
@@ -68,6 +70,7 @@ export class UserAccountService {
         user_id: user.id,
         name: data.name.trim(),
         type: data.type,
+        color: data.color || '#6B7280', // Default gray color
         description: data.description?.trim() || null,
       })
       .select()
@@ -109,12 +112,14 @@ export class UserAccountService {
     const updateData: {
       name?: string;
       type?: 'bank' | 'cash' | 'credit_card' | 'investment' | 'other';
+      color?: string;
       description?: string | null;
       is_active?: boolean;
     } = {};
     
     if (data.name !== undefined) updateData.name = data.name.trim();
     if (data.type !== undefined) updateData.type = data.type;
+    if (data.color !== undefined) updateData.color = data.color;
     if (data.description !== undefined) updateData.description = data.description?.trim() || null;
     if (data.is_active !== undefined) updateData.is_active = data.is_active;
 
