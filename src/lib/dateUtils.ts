@@ -4,13 +4,13 @@
  */
 
 /**
- * Format a date string to show in user's local timezone with date and time (24-hour format)
+ * Format a date string to show in day/month/year format with time (24-hour format)
  */
 export function formatDateTime(dateString: string): string {
-  return new Date(dateString).toLocaleString(undefined, {
+  return new Date(dateString).toLocaleString('en-GB', {
     year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -18,7 +18,7 @@ export function formatDateTime(dateString: string): string {
 }
 
 /**
- * Format a date string to show in user's local timezone with date and time, 
+ * Format a date string to show in day/month/year format with time, 
  * rounded to the nearest minute (no seconds, 24-hour format)
  */
 export function formatDateTimeRounded(dateString: string): string {
@@ -31,10 +31,10 @@ export function formatDateTimeRounded(dateString: string): string {
   }
   roundedDate.setSeconds(0, 0); // Remove seconds and milliseconds
   
-  return roundedDate.toLocaleString(undefined, {
+  return roundedDate.toLocaleString('en-GB', {
     year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -42,13 +42,29 @@ export function formatDateTimeRounded(dateString: string): string {
 }
 
 /**
- * Format a date string to show only the date in user's local timezone
+ * Format a date string to show only the date in day/month/year format
+ * This function handles timezone-safe date parsing for date-only values (YYYY-MM-DD)
  */
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString(undefined, {
+  // Check if this is a date-only string (YYYY-MM-DD format)
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    // Parse date components manually to avoid timezone issues
+    const [year, month, day] = dateString.split('-').map(Number);
+    // Create a date in local timezone (month is 0-indexed in Date constructor)
+    const date = new Date(year, month - 1, day);
+    
+    return date.toLocaleDateString('en-GB', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  }
+  
+  // For datetime strings, use the original method
+  return new Date(dateString).toLocaleDateString('en-GB', {
     year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   });
 }
 

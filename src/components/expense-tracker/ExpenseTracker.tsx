@@ -1,46 +1,73 @@
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { AuthGuard } from '../shared/AuthGuard';
+import { EmailVerification } from '../shared/EmailVerification';
+import { ExpenseNavbar } from './ExpenseNavbar';
+import { AddTransaction } from './AddTransaction';
+import { Transactions } from './Transactions';
+import { ExpenseDashboard } from './ExpenseDashboard';
+import { ExpenseSettings } from './ExpenseSettings';
 
 export function ExpenseTracker() {
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'add' | 'transactions' | 'dashboard' | 'settings'>('add');
+  const [isEmailVerification, setIsEmailVerification] = useState(false);
+
+  useEffect(() => {
+    // Check if this is an email verification callback
+    const checkEmailVerification = () => {
+      const hash = window.location.hash;
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.substring(1));
+        const type = hashParams.get('type');
+        const accessToken = hashParams.get('access_token');
+        
+        // Check if this is a Supabase auth callback for email verification
+        if (type === 'signup' && accessToken) {
+          setIsEmailVerification(true);
+          return;
+        }
+      }
+      setIsEmailVerification(false);
+    };
+
+    checkEmailVerification();
+
+    // Listen for hash changes in case user navigates back/forward
+    const handleHashChange = () => {
+      checkEmailVerification();
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const handleVerificationComplete = () => {
+    // Clear the hash from URL
+    window.history.replaceState(null, '', window.location.pathname);
+    setIsEmailVerification(false);
+  };
+
+  if (isEmailVerification) {
+    return (
+      <AuthProvider>
+        <EmailVerification onComplete={handleVerificationComplete} />
+      </AuthProvider>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
-      <div className="max-w-2xl mx-auto px-6 text-center">
-        <div className="bg-white rounded-2xl shadow-lg p-12">
-          <div className="text-6xl mb-6">🚧</div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Under Construction</h1>
-          <p className="text-xl text-gray-600 mb-8">
-            The Expense Tracker feature is currently being developed. 
-            We&apos;re working hard to bring you an amazing expense management experience!
-          </p>
-          
-          <div className="bg-gray-50 rounded-lg p-6 mb-8">
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Coming Soon:</h2>
-            <ul className="text-left text-gray-600 space-y-2">
-              <li>• 📊 Expense categorization and tracking</li>
-              <li>• 💳 Multiple payment method support</li>
-              <li>• 📈 Spending analytics and insights</li>
-              <li>• 📱 Receipt capture and storage</li>
-              <li>• 📊 Budget planning and monitoring</li>
-            </ul>
-          </div>
-
-          <div className="space-y-4">
-            <button
-              onClick={() => navigate('/hobby-tracker')}
-              className="w-full bg-indigo-600 text-white py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium"
-            >
-              Try Hobby Tracker Instead
-            </button>
-            <button
-              onClick={() => navigate('/')}
-              className="w-full bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium"
-            >
-              Back to Home
-            </button>
-          </div>
+    <AuthProvider>
+      <AuthGuard>
+        <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100">
+          <ExpenseNavbar activeTab={activeTab} onTabChange={setActiveTab} />
+          <main>
+            {activeTab === 'add' && <AddTransaction />}
+            {activeTab === 'transactions' && <Transactions />}
+            {activeTab === 'dashboard' && <ExpenseDashboard />}
+            {activeTab === 'settings' && <ExpenseSettings />}
+          </main>
         </div>
-      </div>
-    </div>
+      </AuthGuard>
+    </AuthProvider>
   );
 } 

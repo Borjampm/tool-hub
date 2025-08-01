@@ -1,0 +1,102 @@
+---
+alwaysApply: true
+description: Date formatting standards for consistent day/month/year display across the application
+---
+
+# Date Formatting Standards
+
+## 📅 Global Date Format Rule
+
+**ALWAYS use day/month/year (dd/mm/yyyy) format** for all date displays in the user interface.
+
+### Required Format Examples:
+- **Date only**: `20/01/2025` 
+- **Date with time**: `20/01/2025, 15:30`
+- **Short format**: `20/01/25` (only when space is extremely limited)
+
+### ✅ CORRECT Examples:
+```typescript
+// Use en-GB locale for day/month/year format
+new Date(dateString).toLocaleDateString('en-GB', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+// Output: "20/01/2025"
+
+// Date with time
+new Date(dateString).toLocaleString('en-GB', {
+  year: 'numeric',
+  month: '2-digit', 
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+// Output: "20/01/2025, 15:30"
+```
+
+### ❌ AVOID These Formats:
+- `Jan 20, 2025` (month name format)
+- `01/20/2025` (US format - month/day/year)
+- `2025-01-20` (ISO format in UI display)
+- `1/20/25` (ambiguous short format)
+
+## 🛠 Implementation Guidelines
+
+### Use Existing Utilities
+Always use the date formatting functions from [dateUtils.ts](mdc:src/lib/dateUtils.ts):
+- `formatDate()` - for date-only display
+- `formatDateTime()` - for date with time
+- `formatDateTimeRounded()` - for rounded date-time display
+
+### Form Labels and Help Text
+When showing date format hints to users, use:
+```tsx
+<label>
+  Transaction Date * <span className="text-xs text-gray-500">(dd/mm/yyyy)</span>
+</label>
+```
+
+### Database vs Display
+- **Database storage**: Continue using ISO format (YYYY-MM-DD) internally
+- **User display**: Always convert to dd/mm/yyyy for UI
+- **API communication**: Use ISO format for data exchange
+
+## 🎯 Application Areas
+
+### Expense Tracker
+- Transaction dates in lists: `20/01/2025`
+- Form labels: Include `(dd/mm/yyyy)` format hint
+- Date pickers: HTML5 inputs adapt automatically to locale
+
+### Hobby Tracker  
+- Activity timestamps: `20/01/2025, 15:30`
+- Duration displays: Maintain existing time format
+- Export files: Use dd/mm/yyyy in CSV headers and data
+
+### Shared Components
+- Authentication dates: Follow same dd/mm/yyyy standard
+- Any date display: Consistent across all components
+
+## 🔧 Technical Implementation
+
+```typescript
+// Standard date formatting setup
+const formatDate = (dateString: string): string => {
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+};
+```
+
+## ⚠️ Important Notes
+
+1. **HTML5 Date Inputs**: These automatically adapt to user's locale, but add format hints in labels
+2. **Accessibility**: Always provide clear format indicators for screen readers
+3. **Consistency**: Never mix formats within the same application or view
+4. **Localization**: en-GB locale provides the dd/mm/yyyy format we want
+
+This standard ensures a consistent, international-friendly date format across the entire Marqness application.

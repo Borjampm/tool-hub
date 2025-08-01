@@ -22,9 +22,9 @@ Smart financial management for your personal expenses:
 
 ### 🚀 More Apps Coming Soon
 The platform is designed to grow with additional productivity applications:
-- **📚 Reading Tracker** *(Planned)*
-- **🏃 Fitness Logger** *(Planned)*
-- **🎯 Goal Tracker** *(Planned)*
+- **📚 Data Explorer** *(Planned)*
+- **🏃 AI Chat** *(Planned)*
+- **🎯 Telegram Bot** *(Planned)*
 
 ## 🌟 Platform Features
 
