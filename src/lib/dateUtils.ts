@@ -4,13 +4,13 @@
  */
 
 /**
- * Format a date string to show in user's local timezone with date and time (24-hour format)
+ * Format a date string to show in day/month/year format with time (24-hour format)
  */
 export function formatDateTime(dateString: string): string {
-  return new Date(dateString).toLocaleString(undefined, {
+  return new Date(dateString).toLocaleString('en-GB', {
     year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -18,7 +18,7 @@ export function formatDateTime(dateString: string): string {
 }
 
 /**
- * Format a date string to show in user's local timezone with date and time, 
+ * Format a date string to show in day/month/year format with time, 
  * rounded to the nearest minute (no seconds, 24-hour format)
  */
 export function formatDateTimeRounded(dateString: string): string {
@@ -31,10 +31,10 @@ export function formatDateTimeRounded(dateString: string): string {
   }
   roundedDate.setSeconds(0, 0); // Remove seconds and milliseconds
   
-  return roundedDate.toLocaleString(undefined, {
+  return roundedDate.toLocaleString('en-GB', {
     year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -42,13 +42,13 @@ export function formatDateTimeRounded(dateString: string): string {
 }
 
 /**
- * Format a date string to show only the date in user's local timezone
+ * Format a date string to show only the date in day/month/year format
  */
 export function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString(undefined, {
+  return new Date(dateString).toLocaleDateString('en-GB', {
     year: 'numeric',
-    month: 'short',
-    day: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   });
 }
 

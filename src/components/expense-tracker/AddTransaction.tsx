@@ -8,8 +8,43 @@ export function AddTransaction() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [dateDisplayValue, setDateDisplayValue] = useState('');
+
+  // Get current date in YYYY-MM-DD format for internal storage
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
+  // Convert YYYY-MM-DD to DD/MM/YYYY for display
+  const formatDateForDisplay = (dateString: string) => {
+    if (!dateString) return '';
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
+  // Convert DD/MM/YYYY to YYYY-MM-DD for storage
+  const parseDateFromDisplay = (displayDate: string) => {
+    if (!displayDate) return '';
+    const parts = displayDate.split('/');
+    if (parts.length !== 3) return '';
+    const [day, month, year] = parts;
+    
+    // Validate the parts
+    const dayNum = parseInt(day, 10);
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    
+    if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || yearNum < 1900) {
+      return '';
+    }
+    
+    // Pad with zeros and return in YYYY-MM-DD format
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  };
 
   // Form state
+  const initialDate = getCurrentDate();
   const [formData, setFormData] = useState<CreateTransactionData>({
     type: 'expense', // preselected as expense
     amount: 0,
@@ -18,7 +53,13 @@ export function AddTransaction() {
     account: 'bank', // default to bank
     title: '',
     description: '',
+    transactionDate: initialDate, // default to today
   });
+
+  // Initialize display value on component mount
+  useEffect(() => {
+    setDateDisplayValue(formatDateForDisplay(initialDate));
+  }, []);
 
   // Load expense categories on component mount
   useEffect(() => {
@@ -27,7 +68,13 @@ export function AddTransaction() {
         const expenseCategories = await TransactionService.getExpenseCategories();
         setCategories(expenseCategories);
         if (expenseCategories.length > 0) {
-          setFormData(prev => ({ ...prev, category: expenseCategories[0].name }));
+          const currentDate = getCurrentDate();
+          setFormData(prev => ({ 
+            ...prev, 
+            category: expenseCategories[0].name,
+            transactionDate: currentDate // Ensure current date on load
+          }));
+          setDateDisplayValue(formatDateForDisplay(currentDate));
         }
       } catch (err) {
         console.error('Error loading categories:', err);
@@ -41,6 +88,42 @@ export function AddTransaction() {
   const handleInputChange = (field: keyof CreateTransactionData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError(''); // Clear error when user starts typing
+  };
+
+  // Special handler for date input with auto-formatting
+  const handleDateChange = (value: string) => {
+    // Remove all non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    // Format as DD/MM/YYYY as user types
+    let formatted = '';
+    if (digitsOnly.length > 0) {
+      formatted = digitsOnly.substring(0, 2);
+      if (digitsOnly.length >= 3) {
+        formatted += '/' + digitsOnly.substring(2, 4);
+        if (digitsOnly.length >= 5) {
+          formatted += '/' + digitsOnly.substring(4, 8);
+        }
+      }
+    }
+    
+    // Update display value immediately for user feedback
+    setDateDisplayValue(formatted);
+    
+    // If we have a complete date (DD/MM/YYYY), validate and store it
+    if (formatted.length === 10) {
+      const isoDate = parseDateFromDisplay(formatted);
+      if (isoDate) {
+        setFormData(prev => ({ ...prev, transactionDate: isoDate }));
+      } else {
+        setFormData(prev => ({ ...prev, transactionDate: '' }));
+      }
+    } else {
+      // Store empty for incomplete dates
+      setFormData(prev => ({ ...prev, transactionDate: '' }));
+    }
+    
+    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -63,6 +146,10 @@ export function AddTransaction() {
         throw new Error('Category is required');
       }
 
+      if (!formData.transactionDate) {
+        throw new Error('Transaction date is required');
+      }
+
       await TransactionService.createTransaction(formData);
       setSuccess(true);
       
@@ -70,6 +157,7 @@ export function AddTransaction() {
       setTimeout(() => {
         setSuccess(false);
         // Reset form to initial state for next transaction
+        const currentDate = getCurrentDate();
         setFormData({
           type: 'expense', // keep expense preselected
           amount: 0,
@@ -78,7 +166,9 @@ export function AddTransaction() {
           account: 'bank', // keep bank default
           title: '',
           description: '',
+          transactionDate: currentDate, // reset to current date
         });
+        setDateDisplayValue(formatDateForDisplay(currentDate));
       }, 1500);
 
     } catch (err) {
@@ -257,6 +347,25 @@ export function AddTransaction() {
             />
           </div>
 
+          {/* Date */}
+          <div>
+            <label htmlFor="transactionDate" className="block text-sm font-medium text-gray-700 mb-2">
+              Transaction Date * <span className="text-xs text-gray-500">(dd/mm/yyyy)</span>
+            </label>
+            <input
+              type="text"
+              id="transactionDate"
+              value={dateDisplayValue}
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="DD/MM/YYYY"
+              maxLength={10}
+              pattern="\d{2}/\d{2}/\d{4}"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
           {/* Description */}
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
@@ -293,6 +402,7 @@ export function AddTransaction() {
               type="button"
               onClick={() => {
                 // Reset form to initial state
+                const currentDate = getCurrentDate();
                 setFormData({
                   type: 'expense',
                   amount: 0,
@@ -301,7 +411,9 @@ export function AddTransaction() {
                   account: 'bank',
                   title: '',
                   description: '',
+                  transactionDate: currentDate,
                 });
+                setDateDisplayValue(formatDateForDisplay(currentDate));
                 setError('');
               }}
               className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"

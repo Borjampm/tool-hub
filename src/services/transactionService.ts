@@ -9,6 +9,7 @@ export interface CreateTransactionData {
   account: 'bank' | 'cash';
   title: string;
   description?: string;
+  transactionDate: string; // Date in YYYY-MM-DD format
 }
 
 export interface UpdateTransactionData {
@@ -19,6 +20,7 @@ export interface UpdateTransactionData {
   account?: 'bank' | 'cash';
   title?: string;
   description?: string;
+  transactionDate?: string; // Date in YYYY-MM-DD format
 }
 
 export class TransactionService {
@@ -46,6 +48,7 @@ export class TransactionService {
         account: data.account,
         title: data.title,
         description: data.description,
+        transaction_date: data.transactionDate,
       })
       .select()
       .single();
@@ -72,6 +75,7 @@ export class TransactionService {
       .from('transactions')
       .select('*')
       .eq('user_id', user.id)
+      .order('transaction_date', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -129,6 +133,7 @@ export class TransactionService {
       account?: 'bank' | 'cash';
       title?: string;
       description?: string;
+      transaction_date?: string;
     } = {};
     
     if (data.type !== undefined) updateData.type = data.type;
@@ -138,6 +143,7 @@ export class TransactionService {
     if (data.account !== undefined) updateData.account = data.account;
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
+    if (data.transactionDate !== undefined) updateData.transaction_date = data.transactionDate;
 
     const { data: transaction, error } = await supabase
       .from('transactions')
@@ -209,6 +215,7 @@ export class TransactionService {
       .select('*')
       .eq('user_id', user.id)
       .eq('type', type)
+      .order('transaction_date', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -234,6 +241,7 @@ export class TransactionService {
       .select('*')
       .eq('user_id', user.id)
       .eq('category', category)
+      .order('transaction_date', { ascending: false })
       .order('created_at', { ascending: false });
 
     if (error) {

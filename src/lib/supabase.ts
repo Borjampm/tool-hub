@@ -44,6 +44,7 @@ export interface Transaction {
   account: 'bank' | 'cash';
   title: string;
   description?: string;
+  transaction_date: string;
   created_at: string;
   updated_at: string;
 }
