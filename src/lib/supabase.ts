@@ -31,4 +31,26 @@ export interface UserCategory {
   color?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface Transaction {
+  id: string;
+  transaction_id: string;
+  user_id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  currency: string;
+  category: string;
+  account: 'bank' | 'cash';
+  title: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+  emoji: string;
+  created_at: string;
 } 
