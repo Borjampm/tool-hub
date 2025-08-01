@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { TransactionService } from '../../services/transactionService';
+import { UserCategoryService } from '../../services/userCategoryService';
+import { UserAccountService } from '../../services/userAccountService';
 import type { CreateTransactionData } from '../../services/transactionService';
-import type { ExpenseCategory } from '../../lib/supabase';
+import type { UserAccount } from '../../lib/supabase';
 
 export function AddTransaction() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
-  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; emoji: string; created_at: string }[]>([]);
+  const [accounts, setAccounts] = useState<UserAccount[]>([]);
   const [dateDisplayValue, setDateDisplayValue] = useState('');
 
   // Get current date in YYYY-MM-DD format for internal storage
@@ -61,28 +64,44 @@ export function AddTransaction() {
     setDateDisplayValue(formatDateForDisplay(initialDate));
   }, []);
 
-  // Load expense categories on component mount
+  // Load categories and accounts on component mount
   useEffect(() => {
-    const loadCategories = async () => {
+    const loadData = async () => {
       try {
-        const expenseCategories = await TransactionService.getExpenseCategories();
-        setCategories(expenseCategories);
-        if (expenseCategories.length > 0) {
+        const [allCategories, userAccounts] = await Promise.all([
+          UserCategoryService.getAllAvailableCategories(),
+          UserAccountService.getUserAccounts()
+        ]);
+        
+        // Ensure all categories have emoji property for consistent display
+        const formattedCategories = allCategories.map(cat => ({
+          id: cat.id,
+          name: cat.name,
+          emoji: 'emoji' in cat ? cat.emoji : '📝', // Use default emoji for user categories
+          created_at: cat.created_at
+        }));
+        
+        setCategories(formattedCategories);
+        setAccounts(userAccounts);
+        
+        if (allCategories.length > 0) {
           const currentDate = getCurrentDate();
+          // Set default account to 'bank' to maintain compatibility
           setFormData(prev => ({ 
             ...prev, 
-            category: expenseCategories[0].name,
-            transactionDate: currentDate // Ensure current date on load
+            category: allCategories[0].name,
+            account: 'bank', // Keep default bank account
+            transactionDate: currentDate
           }));
           setDateDisplayValue(formatDateForDisplay(currentDate));
         }
       } catch (err) {
-        console.error('Error loading categories:', err);
-        setError('Failed to load categories');
+        console.error('Error loading data:', err);
+        setError('Failed to load categories and accounts');
       }
     };
 
-    loadCategories();
+    loadData();
   }, []);
 
   const handleInputChange = (field: keyof CreateTransactionData, value: string | number) => {
@@ -304,11 +323,12 @@ export function AddTransaction() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Account *
             </label>
-            <div className="flex space-x-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {/* Default Bank Account */}
               <button
                 type="button"
                 onClick={() => handleInputChange('account', 'bank')}
-                className={`px-6 py-3 rounded-lg font-medium transition-colors duration-200 ${
+                className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 text-center ${
                   formData.account === 'bank'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -316,10 +336,12 @@ export function AddTransaction() {
               >
                 🏦 Bank
               </button>
+              
+              {/* Default Cash Account */}
               <button
                 type="button"
                 onClick={() => handleInputChange('account', 'cash')}
-                className={`px-6 py-3 rounded-lg font-medium transition-colors duration-200 ${
+                className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 text-center ${
                   formData.account === 'cash'
                     ? 'bg-green-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -327,6 +349,30 @@ export function AddTransaction() {
               >
                 💵 Cash
               </button>
+              
+              {/* Custom Accounts */}
+              {accounts.map((account) => (
+                <button
+                  key={account.id}
+                  type="button"
+                  onClick={() => handleInputChange('account', account.name)}
+                  className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 text-center ${
+                    formData.account === account.name
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  title={account.description || account.name}
+                >
+                  <div className="flex flex-col items-center space-y-1">
+                    <span className="text-lg">
+                      {UserAccountService.getAccountTypeEmoji(account.type)}
+                    </span>
+                    <span className="text-xs truncate max-w-full">
+                      {account.name}
+                    </span>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 

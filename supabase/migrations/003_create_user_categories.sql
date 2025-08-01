@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS user_categories (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
+    emoji TEXT NOT NULL, -- Required emoji for category display
     color TEXT, -- Optional color for category display
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),

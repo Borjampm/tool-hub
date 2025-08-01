@@ -6,7 +6,7 @@ export interface CreateTransactionData {
   amount: number;
   currency: string;
   category: string;
-  account: 'bank' | 'cash';
+  account: string; // Now accepts any custom account name
   title: string;
   description?: string;
   transactionDate: string; // Date in YYYY-MM-DD format
@@ -17,7 +17,7 @@ export interface UpdateTransactionData {
   amount?: number;
   currency?: string;
   category?: string;
-  account?: 'bank' | 'cash';
+  account?: string; // Now accepts any custom account name
   title?: string;
   description?: string;
   transactionDate?: string; // Date in YYYY-MM-DD format

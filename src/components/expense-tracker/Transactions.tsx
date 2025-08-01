@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { TransactionService } from '../../services/transactionService';
-import type { Transaction, ExpenseCategory } from '../../lib/supabase';
+import { UserAccountService } from '../../services/userAccountService';
+import type { Transaction, ExpenseCategory, UserAccount } from '../../lib/supabase';
 import { formatDate } from '../../lib/dateUtils';
 
 export function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [accounts, setAccounts] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -14,12 +16,14 @@ export function Transactions() {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const [transactionData, categoryData] = await Promise.all([
+        const [transactionData, categoryData, accountData] = await Promise.all([
           TransactionService.getAllTransactions(),
-          TransactionService.getExpenseCategories()
+          TransactionService.getExpenseCategories(),
+          UserAccountService.getUserAccounts()
         ]);
         setTransactions(transactionData);
         setCategories(categoryData);
+        setAccounts(accountData);
       } catch (err) {
         console.error('Error loading transactions:', err);
         setError(err instanceof Error ? err.message : 'Failed to load transactions');
@@ -35,6 +39,21 @@ export function Transactions() {
   const getCategoryEmoji = (categoryName: string) => {
     const category = categories.find(cat => cat.name === categoryName);
     return category?.emoji || '📝';
+  };
+
+  // Get account info by name
+  const getAccountInfo = (accountName: string) => {
+    const account = accounts.find(acc => acc.name === accountName);
+    if (account) {
+      return {
+        emoji: UserAccountService.getAccountTypeEmoji(account.type),
+        name: account.name
+      };
+    }
+    // Fallback for old hardcoded values or if account not found
+    if (accountName === 'bank') return { emoji: '🏦', name: 'Bank' };
+    if (accountName === 'cash') return { emoji: '💵', name: 'Cash' };
+    return { emoji: '💰', name: accountName };
   };
 
   // Format currency amount with appropriate locale
@@ -128,8 +147,8 @@ export function Transactions() {
                       
                       {/* Account */}
                       <span className="inline-flex items-center space-x-1 text-sm text-gray-500">
-                        <span>{transaction.account === 'bank' ? '🏦' : '💵'}</span>
-                        <span className="capitalize">{transaction.account}</span>
+                        <span>{getAccountInfo(transaction.account).emoji}</span>
+                        <span>{getAccountInfo(transaction.account).name}</span>
                       </span>
                     </div>
                     

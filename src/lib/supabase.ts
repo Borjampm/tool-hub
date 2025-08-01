@@ -28,6 +28,7 @@ export interface UserCategory {
   id: string;
   user_id: string;
   name: string;
+  emoji: string;
   color?: string;
   created_at: string;
   updated_at: string;
@@ -41,10 +42,21 @@ export interface Transaction {
   amount: number;
   currency: string;
   category: string;
-  account: 'bank' | 'cash';
+  account: string; // Now accepts any custom account name
   title: string;
   description?: string;
   transaction_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserAccount {
+  id: string;
+  user_id: string;
+  name: string;
+  type: 'bank' | 'cash' | 'credit_card' | 'investment' | 'other';
+  description?: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
