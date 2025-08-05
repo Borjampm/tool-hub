@@ -197,7 +197,8 @@ export class TransactionService {
       .from('user_expense_categories')
       .select('*')
       .eq('user_id', user.id)
-      .order('is_default DESC, name');
+      .order('is_default', { ascending: false })
+      .order('name', { ascending: true });
 
     if (error) {
       console.error('Error fetching expense categories:', error);

@@ -186,22 +186,13 @@ export function ExpenseSettings() {
   const openCategoryModal = (category?: UserExpenseCategory) => {
     closeDropdown();
     if (category) {
-      // If it's a default category, treat it as creating a new custom category based on it
-      if (isDefaultCategory(category)) {
-        setEditingCategory(null);
-        setCategoryForm({ 
-          name: `${category.name} (Custom)`, 
-          emoji: category.emoji || '📝',
-          color: category.color || '#6B7280' 
-        });
-      } else {
-        setEditingCategory(category);
-        setCategoryForm({ 
-          name: category.name, 
-          emoji: category.emoji || '📝',
-          color: category.color || '#6B7280' 
-        });
-      }
+      // Allow editing any category, including default ones
+      setEditingCategory(category);
+      setCategoryForm({ 
+        name: category.name, 
+        emoji: category.emoji || '📝',
+        color: category.color || '#6B7280' 
+      });
     } else {
       setEditingCategory(null);
       setCategoryForm({ name: '', emoji: '📝', color: '#6B7280' });
@@ -278,11 +269,6 @@ export function ExpenseSettings() {
                   <div className="flex items-center space-x-2">
                     <span className="text-lg">{category.emoji}</span>
                     <span className="font-medium text-white text-shadow">{category.name}</span>
-                    {isDefaultCategory(category) && (
-                      <span className="text-xs bg-white text-gray-800 px-2 py-0.5 rounded-full font-medium shadow-sm">
-                        Default
-                      </span>
-                    )}
                   </div>
                   <div className="dropdown-container relative">
                     <button
@@ -299,7 +285,7 @@ export function ExpenseSettings() {
                           onClick={() => openCategoryModal(category)}
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                         >
-                          {isDefaultCategory(category) ? 'Create Custom Copy' : 'Edit'}
+                          Edit
                         </button>
                         {!isDefaultCategory(category) && (
                           <button
