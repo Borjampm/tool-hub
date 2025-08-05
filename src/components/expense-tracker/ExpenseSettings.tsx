@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ExpenseCategoryService } from '../../services/expenseCategoryService';
 import { UserAccountService } from '../../services/userAccountService';
-import type { UserExpenseCategory, UserAccount, ExpenseCategory } from '../../lib/supabase';
+import type { UserExpenseCategory, UserAccount } from '../../lib/supabase';
 
 export function ExpenseSettings() {
-  const [allCategories, setAllCategories] = useState<(ExpenseCategory | UserExpenseCategory)[]>([]);
+  const [allCategories, setAllCategories] = useState<UserExpenseCategory[]>([]);
   const [defaultAccounts, setDefaultAccounts] = useState<{ name: string; type: string; emoji: string; color: string }[]>([]);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,8 +129,8 @@ export function ExpenseSettings() {
   };
 
   // Helper function to check if category is default (non-editable)
-  const isDefaultCategory = (category: ExpenseCategory | UserExpenseCategory): boolean => {
-    return !('user_id' in category);
+  const isDefaultCategory = (category: UserExpenseCategory): boolean => {
+    return category.is_default === true;
   };
 
   // Account functions
@@ -183,7 +183,7 @@ export function ExpenseSettings() {
   };
 
   // Modal functions
-  const openCategoryModal = (category?: ExpenseCategory | UserExpenseCategory) => {
+  const openCategoryModal = (category?: UserExpenseCategory) => {
     closeDropdown();
     if (category) {
       // If it's a default category, treat it as creating a new custom category based on it
@@ -195,7 +195,7 @@ export function ExpenseSettings() {
           color: category.color || '#6B7280' 
         });
       } else {
-        setEditingCategory(category as UserExpenseCategory);
+        setEditingCategory(category);
         setCategoryForm({ 
           name: category.name, 
           emoji: category.emoji || '📝',

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { TransactionService } from '../../services/transactionService';
 import { UserAccountService } from '../../services/userAccountService';
-import type { Transaction, ExpenseCategory, UserAccount } from '../../lib/supabase';
+import type { Transaction, UserExpenseCategory, UserAccount } from '../../lib/supabase';
 import { formatDate } from '../../lib/dateUtils';
 
 export function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [categories, setCategories] = useState<UserExpenseCategory[]>([]);
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');

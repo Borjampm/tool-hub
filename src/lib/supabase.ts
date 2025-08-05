@@ -40,6 +40,7 @@ export interface UserExpenseCategory {
   name: string;
   emoji: string;
   color?: string;
+  is_default?: boolean; // Indicates if this was created as a default category
   created_at: string;
   updated_at: string;
 }
@@ -52,8 +53,7 @@ export interface Transaction {
   amount: number;
   currency: string;
   category?: string; // Legacy field for backwards compatibility
-  category_id?: string; // Foreign key to expense_categories.id or user_expense_categories.id
-  category_type?: 'default' | 'user'; // Indicates which table category_id references
+  category_id?: string; // Foreign key to user_expense_categories.id
   account?: string; // Legacy field for backwards compatibility
   account_id?: string; // Foreign key to user_accounts.id
   title: string;
@@ -75,10 +75,5 @@ export interface UserAccount {
   updated_at: string;
 }
 
-export interface ExpenseCategory {
-  id: string;
-  name: string;
-  emoji: string;
-  color?: string;
-  created_at: string;
-} 
+// ExpenseCategory interface removed - all expense categories are now user-specific
+// Use UserExpenseCategory instead 

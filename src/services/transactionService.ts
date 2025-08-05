@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { Transaction, ExpenseCategory } from '../lib/supabase';
+import type { Transaction, UserExpenseCategory } from '../lib/supabase';
 
 export interface CreateTransactionData {
   type: 'income' | 'expense';
@@ -184,13 +184,20 @@ export class TransactionService {
   }
 
   /**
-   * Get all available expense categories
+   * Get all available expense categories for the authenticated user
    */
-  static async getExpenseCategories(): Promise<ExpenseCategory[]> {
+  static async getExpenseCategories(): Promise<UserExpenseCategory[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to access expense categories');
+    }
+
     const { data: categories, error } = await supabase
-      .from('expense_categories')
+      .from('user_expense_categories')
       .select('*')
-      .order('name');
+      .eq('user_id', user.id)
+      .order('is_default DESC, name');
 
     if (error) {
       console.error('Error fetching expense categories:', error);
