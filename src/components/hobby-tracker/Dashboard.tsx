@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { TimeEntryService } from '../../services/timeEntryService';
-import type { TimeEntry } from '../../lib/supabase';
+import { CategoryService } from '../../services/categoryService';
+import type { TimeEntry, HobbyCategory } from '../../lib/supabase';
 import { formatDateTime, formatDuration } from '../../lib/dateUtils';
 
 export function Dashboard() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [categories, setCategories] = useState<HobbyCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,8 +18,12 @@ export function Dashboard() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await TimeEntryService.getAllEntries();
-      setEntries(data);
+      const [entriesData, categoriesData] = await Promise.all([
+        TimeEntryService.getAllEntries(),
+        CategoryService.getHobbyCategories()
+      ]);
+      setEntries(entriesData);
+      setCategories(categoriesData);
     } catch (err) {
       console.error('Failed to load entries:', err);
       setError('Failed to load time entries');
@@ -44,10 +50,22 @@ export function Dashboard() {
     const categoryMap = new Map<string, { count: number; totalTime: number }>();
     
     entries.forEach(entry => {
-      const category = entry.category || 'uncategorized';
-      const existing = categoryMap.get(category) || { count: 0, totalTime: 0 };
+      // Find the category name using the foreign key relationship
+      let categoryName = 'uncategorized';
       
-      categoryMap.set(category, {
+      if (entry.category_id) {
+        const categoryInfo = categories.find(cat => cat.id === entry.category_id);
+        if (categoryInfo) {
+          categoryName = categoryInfo.name;
+        }
+      } else if (entry.category) {
+        // Fallback to legacy category field if it exists
+        categoryName = entry.category;
+      }
+      
+      const existing = categoryMap.get(categoryName) || { count: 0, totalTime: 0 };
+      
+      categoryMap.set(categoryName, {
         count: existing.count + 1,
         totalTime: existing.totalTime + (entry.elapsed_time || 0),
       });
