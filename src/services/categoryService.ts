@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { UserCategory } from '../lib/supabase';
+import type { HobbyCategory } from '../lib/supabase';
 
 export interface CreateCategoryData {
   name: string;
@@ -15,7 +15,7 @@ export class CategoryService {
   /**
    * Get all categories for the authenticated user
    */
-  static async getUserCategories(): Promise<UserCategory[]> {
+  static async getHobbyCategories(): Promise<HobbyCategory[]> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -23,7 +23,7 @@ export class CategoryService {
     }
 
     const { data: categories, error } = await supabase
-      .from('user_categories')
+      .from('hobby_categories')
       .select('*')
       .eq('user_id', user.id)
       .order('name');
@@ -39,7 +39,7 @@ export class CategoryService {
   /**
    * Create a new category for the authenticated user
    */
-  static async createCategory(data: CreateCategoryData): Promise<UserCategory> {
+  static async createCategory(data: CreateCategoryData): Promise<HobbyCategory> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -48,7 +48,7 @@ export class CategoryService {
 
     // Check if category name already exists for this user
     const { data: existingCategories } = await supabase
-      .from('user_categories')
+      .from('hobby_categories')
       .select('name')
       .eq('user_id', user.id)
       .eq('name', data.name);
@@ -58,7 +58,7 @@ export class CategoryService {
     }
 
     const { data: category, error } = await supabase
-      .from('user_categories')
+      .from('hobby_categories')
       .insert({
         user_id: user.id,
         name: data.name.trim(),
@@ -78,7 +78,7 @@ export class CategoryService {
   /**
    * Update an existing category
    */
-  static async updateCategory(categoryId: string, data: UpdateCategoryData): Promise<UserCategory> {
+  static async updateCategory(categoryId: string, data: UpdateCategoryData): Promise<HobbyCategory> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -88,7 +88,7 @@ export class CategoryService {
     // If updating name, check if it already exists for this user
     if (data.name) {
       const { data: existingCategories } = await supabase
-        .from('user_categories')
+        .from('hobby_categories')
         .select('id, name')
         .eq('user_id', user.id)
         .eq('name', data.name)
@@ -107,7 +107,7 @@ export class CategoryService {
     if (data.color !== undefined) updateData.color = data.color;
 
     const { data: category, error } = await supabase
-      .from('user_categories')
+      .from('hobby_categories')
       .update(updateData)
       .eq('id', categoryId)
       .eq('user_id', user.id)
@@ -133,7 +133,7 @@ export class CategoryService {
     }
 
     const { error } = await supabase
-      .from('user_categories')
+      .from('hobby_categories')
       .delete()
       .eq('id', categoryId)
       .eq('user_id', user.id);
@@ -147,7 +147,7 @@ export class CategoryService {
   /**
    * Get a single category by ID
    */
-  static async getCategoryById(categoryId: string): Promise<UserCategory | null> {
+  static async getCategoryById(categoryId: string): Promise<HobbyCategory | null> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -155,7 +155,7 @@ export class CategoryService {
     }
 
     const { data: category, error } = await supabase
-      .from('user_categories')
+      .from('hobby_categories')
       .select('*')
       .eq('id', categoryId)
       .eq('user_id', user.id)
@@ -183,7 +183,7 @@ export class CategoryService {
     }
 
     const { data: categories } = await supabase
-      .from('user_categories')
+      .from('hobby_categories')
       .select('id')
       .eq('user_id', user.id)
       .eq('name', name.trim());

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } from '../../services/timeEntryService';
+import { CategoryService } from '../../services/categoryService';
 import { CSVExportService } from '../../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
-import type { TimeEntry } from '../../lib/supabase';
+import type { TimeEntry, HobbyCategory } from '../../lib/supabase';
 import { formatDateTimeRounded, formatTimeRangeRounded, formatDuration } from '../../lib/dateUtils';
 
 // New component for the file upload modal
@@ -286,6 +287,7 @@ function ManageDataDropdown({
 
 export function Activities() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [categories, setCategories] = useState<HobbyCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -304,8 +306,12 @@ export function Activities() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await TimeEntryService.getAllEntries();
-      setEntries(data);
+      const [entriesData, categoriesData] = await Promise.all([
+        TimeEntryService.getAllEntries(),
+        CategoryService.getHobbyCategories()
+      ]);
+      setEntries(entriesData);
+      setCategories(categoriesData);
     } catch (err) {
       console.error('Failed to load entries:', err);
       setError('Failed to load activities');
@@ -368,10 +374,18 @@ export function Activities() {
       const elapsedTime = data.duration * 60; // Convert duration to seconds
 
       if (modalMode === 'create') {
+        // Find the category ID if a category was selected
+        let categoryId: string | undefined;
+        if (data.category) {
+          const categories = await CategoryService.getHobbyCategories();
+          const selectedCategory = categories.find(cat => cat.name === data.category);
+          categoryId = selectedCategory?.id;
+        }
+
         const manualEntryData: ManualTimeEntryData = {
           name: data.name,
           description: data.description,
-          category: data.category,
+          categoryId: categoryId,
           startTime,
           endTime,
           elapsedTime,
@@ -380,10 +394,18 @@ export function Activities() {
         const newEntry = await TimeEntryService.createManualEntry(manualEntryData);
         setEntries([newEntry, ...entries]);
       } else if (modalMode === 'edit' && editingEntry) {
+        // Find the category ID if a category was selected
+        let categoryId: string | undefined;
+        if (data.category) {
+          const categories = await CategoryService.getHobbyCategories();
+          const selectedCategory = categories.find(cat => cat.name === data.category);
+          categoryId = selectedCategory?.id;
+        }
+
         const updateData: UpdateTimeEntryData = {
           name: data.name,
           description: data.description,
-          category: data.category,
+          categoryId: categoryId,
           startTime,
           endTime,
           elapsedTime,
@@ -448,7 +470,7 @@ export function Activities() {
         const manualEntryData: ManualTimeEntryData = {
           name: activity.name,
           description: activity.description,
-          category: undefined, // No category for sample activities
+          categoryId: undefined, // No category for sample activities
           startTime,
           endTime,
           elapsedTime: durationMinutes * 60, // Convert to seconds
@@ -476,7 +498,7 @@ export function Activities() {
       setError(null);
       
       // Use direct download method to avoid needing storage bucket setup
-      CSVExportService.downloadCSVDirect(entries);
+      CSVExportService.downloadCSVDirect(entries, categories);
       
       console.log('✅ CSV export completed successfully');
     } catch (err) {
@@ -553,14 +575,12 @@ export function Activities() {
             <p className="text-sm sm:text-base text-gray-600">Manage all your hobby tracking entries</p>
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-            {entries.length > 0 && (
-              <ManageDataDropdown
-                entries={entries}
-                isExporting={isExporting}
-                onExportCSV={handleExportCSV}
-                onUploadData={handleUploadData}
-              />
-            )}
+            <ManageDataDropdown
+              entries={entries}
+              isExporting={isExporting}
+              onExportCSV={handleExportCSV}
+              onUploadData={handleUploadData}
+            />
             {import.meta.env.DEV && (
               <button
                 onClick={generateSampleActivities}
@@ -643,11 +663,36 @@ export function Activities() {
                         </p>
                       )}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
-                        {entry.category && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {entry.category}
-                          </span>
-                        )}
+                        {(() => {
+                          // Find category name and color using foreign key relationship
+                          let categoryName = null;
+                          let categoryColor = '#6B7280'; // Default gray
+                          
+                          if (entry.category_id) {
+                            const categoryInfo = categories.find(cat => cat.id === entry.category_id);
+                            if (categoryInfo) {
+                              categoryName = categoryInfo.name;
+                              categoryColor = categoryInfo.color || '#6B7280';
+                            }
+                          } else if (entry.category) {
+                            // Fallback to legacy category field
+                            categoryName = entry.category;
+                            // Try to find color from category name for legacy entries
+                            const categoryInfo = categories.find(cat => cat.name === entry.category);
+                            if (categoryInfo) {
+                              categoryColor = categoryInfo.color || '#6B7280';
+                            }
+                          }
+                          
+                          return categoryName ? (
+                            <span 
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                              style={{ backgroundColor: categoryColor }}
+                            >
+                              {categoryName}
+                            </span>
+                          ) : null;
+                        })()}
                         <span className="text-xs sm:text-sm text-gray-500">
                           {entry.start_time ? formatStartTime(entry.start_time) : formatStartTime(entry.created_at)}
                         </span>

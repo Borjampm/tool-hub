@@ -5,6 +5,7 @@ import { TimerControls } from './TimerControls';
 import { MetadataForm } from './MetadataForm';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import { TimeEntryService, type ManualTimeEntryData } from '../../services/timeEntryService';
+import { CategoryService } from '../../services/categoryService';
 
 interface MetadataFormData {
   name: string;
@@ -60,11 +61,19 @@ export function TimerView() {
     setError(null);
     
     try {
+      // Find the category ID if a category was selected
+      let categoryId: string | undefined;
+      if (data.category) {
+        const categories = await CategoryService.getHobbyCategories();
+        const selectedCategory = categories.find(cat => cat.name === data.category);
+        categoryId = selectedCategory?.id;
+      }
+
       // Complete the entry in database
       await TimeEntryService.completeEntry(state.entryId, {
         name: data.name,
         description: data.description,
-        category: data.category,
+        categoryId: categoryId,
         endTime: new Date(),
         elapsedTime: state.elapsedTime,
       });
@@ -102,10 +111,18 @@ export function TimerView() {
 
       const elapsedTime = data.duration * 60; // Convert duration to seconds
 
+      // Find the category ID if a category was selected
+      let categoryId: string | undefined;
+      if (data.category) {
+        const categories = await CategoryService.getHobbyCategories();
+        const selectedCategory = categories.find(cat => cat.name === data.category);
+        categoryId = selectedCategory?.id;
+      }
+
       const manualEntryData: ManualTimeEntryData = {
         name: data.name,
         description: data.description,
-        category: data.category,
+        categoryId: categoryId,
         startTime,
         endTime,
         elapsedTime,

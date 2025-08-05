@@ -9,7 +9,7 @@ export interface CreateTimeEntryData {
 export interface CompleteTimeEntryData {
   name: string;
   description?: string;
-  category?: string;
+  categoryId?: string; // Foreign key to hobby_categories.id
   endTime: Date;
   elapsedTime: number;
 }
@@ -17,7 +17,7 @@ export interface CompleteTimeEntryData {
 export interface ManualTimeEntryData {
   name: string;
   description?: string;
-  category?: string;
+  categoryId?: string; // Foreign key to hobby_categories.id
   startTime: Date;
   endTime: Date;
   elapsedTime: number;
@@ -26,7 +26,7 @@ export interface ManualTimeEntryData {
 export interface UpdateTimeEntryData {
   name?: string;
   description?: string;
-  category?: string;
+  categoryId?: string; // Foreign key to hobby_categories.id
   startTime?: Date;
   endTime?: Date;
   elapsedTime?: number;
@@ -74,7 +74,7 @@ export class TimeEntryService {
       .update({
         name: data.name,
         description: data.description,
-        category: data.category,
+        category_id: data.categoryId,
         end_time: data.endTime.toISOString(),
         elapsed_time: data.elapsedTime,
       })
@@ -104,7 +104,7 @@ export class TimeEntryService {
       .from('time_entries')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('start_time', { ascending: false });
 
     if (error) {
       console.error('Error fetching time entries:', error);
@@ -178,14 +178,14 @@ export class TimeEntryService {
     const updateData: {
       name?: string;
       description?: string;
-      category?: string;
+      category_id?: string;
       start_time?: string;
       end_time?: string;
       elapsed_time?: number;
     } = {};
     if (data.name !== undefined) updateData.name = data.name;
     if (data.description !== undefined) updateData.description = data.description;
-    if (data.category !== undefined) updateData.category = data.category;
+    if (data.categoryId !== undefined) updateData.category_id = data.categoryId;
     if (data.startTime !== undefined) updateData.start_time = data.startTime.toISOString();
     if (data.endTime !== undefined) updateData.end_time = data.endTime.toISOString();
     if (data.elapsedTime !== undefined) updateData.elapsed_time = data.elapsedTime;
@@ -224,7 +224,7 @@ export class TimeEntryService {
         entry_id: entryId,
         name: data.name,
         description: data.description,
-        category: data.category,
+        category_id: data.categoryId,
         start_time: data.startTime.toISOString(),
         end_time: data.endTime.toISOString(),
         elapsed_time: data.elapsedTime,

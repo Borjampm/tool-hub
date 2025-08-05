@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { TimeEntryService } from '../../services/timeEntryService';
-import type { TimeEntry } from '../../lib/supabase';
+import { CategoryService } from '../../services/categoryService';
+import type { TimeEntry, HobbyCategory } from '../../lib/supabase';
 import { formatDateTime, formatDuration } from '../../lib/dateUtils';
 
 export function Dashboard() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [categories, setCategories] = useState<HobbyCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,8 +18,12 @@ export function Dashboard() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await TimeEntryService.getAllEntries();
-      setEntries(data);
+      const [entriesData, categoriesData] = await Promise.all([
+        TimeEntryService.getAllEntries(),
+        CategoryService.getHobbyCategories()
+      ]);
+      setEntries(entriesData);
+      setCategories(categoriesData);
     } catch (err) {
       console.error('Failed to load entries:', err);
       setError('Failed to load time entries');
@@ -44,10 +50,22 @@ export function Dashboard() {
     const categoryMap = new Map<string, { count: number; totalTime: number }>();
     
     entries.forEach(entry => {
-      const category = entry.category || 'uncategorized';
-      const existing = categoryMap.get(category) || { count: 0, totalTime: 0 };
+      // Find the category name using the foreign key relationship
+      let categoryName = 'uncategorized';
       
-      categoryMap.set(category, {
+      if (entry.category_id) {
+        const categoryInfo = categories.find(cat => cat.id === entry.category_id);
+        if (categoryInfo) {
+          categoryName = categoryInfo.name;
+        }
+      } else if (entry.category) {
+        // Fallback to legacy category field if it exists
+        categoryName = entry.category;
+      }
+      
+      const existing = categoryMap.get(categoryName) || { count: 0, totalTime: 0 };
+      
+      categoryMap.set(categoryName, {
         count: existing.count + 1,
         totalTime: existing.totalTime + (entry.elapsed_time || 0),
       });
@@ -131,12 +149,20 @@ export function Dashboard() {
                   <p className="text-sm sm:text-base text-gray-500 text-center py-4">No categorized activities yet</p>
                 ) : (
                   <div className="space-y-3 sm:space-y-4">
-                    {getCategoryBreakdown().map(({ category, count, totalTime }) => (
-                      <div key={category} className="flex items-center justify-between">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-1 sm:space-y-0 min-w-0 flex-1">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 truncate">
-                            {category || 'Uncategorized'}
-                          </span>
+                    {getCategoryBreakdown().map(({ category, count, totalTime }) => {
+                      // Find the category info to get the color
+                      const categoryInfo = categories.find(cat => cat.name === category);
+                      const color = categoryInfo?.color || '#6B7280'; // Default gray if no color
+                      
+                      return (
+                        <div key={category} className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-1 sm:space-y-0 min-w-0 flex-1">
+                            <span 
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white truncate"
+                              style={{ backgroundColor: color }}
+                            >
+                              {category || 'Uncategorized'}
+                            </span>
                           <span className="text-xs sm:text-sm text-gray-600">
                             {count} {count === 1 ? 'activity' : 'activities'}
                           </span>
@@ -144,8 +170,9 @@ export function Dashboard() {
                         <div className="text-sm font-medium text-gray-900 ml-2 flex-shrink-0">
                           {formatTime(totalTime)}
                         </div>
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

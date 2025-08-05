@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CategoryService } from '../../services/categoryService';
-import type { TimeEntry, UserCategory } from '../../lib/supabase';
+import type { TimeEntry, HobbyCategory } from '../../lib/supabase';
 import { toLocalDateTimeString } from '../../lib/dateUtils';
 
 export interface ActivityFormData {
@@ -31,7 +31,7 @@ export function ActivityModal({
 }: ActivityModalProps) {
   
   const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<ActivityFormData>();
-  const [categories, setCategories] = useState<UserCategory[]>([]);
+  const [categories, setCategories] = useState<HobbyCategory[]>([]);
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
@@ -63,7 +63,7 @@ export function ActivityModal({
 
   const loadCategories = async () => {
     try {
-      const data = await CategoryService.getUserCategories();
+      const data = await CategoryService.getHobbyCategories();
       setCategories(data);
     } catch (error) {
       console.error('Failed to load categories:', error);
@@ -98,7 +98,19 @@ export function ActivityModal({
       if (mode === 'edit' && existingEntry) {
         setValue('name', existingEntry.name);
         setValue('description', existingEntry.description || '');
-        setValue('category', existingEntry.category || '');
+        
+        // Set category - need to look up name from foreign key relationship
+        let categoryName = '';
+        if (existingEntry.category_id) {
+          const categoryInfo = categories.find(cat => cat.id === existingEntry.category_id);
+          if (categoryInfo) {
+            categoryName = categoryInfo.name;
+          }
+        } else if (existingEntry.category) {
+          // Fallback to legacy category field if it exists
+          categoryName = existingEntry.category;
+        }
+        setValue('category', categoryName);
         
         // Set start time - convert UTC to local time
         if (existingEntry.start_time) {
@@ -128,7 +140,7 @@ export function ActivityModal({
         setValue('category', '');
       }
     }
-  }, [isOpen, mode, existingEntry, setValue]);
+  }, [isOpen, mode, existingEntry, setValue, categories]);
 
   const handleFormSubmit = async (data: ActivityFormData) => {
     try {

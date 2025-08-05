@@ -1,12 +1,12 @@
 import { supabase } from '../lib/supabase';
-import type { Transaction, ExpenseCategory } from '../lib/supabase';
+import type { Transaction, UserExpenseCategory, UserAccount } from '../lib/supabase';
 
 export interface CreateTransactionData {
   type: 'income' | 'expense';
   amount: number;
   currency: string;
-  category: string;
-  account: string; // Now accepts any custom account name
+  categoryId: string; // Now expects category ID instead of category name
+  accountId: string; // Now expects account ID instead of account name
   title: string;
   description?: string;
   transactionDate: string; // Date in YYYY-MM-DD format
@@ -16,8 +16,8 @@ export interface UpdateTransactionData {
   type?: 'income' | 'expense';
   amount?: number;
   currency?: string;
-  category?: string;
-  account?: string; // Now accepts any custom account name
+  categoryId?: string; // Now expects category ID instead of category name
+  accountId?: string; // Now expects account ID instead of account name
   title?: string;
   description?: string;
   transactionDate?: string; // Date in YYYY-MM-DD format
@@ -44,8 +44,8 @@ export class TransactionService {
         type: data.type,
         amount: data.amount,
         currency: data.currency,
-        category: data.category,
-        account: data.account,
+        category_id: data.categoryId,
+        account_id: data.accountId,
         title: data.title,
         description: data.description,
         transaction_date: data.transactionDate,
@@ -129,8 +129,8 @@ export class TransactionService {
       type?: 'income' | 'expense';
       amount?: number;
       currency?: string;
-      category?: string;
-      account?: string;
+      category_id?: string;
+      account_id?: string;
       title?: string;
       description?: string;
       transaction_date?: string;
@@ -139,8 +139,8 @@ export class TransactionService {
     if (data.type !== undefined) updateData.type = data.type;
     if (data.amount !== undefined) updateData.amount = data.amount;
     if (data.currency !== undefined) updateData.currency = data.currency;
-    if (data.category !== undefined) updateData.category = data.category;
-    if (data.account !== undefined) updateData.account = data.account;
+    if (data.categoryId !== undefined) updateData.category_id = data.categoryId;
+    if (data.accountId !== undefined) updateData.account_id = data.accountId;
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.transactionDate !== undefined) updateData.transaction_date = data.transactionDate;
@@ -184,13 +184,21 @@ export class TransactionService {
   }
 
   /**
-   * Get all available expense categories
+   * Get all available expense categories for the authenticated user
    */
-  static async getExpenseCategories(): Promise<ExpenseCategory[]> {
+  static async getExpenseCategories(): Promise<UserExpenseCategory[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to access expense categories');
+    }
+
     const { data: categories, error } = await supabase
-      .from('expense_categories')
+      .from('user_expense_categories')
       .select('*')
-      .order('name');
+      .eq('user_id', user.id)
+      .order('is_default', { ascending: false })
+      .order('name', { ascending: true });
 
     if (error) {
       console.error('Error fetching expense categories:', error);
@@ -198,6 +206,31 @@ export class TransactionService {
     }
 
     return categories || [];
+  }
+
+  /**
+   * Get all available user accounts for the authenticated user
+   */
+  static async getUserAccounts(): Promise<UserAccount[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to access user accounts');
+    }
+
+    const { data: accounts, error } = await supabase
+      .from('user_accounts')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching user accounts:', error);
+      throw new Error(`Failed to fetch user accounts: ${error.message}`);
+    }
+
+    return accounts || [];
   }
 
   /**
@@ -227,9 +260,9 @@ export class TransactionService {
   }
 
   /**
-   * Get transactions by category
+   * Get transactions by category ID
    */
-  static async getTransactionsByCategory(category: string): Promise<Transaction[]> {
+  static async getTransactionsByCategory(categoryId: string): Promise<Transaction[]> {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) {
@@ -240,7 +273,7 @@ export class TransactionService {
       .from('transactions')
       .select('*')
       .eq('user_id', user.id)
-      .eq('category', category)
+      .eq('category_id', categoryId)
       .order('transaction_date', { ascending: false })
       .order('created_at', { ascending: false });
 

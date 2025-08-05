@@ -52,8 +52,8 @@ export function AddTransaction() {
     type: 'expense', // preselected as expense
     amount: 0,
     currency: 'CLP', // default to CLP
-    category: '',
-    account: 'bank', // default to bank
+    categoryId: '',
+    accountId: '',
     title: '',
     description: '',
     transactionDate: initialDate, // default to today
@@ -86,11 +86,12 @@ export function AddTransaction() {
         
         if (allCategories.length > 0) {
           const currentDate = getCurrentDate();
-          // Set default account to 'bank' to maintain compatibility
+          // Set default account to first available account
+          const defaultAccountId = userAccounts.length > 0 ? userAccounts[0].id : '';
           setFormData(prev => ({ 
             ...prev, 
-            category: allCategories[0].name,
-            account: 'bank', // Keep default bank account
+            categoryId: allCategories[0].id,
+            accountId: defaultAccountId,
             transactionDate: currentDate
           }));
           setDateDisplayValue(formatDateForDisplay(currentDate));
@@ -161,8 +162,12 @@ export function AddTransaction() {
         throw new Error('Title is required');
       }
 
-      if (!formData.category) {
+      if (!formData.categoryId) {
         throw new Error('Category is required');
+      }
+
+      if (!formData.accountId) {
+        throw new Error('Account is required');
       }
 
       if (!formData.transactionDate) {
@@ -181,8 +186,8 @@ export function AddTransaction() {
           type: 'expense', // keep expense preselected
           amount: 0,
           currency: 'CLP', // keep CLP default
-          category: categories.length > 0 ? categories[0].name : '',
-          account: 'bank', // keep bank default
+          categoryId: categories.length > 0 ? categories[0].id : '',
+          accountId: accounts.length > 0 ? accounts[0].id : '', // Reset to first available account
           title: '',
           description: '',
           transactionDate: currentDate, // reset to current date
@@ -303,15 +308,15 @@ export function AddTransaction() {
             </label>
             <select
               id="category"
-              value={formData.category}
-              onChange={(e) => handleInputChange('category', e.target.value)}
+              value={formData.categoryId}
+              onChange={(e) => handleInputChange('categoryId', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               required
               disabled={isLoading}
             >
               <option value="">Select a category</option>
               {categories.map((category) => (
-                <option key={category.id} value={category.name}>
+                <option key={category.id} value={category.id}>
                   {category.emoji} {category.name}
                 </option>
               ))}
@@ -324,50 +329,18 @@ export function AddTransaction() {
               Account *
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {/* Default Bank Account */}
-              <button
-                type="button"
-                onClick={() => handleInputChange('account', 'bank')}
-                className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 text-center ${
-                  formData.account === 'bank'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <div className="flex flex-col items-center space-y-1">
-                  <span className="text-lg">🏦</span>
-                  <span className="text-xs truncate max-w-full">Bank</span>
-                </div>
-              </button>
-              
-              {/* Default Cash Account */}
-              <button
-                type="button"
-                onClick={() => handleInputChange('account', 'cash')}
-                className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 text-center ${
-                  formData.account === 'cash'
-                    ? 'bg-green-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                <div className="flex flex-col items-center space-y-1">
-                  <span className="text-lg">💵</span>
-                  <span className="text-xs truncate max-w-full">Cash</span>
-                </div>
-              </button>
-              
-              {/* Custom Accounts */}
+              {/* User Accounts */}
               {accounts.map((account) => (
                 <button
                   key={account.id}
                   type="button"
-                  onClick={() => handleInputChange('account', account.name)}
+                  onClick={() => handleInputChange('accountId', account.id)}
                   className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 text-center ${
-                    formData.account === account.name
+                    formData.accountId === account.id
                       ? 'text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
-                  style={formData.account === account.name ? { backgroundColor: account.color || '#6B7280' } : {}}
+                  style={formData.accountId === account.id ? { backgroundColor: account.color || '#6B7280' } : {}}
                   title={account.description || account.name}
                 >
                   <div className="flex flex-col items-center space-y-1">
@@ -381,6 +354,11 @@ export function AddTransaction() {
                 </button>
               ))}
             </div>
+            {accounts.length === 0 && (
+              <p className="text-sm text-gray-500 mt-2">
+                No accounts available. Please create an account in the Settings tab first.
+              </p>
+            )}
           </div>
 
           {/* Title */}
@@ -460,8 +438,8 @@ export function AddTransaction() {
                   type: 'expense',
                   amount: 0,
                   currency: 'CLP',
-                  category: categories.length > 0 ? categories[0].name : '',
-                  account: 'bank',
+                  categoryId: categories.length > 0 ? categories[0].id : '',
+                  accountId: accounts.length > 0 ? accounts[0].id : '', // Reset to first available account
                   title: '',
                   description: '',
                   transactionDate: currentDate,

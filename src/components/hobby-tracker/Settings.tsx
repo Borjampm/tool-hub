@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { CategoryService } from '../../services/categoryService';
 import type { CreateCategoryData, UpdateCategoryData } from '../../services/categoryService';
-import type { UserCategory } from '../../lib/supabase';
+import type { HobbyCategory } from '../../lib/supabase';
 
 interface CategoryFormData {
   name: string;
@@ -10,11 +10,11 @@ interface CategoryFormData {
 }
 
 export function Settings() {
-  const [categories, setCategories] = useState<UserCategory[]>([]);
+  const [categories, setCategories] = useState<HobbyCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<UserCategory | null>(null);
+  const [editingCategory, setEditingCategory] = useState<HobbyCategory | null>(null);
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
 
   const {
@@ -34,7 +34,7 @@ export function Settings() {
     try {
       setIsLoading(true);
       setError(null);
-      const userCategories = await CategoryService.getUserCategories();
+      const userCategories = await CategoryService.getHobbyCategories();
       setCategories(userCategories);
     } catch (err) {
       console.error('Failed to load categories:', err);
@@ -106,7 +106,7 @@ export function Settings() {
     }
   };
 
-  const startEditing = (category: UserCategory) => {
+  const startEditing = (category: HobbyCategory) => {
     setEditingCategory(category);
     setValue('name', category.name);
     setValue('color', category.color || '');

@@ -2,7 +2,7 @@
 import { useForm } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { CategoryService } from '../../services/categoryService';
-import type { UserCategory } from '../../lib/supabase';
+import type { HobbyCategory } from '../../lib/supabase';
 
 interface MetadataFormData {
   name: string;
@@ -19,7 +19,7 @@ interface MetadataFormProps {
 }
 
 export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading = false }: MetadataFormProps) {
-  const [categories, setCategories] = useState<UserCategory[]>([]);
+  const [categories, setCategories] = useState<HobbyCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -57,7 +57,7 @@ export function MetadataForm({ isOpen, onClose, onSubmit, elapsedTime, isLoading
   const loadCategories = async () => {
     try {
       setLoadingCategories(true);
-      const userCategories = await CategoryService.getUserCategories();
+      const userCategories = await CategoryService.getHobbyCategories();
       setCategories(userCategories);
     } catch (err) {
       console.error('Failed to load categories:', err);

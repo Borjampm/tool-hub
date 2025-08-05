@@ -15,7 +15,8 @@ export interface TimeEntry {
   entry_id: string;
   name: string;
   description?: string;
-  category?: string;
+  category?: string; // Legacy field for backwards compatibility
+  category_id?: string; // Foreign key to hobby_categories.id
   start_time: string;
   end_time?: string;
   elapsed_time?: number;
@@ -24,7 +25,7 @@ export interface TimeEntry {
   updated_at: string;
 }
 
-export interface UserCategory {
+export interface HobbyCategory {
   id: string;
   user_id: string;
   name: string;
@@ -39,6 +40,7 @@ export interface UserExpenseCategory {
   name: string;
   emoji: string;
   color?: string;
+  is_default?: boolean; // Indicates if this was created as a default category
   created_at: string;
   updated_at: string;
 }
@@ -50,8 +52,10 @@ export interface Transaction {
   type: 'income' | 'expense';
   amount: number;
   currency: string;
-  category: string;
-  account: string; // Now accepts any custom account name
+  category?: string; // Legacy field for backwards compatibility
+  category_id?: string; // Foreign key to user_expense_categories.id
+  account?: string; // Legacy field for backwards compatibility
+  account_id?: string; // Foreign key to user_accounts.id
   title: string;
   description?: string;
   transaction_date: string;
@@ -71,10 +75,5 @@ export interface UserAccount {
   updated_at: string;
 }
 
-export interface ExpenseCategory {
-  id: string;
-  name: string;
-  emoji: string;
-  color?: string;
-  created_at: string;
-} 
+// ExpenseCategory interface removed - all expense categories are now user-specific
+// Use UserExpenseCategory instead 

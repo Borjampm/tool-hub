@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { UserExpenseCategory, ExpenseCategory } from '../lib/supabase';
+import type { UserExpenseCategory } from '../lib/supabase';
 
 export interface CreateUserExpenseCategoryData {
   name: string;
@@ -15,46 +15,15 @@ export interface UpdateUserExpenseCategoryData {
 
 export class ExpenseCategoryService {
   /**
-   * Get all available expense categories (both default expense categories and user custom expense categories)
+   * Get all expense categories for the authenticated user
+   * This includes both default categories (is_default=true) and custom categories
    */
-  static async getAllAvailableExpenseCategories(): Promise<(ExpenseCategory | { id: string; name: string; emoji: string; color?: string; created_at: string; user_id?: string })[]> {
-    const [defaultCategories, userCategories] = await Promise.all([
-      this.getDefaultExpenseCategories(),
-      this.getUserExpenseCategories()
-    ]);
-
-    // Convert user expense categories to match ExpenseCategory format for display
-    const formattedUserCategories = userCategories.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      emoji: cat.emoji,
-      color: cat.color,
-      created_at: cat.created_at,
-      user_id: cat.user_id  // Keep user_id to identify as custom category
-    }));
-
-    return [...defaultCategories, ...formattedUserCategories];
+  static async getAllAvailableExpenseCategories(): Promise<UserExpenseCategory[]> {
+    return this.getUserExpenseCategories();
   }
 
   /**
-   * Get default expense categories
-   */
-  static async getDefaultExpenseCategories(): Promise<ExpenseCategory[]> {
-    const { data: categories, error } = await supabase
-      .from('expense_categories')
-      .select('*')
-      .order('name');
-
-    if (error) {
-      console.error('Error fetching default expense categories:', error);
-      throw new Error(`Failed to fetch default expense categories: ${error.message}`);
-    }
-
-    return categories || [];
-  }
-
-  /**
-   * Get user custom expense categories
+   * Get all expense categories for the authenticated user (including defaults)
    */
   static async getUserExpenseCategories(): Promise<UserExpenseCategory[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -67,6 +36,7 @@ export class ExpenseCategoryService {
       .from('user_expense_categories')
       .select('*')
       .eq('user_id', user.id)
+      .order('is_default', { ascending: false })
       .order('name');
 
     if (error) {
@@ -87,20 +57,13 @@ export class ExpenseCategoryService {
       throw new Error('User must be authenticated to create expense categories');
     }
 
-    // Check if category name already exists (both in default and user expense categories)
-    const [defaultCategories, userCategories] = await Promise.all([
-      this.getDefaultExpenseCategories(),
-      this.getUserExpenseCategories()
-    ]);
-
-    const existingDefault = defaultCategories.find(cat => 
-      cat.name.toLowerCase() === data.name.toLowerCase()
-    );
+    // Check if category name already exists for this user
+    const userCategories = await this.getUserExpenseCategories();
     const existingUser = userCategories.find(cat => 
       cat.name.toLowerCase() === data.name.toLowerCase()
     );
 
-    if (existingDefault || existingUser) {
+    if (existingUser) {
       throw new Error(`Expense category "${data.name}" already exists`);
     }
 
@@ -133,21 +96,14 @@ export class ExpenseCategoryService {
       throw new Error('User must be authenticated to update expense categories');
     }
 
-    // If updating name, check if it already exists
+    // If updating name, check if it already exists for this user
     if (data.name) {
-      const [defaultCategories, userCategories] = await Promise.all([
-        this.getDefaultExpenseCategories(),
-        this.getUserExpenseCategories()
-      ]);
-
-      const existingDefault = defaultCategories.find(cat => 
-        cat.name.toLowerCase() === data.name!.toLowerCase()
-      );
+      const userCategories = await this.getUserExpenseCategories();
       const existingUser = userCategories.find(cat => 
         cat.name.toLowerCase() === data.name!.toLowerCase() && cat.id !== categoryId
       );
 
-      if (existingDefault || existingUser) {
+      if (existingUser) {
         throw new Error(`Expense category "${data.name}" already exists`);
       }
     }
@@ -193,7 +149,7 @@ export class ExpenseCategoryService {
       .from('transactions')
       .select('id')
       .eq('user_id', user.id)
-      .eq('category', categoryId)
+      .eq('category_id', categoryId)
       .limit(1);
 
     if (transactions && transactions.length > 0) {

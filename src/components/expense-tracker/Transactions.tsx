@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { TransactionService } from '../../services/transactionService';
 import { UserAccountService } from '../../services/userAccountService';
-import type { Transaction, ExpenseCategory, UserAccount } from '../../lib/supabase';
+import type { Transaction, UserExpenseCategory, UserAccount } from '../../lib/supabase';
 import { formatDate } from '../../lib/dateUtils';
 
 export function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<ExpenseCategory[]>([]);
+  const [categories, setCategories] = useState<UserExpenseCategory[]>([]);
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -35,25 +35,31 @@ export function Transactions() {
     loadData();
   }, []);
 
-  // Get category emoji by name
-  const getCategoryEmoji = (categoryName: string) => {
-    const category = categories.find(cat => cat.name === categoryName);
+  // Get category emoji by ID
+  const getCategoryEmoji = (categoryId: string | null) => {
+    if (!categoryId) return '📝';
+    const category = categories.find(cat => cat.id === categoryId);
     return category?.emoji || '📝';
   };
 
-  // Get account info by name
-  const getAccountInfo = (accountName: string) => {
-    const account = accounts.find(acc => acc.name === accountName);
+  // Get category name by ID
+  const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId) return 'Uncategorized';
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Uncategorized';
+  };
+
+  // Get account info by ID
+  const getAccountInfo = (accountId: string | null) => {
+    if (!accountId) return { emoji: '💰', name: 'Unknown Account' };
+    const account = accounts.find(acc => acc.id === accountId);
     if (account) {
       return {
         emoji: UserAccountService.getAccountTypeEmoji(account.type),
         name: account.name
       };
     }
-    // Fallback for old hardcoded values or if account not found
-    if (accountName === 'bank') return { emoji: '🏦', name: 'Bank' };
-    if (accountName === 'cash') return { emoji: '💵', name: 'Cash' };
-    return { emoji: '💰', name: accountName };
+    return { emoji: '💰', name: 'Unknown Account' };
   };
 
   // Format currency amount with appropriate locale
@@ -141,14 +147,14 @@ export function Transactions() {
                       
                       {/* Category */}
                       <span className="inline-flex items-center space-x-1 text-sm text-gray-600">
-                        <span>{getCategoryEmoji(transaction.category)}</span>
-                        <span className="capitalize">{transaction.category}</span>
+                        <span>{getCategoryEmoji(transaction.category_id || transaction.category || null)}</span>
+                        <span className="capitalize">{getCategoryName(transaction.category_id || transaction.category || null)}</span>
                       </span>
                       
                       {/* Account */}
                       <span className="inline-flex items-center space-x-1 text-sm text-gray-500">
-                        <span>{getAccountInfo(transaction.account).emoji}</span>
-                        <span>{getAccountInfo(transaction.account).name}</span>
+                        <span>{getAccountInfo(transaction.account_id || transaction.account || null).emoji}</span>
+                        <span>{getAccountInfo(transaction.account_id || transaction.account || null).name}</span>
                       </span>
                     </div>
                     

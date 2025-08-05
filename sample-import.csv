@@ -1,8 +1,0 @@
-Name,Description,Category,Start Time,End Time,Duration (seconds),Duration (formatted),Created At,Entry ID
-"Team Meeting","Daily standup and sprint planning","Work","1705334400000","1705338000000","3600","1h 0m 0s","1/15/2024, 10:00:00 AM","sample-001"
-"Code Review","Reviewing pull requests from teammates","Work","1705339800000","1705342500000","2700","45m 0s","1/15/2024, 11:15:00 AM","sample-002"
-"Learning React","Deep dive into React hooks and state management","Learning","1705352400000","1705361400000","9000","2h 30m 0s","1/15/2024, 4:30:00 PM","sample-003"
-"Coffee Break","Quick break with colleagues","Break","1705356000000","1705356900000","900","15m 0s","1/15/2024, 3:15:00 PM","sample-004"
-"Bug Fixing","Fixed critical authentication issue","Work","1705420800000","1705429800000","9000","2h 30m 0s","1/16/2024, 11:30:00 AM","sample-005"
-"Documentation","Updated project README and API docs","Work","1705435200000","1705440600000","5400","1h 30m 0s","1/16/2024, 2:30:00 PM","sample-006"
-"Exercise","Morning jog around the neighborhood","Personal","1705500000000","1705502700000","2700","45m 0s","1/17/2024, 7:45:00 AM","sample-007" 

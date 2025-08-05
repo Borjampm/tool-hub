@@ -1,13 +1,19 @@
 import { supabase } from '../lib/supabase';
-import type { TimeEntry } from '../lib/supabase';
+import type { TimeEntry, HobbyCategory } from '../lib/supabase';
 import { TimeEntryService, type ManualTimeEntryData } from './timeEntryService';
+import { CategoryService } from './categoryService';
 import { formatDateTime } from '../lib/dateUtils';
+
+// Interface for temporary time entry data with category name
+interface TimeEntryWithCategoryName extends ManualTimeEntryData {
+  _categoryName?: string;
+}
 
 export class CSVExportService {
   /**
    * Convert time entries to CSV format
    */
-  static formatTimeEntriesToCSV(entries: TimeEntry[]): string {
+  static formatTimeEntriesToCSV(entries: TimeEntry[], categories: HobbyCategory[] = []): string {
     // Define CSV headers
     const headers = [
       'Name',
@@ -52,10 +58,22 @@ export class CSVExportService {
 
     // Convert entries to CSV rows
     const csvRows = entries.map(entry => {
+      // Find category name using foreign key relationship
+      let categoryName = '';
+      if (entry.category_id) {
+        const categoryInfo = categories.find(cat => cat.id === entry.category_id);
+        if (categoryInfo) {
+          categoryName = categoryInfo.name;
+        }
+      } else if (entry.category) {
+        // Fallback to legacy category field
+        categoryName = entry.category;
+      }
+
       const row = [
         escapeCSVValue(entry.name),
         escapeCSVValue(entry.description || ''),
-        escapeCSVValue(entry.category || ''),
+        escapeCSVValue(categoryName),
         entry.start_time ? new Date(entry.start_time).getTime().toString() : '',
         entry.end_time ? new Date(entry.end_time).getTime().toString() : '',
         entry.elapsed_time?.toString() || '0',
@@ -74,7 +92,7 @@ export class CSVExportService {
   /**
    * Export time entries as CSV file using Supabase storage
    */
-  static async exportTimeEntriesToCSV(entries: TimeEntry[]): Promise<string> {
+  static async exportTimeEntriesToCSV(entries: TimeEntry[], categories: HobbyCategory[] = []): Promise<string> {
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -84,7 +102,7 @@ export class CSVExportService {
       }
 
       // Generate CSV content
-      const csvContent = this.formatTimeEntriesToCSV(entries);
+      const csvContent = this.formatTimeEntriesToCSV(entries, categories);
       
       // Create a unique filename with timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -126,10 +144,10 @@ export class CSVExportService {
   /**
    * Download CSV file directly without using storage (alternative method)
    */
-  static downloadCSVDirect(entries: TimeEntry[], filename?: string): void {
+  static downloadCSVDirect(entries: TimeEntry[], categories: HobbyCategory[] = [], filename?: string): void {
     try {
       // Generate CSV content
-      const csvContent = this.formatTimeEntriesToCSV(entries);
+      const csvContent = this.formatTimeEntriesToCSV(entries, categories);
       
       // Create blob and download link
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -167,9 +185,15 @@ export class CSVExportService {
     // Validate required headers (only core fields are required for import)
     // Format matches export: Name, Description, Category, Start Time (Unix timestamp), End Time (Unix timestamp), Duration (seconds), Duration (formatted), Created At, Entry ID
     const requiredHeaders = ['Name', 'Start Time', 'End Time'];
-    const missingHeaders = requiredHeaders.filter(header => 
-      !headers.some(h => h.toLowerCase() === header.toLowerCase())
-    );
+    const missingHeaders = requiredHeaders.filter(header => {
+      if (header.toLowerCase() === 'start time') {
+        return !headers.some(h => h.toLowerCase().includes('start time'));
+      }
+      if (header.toLowerCase() === 'end time') {
+        return !headers.some(h => h.toLowerCase().includes('end time'));
+      }
+      return !headers.some(h => h.toLowerCase() === header.toLowerCase());
+    });
     
     if (missingHeaders.length > 0) {
       throw new Error(`Missing required columns: ${missingHeaders.join(', ')}`);
@@ -179,8 +203,8 @@ export class CSVExportService {
     const nameIndex = headers.findIndex(h => h.toLowerCase() === 'name');
     const descriptionIndex = headers.findIndex(h => h.toLowerCase() === 'description');
     const categoryIndex = headers.findIndex(h => h.toLowerCase() === 'category');
-    const startTimeIndex = headers.findIndex(h => h.toLowerCase() === 'start time');
-    const endTimeIndex = headers.findIndex(h => h.toLowerCase() === 'end time');
+    const startTimeIndex = headers.findIndex(h => h.toLowerCase().includes('start time'));
+    const endTimeIndex = headers.findIndex(h => h.toLowerCase().includes('end time'));
     // Note: Duration and Entry ID columns are ignored during import as they're calculated/generated
 
     const timeEntries: ManualTimeEntryData[] = [];
@@ -236,11 +260,16 @@ export class CSVExportService {
         const timeEntry: ManualTimeEntryData = {
           name,
           description: descriptionIndex >= 0 ? values[descriptionIndex]?.trim() || undefined : undefined,
-          category: categoryIndex >= 0 ? values[categoryIndex]?.trim() || undefined : undefined,
+          categoryId: undefined, // Will be resolved during import
           startTime,
           endTime,
           elapsedTime,
         };
+
+        // Store the category name for later processing during import
+        if (categoryIndex >= 0 && values[categoryIndex]?.trim()) {
+          (timeEntry as TimeEntryWithCategoryName)._categoryName = values[categoryIndex].trim();
+        }
 
         timeEntries.push(timeEntry);
       } catch (error) {
@@ -295,6 +324,19 @@ export class CSVExportService {
   }
 
   /**
+   * Generate a random color for new categories
+   */
+  private static generateRandomColor(): string {
+    const colors = [
+      '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16',
+      '#22C55E', '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9',
+      '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF',
+      '#EC4899', '#F43F5E', '#EF4444', '#F87171', '#FB7185'
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  /**
    * Import time entries from CSV content, avoiding duplicates
    */
   static async importTimeEntriesFromCSV(csvContent: string, existingEntries: TimeEntry[]): Promise<{
@@ -304,6 +346,11 @@ export class CSVExportService {
   }> {
     try {
       const parsedEntries = this.parseCSVContent(csvContent);
+      
+      // Get existing categories to check for missing ones
+      const existingCategories = await CategoryService.getHobbyCategories();
+      const categoryMap = new Map<string, string>(); // name -> id
+      existingCategories.forEach(cat => categoryMap.set(cat.name, cat.id));
       
       let imported = 0;
       let skipped = 0;
@@ -325,7 +372,31 @@ export class CSVExportService {
             continue;
           }
 
-                      await TimeEntryService.createManualEntry(entry);
+          // Handle category - create if it doesn't exist
+          const categoryName = (entry as TimeEntryWithCategoryName)._categoryName;
+          if (categoryName && !categoryMap.has(categoryName)) {
+            try {
+              // Create new category with random color
+              const newCategory = await CategoryService.createCategory({
+                name: categoryName,
+                color: this.generateRandomColor()
+              });
+              categoryMap.set(categoryName, newCategory.id);
+            } catch (createError) {
+              console.warn(`Failed to create category "${categoryName}":`, createError);
+              // Continue without category if creation fails
+            }
+          }
+
+          // Set the category ID if we have a category
+          if (categoryName && categoryMap.has(categoryName)) {
+            entry.categoryId = categoryMap.get(categoryName);
+          }
+
+          // Remove the temporary category name field
+          delete (entry as TimeEntryWithCategoryName)._categoryName;
+
+          await TimeEntryService.createManualEntry(entry);
           imported++;
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : 'Unknown error';

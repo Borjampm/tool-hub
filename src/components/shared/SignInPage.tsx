@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 export function SignInPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signIn, signUp, loading } = useAuth();
   
   const [email, setEmail] = useState('');
@@ -13,6 +14,9 @@ export function SignInPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [verificationEmailSent, setVerificationEmailSent] = useState(false);
+
+  // Get the redirect destination from URL parameters
+  const redirectTo = searchParams.get('redirect') || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,8 +44,8 @@ export function SignInPage() {
         if (result.error) {
           setError(result.error.message);
         } else {
-          // Success - navigate back to home
-          navigate('/');
+          // Success - navigate to intended destination or home
+          navigate(redirectTo);
         }
       }
     } catch {
