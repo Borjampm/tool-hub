@@ -18,7 +18,7 @@ export function AccountManagement() {
   // Handle redirect if user is not authenticated
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/');
+      navigate('/signin');
     }
   }, [user, loading, navigate]);
 
