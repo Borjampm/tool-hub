@@ -104,7 +104,7 @@ export class TimeEntryService {
       .from('time_entries')
       .select('*')
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+      .order('start_time', { ascending: false });
 
     if (error) {
       console.error('Error fetching time entries:', error);
