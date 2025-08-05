@@ -575,14 +575,12 @@ export function Activities() {
             <p className="text-sm sm:text-base text-gray-600">Manage all your hobby tracking entries</p>
           </div>
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-            {entries.length > 0 && (
-              <ManageDataDropdown
-                entries={entries}
-                isExporting={isExporting}
-                onExportCSV={handleExportCSV}
-                onUploadData={handleUploadData}
-              />
-            )}
+            <ManageDataDropdown
+              entries={entries}
+              isExporting={isExporting}
+              onExportCSV={handleExportCSV}
+              onUploadData={handleUploadData}
+            />
             {import.meta.env.DEV && (
               <button
                 onClick={generateSampleActivities}
