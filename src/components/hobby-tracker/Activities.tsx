@@ -498,7 +498,7 @@ export function Activities() {
       setError(null);
       
       // Use direct download method to avoid needing storage bucket setup
-      CSVExportService.downloadCSVDirect(entries);
+      CSVExportService.downloadCSVDirect(entries, categories);
       
       console.log('✅ CSV export completed successfully');
     } catch (err) {

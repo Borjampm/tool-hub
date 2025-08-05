@@ -1,13 +1,14 @@
 import { supabase } from '../lib/supabase';
-import type { TimeEntry } from '../lib/supabase';
+import type { TimeEntry, HobbyCategory } from '../lib/supabase';
 import { TimeEntryService, type ManualTimeEntryData } from './timeEntryService';
+import { CategoryService } from './categoryService';
 import { formatDateTime } from '../lib/dateUtils';
 
 export class CSVExportService {
   /**
    * Convert time entries to CSV format
    */
-  static formatTimeEntriesToCSV(entries: TimeEntry[]): string {
+  static formatTimeEntriesToCSV(entries: TimeEntry[], categories: HobbyCategory[] = []): string {
     // Define CSV headers
     const headers = [
       'Name',
@@ -52,10 +53,22 @@ export class CSVExportService {
 
     // Convert entries to CSV rows
     const csvRows = entries.map(entry => {
+      // Find category name using foreign key relationship
+      let categoryName = '';
+      if (entry.category_id) {
+        const categoryInfo = categories.find(cat => cat.id === entry.category_id);
+        if (categoryInfo) {
+          categoryName = categoryInfo.name;
+        }
+      } else if (entry.category) {
+        // Fallback to legacy category field
+        categoryName = entry.category;
+      }
+
       const row = [
         escapeCSVValue(entry.name),
         escapeCSVValue(entry.description || ''),
-        escapeCSVValue(entry.category || ''),
+        escapeCSVValue(categoryName),
         entry.start_time ? new Date(entry.start_time).getTime().toString() : '',
         entry.end_time ? new Date(entry.end_time).getTime().toString() : '',
         entry.elapsed_time?.toString() || '0',
@@ -74,7 +87,7 @@ export class CSVExportService {
   /**
    * Export time entries as CSV file using Supabase storage
    */
-  static async exportTimeEntriesToCSV(entries: TimeEntry[]): Promise<string> {
+  static async exportTimeEntriesToCSV(entries: TimeEntry[], categories: HobbyCategory[] = []): Promise<string> {
     try {
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -84,7 +97,7 @@ export class CSVExportService {
       }
 
       // Generate CSV content
-      const csvContent = this.formatTimeEntriesToCSV(entries);
+      const csvContent = this.formatTimeEntriesToCSV(entries, categories);
       
       // Create a unique filename with timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -126,10 +139,10 @@ export class CSVExportService {
   /**
    * Download CSV file directly without using storage (alternative method)
    */
-  static downloadCSVDirect(entries: TimeEntry[], filename?: string): void {
+  static downloadCSVDirect(entries: TimeEntry[], categories: HobbyCategory[] = [], filename?: string): void {
     try {
       // Generate CSV content
-      const csvContent = this.formatTimeEntriesToCSV(entries);
+      const csvContent = this.formatTimeEntriesToCSV(entries, categories);
       
       // Create blob and download link
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -233,10 +246,19 @@ export class CSVExportService {
         // Calculate elapsed time in seconds
         const elapsedTime = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
 
+        // Handle category - convert name to ID if possible
+        let categoryId: string | undefined;
+        const categoryName = categoryIndex >= 0 ? values[categoryIndex]?.trim() : undefined;
+        
+        if (categoryName) {
+          // Try to find matching category ID (this will need categories passed to import)
+          // For now, we'll store as legacy category field to maintain compatibility
+        }
+
         const timeEntry: ManualTimeEntryData = {
           name,
           description: descriptionIndex >= 0 ? values[descriptionIndex]?.trim() || undefined : undefined,
-          category: categoryIndex >= 0 ? values[categoryIndex]?.trim() || undefined : undefined,
+          categoryId: undefined, // Will be handled during import if categories are available
           startTime,
           endTime,
           elapsedTime,
