@@ -36,7 +36,8 @@ export class ExpenseCategoryService {
       .from('user_expense_categories')
       .select('*')
       .eq('user_id', user.id)
-      .order('is_default DESC, name');
+      .order('is_default', { ascending: false })
+      .order('name');
 
     if (error) {
       console.error('Error fetching user expense categories:', error);
