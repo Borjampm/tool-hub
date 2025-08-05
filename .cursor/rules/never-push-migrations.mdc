@@ -1,0 +1,50 @@
+---
+alwaysApply: true
+description: "Migration safety rules - never automatically push database migrations"
+---
+
+# 🚫 Migration Safety Rules
+
+## CRITICAL: Never Push Migrations Automatically
+
+**NEVER run `npx supabase db push` or any migration push commands without explicit user confirmation.**
+
+### Rules:
+1. **❌ NEVER auto-push migrations** - Always ask user first
+2. **❌ NEVER run migration commands in background** - Migrations require user interaction
+3. **✅ Always show migration content** - Let user review before applying
+4. **✅ Always explain what migration does** - Describe changes clearly
+
+### Migration Workflow:
+1. **Create migration files** in [supabase/migrations/](mdc:supabase/migrations/) 
+2. **Show user the migration content** - Let them review the SQL
+3. **Explain the changes** - What tables/columns are affected
+4. **Ask for explicit permission** before running any push commands
+5. **Let user run the command themselves** if they prefer
+
+### Safe Commands:
+- ✅ `npx supabase migration list` - Safe to check status
+- ✅ `npx supabase db diff` - Safe to see differences  
+- ✅ Creating migration files - Safe file operations
+- ❌ `npx supabase db push` - REQUIRES user confirmation
+- ❌ `npx supabase db reset` - REQUIRES user confirmation
+
+### Example Safe Approach:
+```
+I've created a new migration file. Here's what it does:
+[Explain changes]
+
+To apply this migration, run:
+npx supabase db push
+
+Would you like me to run this command, or would you prefer to review and run it yourself?
+```
+
+## Database Safety
+
+- **Migrations are irreversible** - Always double-check before applying
+- **Backup important data** - Migrations can drop columns/tables
+- **Test locally first** - Use local Supabase instance when possible
+- **Review migration SQL** - Understand exactly what will change
+
+Remember: It's better to be safe than sorry with database changes!
