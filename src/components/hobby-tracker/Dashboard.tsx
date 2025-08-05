@@ -149,12 +149,20 @@ export function Dashboard() {
                   <p className="text-sm sm:text-base text-gray-500 text-center py-4">No categorized activities yet</p>
                 ) : (
                   <div className="space-y-3 sm:space-y-4">
-                    {getCategoryBreakdown().map(({ category, count, totalTime }) => (
-                      <div key={category} className="flex items-center justify-between">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-1 sm:space-y-0 min-w-0 flex-1">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 truncate">
-                            {category || 'Uncategorized'}
-                          </span>
+                    {getCategoryBreakdown().map(({ category, count, totalTime }) => {
+                      // Find the category info to get the color
+                      const categoryInfo = categories.find(cat => cat.name === category);
+                      const color = categoryInfo?.color || '#6B7280'; // Default gray if no color
+                      
+                      return (
+                        <div key={category} className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-1 sm:space-y-0 min-w-0 flex-1">
+                            <span 
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white truncate"
+                              style={{ backgroundColor: color }}
+                            >
+                              {category || 'Uncategorized'}
+                            </span>
                           <span className="text-xs sm:text-sm text-gray-600">
                             {count} {count === 1 ? 'activity' : 'activities'}
                           </span>
@@ -162,8 +170,9 @@ export function Dashboard() {
                         <div className="text-sm font-medium text-gray-900 ml-2 flex-shrink-0">
                           {formatTime(totalTime)}
                         </div>
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

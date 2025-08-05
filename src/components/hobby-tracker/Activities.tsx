@@ -3,7 +3,7 @@ import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } 
 import { CategoryService } from '../../services/categoryService';
 import { CSVExportService } from '../../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
-import type { TimeEntry } from '../../lib/supabase';
+import type { TimeEntry, HobbyCategory } from '../../lib/supabase';
 import { formatDateTimeRounded, formatTimeRangeRounded, formatDuration } from '../../lib/dateUtils';
 
 // New component for the file upload modal
@@ -287,6 +287,7 @@ function ManageDataDropdown({
 
 export function Activities() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
+  const [categories, setCategories] = useState<HobbyCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -305,8 +306,12 @@ export function Activities() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await TimeEntryService.getAllEntries();
-      setEntries(data);
+      const [entriesData, categoriesData] = await Promise.all([
+        TimeEntryService.getAllEntries(),
+        CategoryService.getHobbyCategories()
+      ]);
+      setEntries(entriesData);
+      setCategories(categoriesData);
     } catch (err) {
       console.error('Failed to load entries:', err);
       setError('Failed to load activities');
@@ -660,11 +665,36 @@ export function Activities() {
                         </p>
                       )}
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
-                        {entry.category && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {entry.category}
-                          </span>
-                        )}
+                        {(() => {
+                          // Find category name and color using foreign key relationship
+                          let categoryName = null;
+                          let categoryColor = '#6B7280'; // Default gray
+                          
+                          if (entry.category_id) {
+                            const categoryInfo = categories.find(cat => cat.id === entry.category_id);
+                            if (categoryInfo) {
+                              categoryName = categoryInfo.name;
+                              categoryColor = categoryInfo.color || '#6B7280';
+                            }
+                          } else if (entry.category) {
+                            // Fallback to legacy category field
+                            categoryName = entry.category;
+                            // Try to find color from category name for legacy entries
+                            const categoryInfo = categories.find(cat => cat.name === entry.category);
+                            if (categoryInfo) {
+                              categoryColor = categoryInfo.color || '#6B7280';
+                            }
+                          }
+                          
+                          return categoryName ? (
+                            <span 
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                              style={{ backgroundColor: categoryColor }}
+                            >
+                              {categoryName}
+                            </span>
+                          ) : null;
+                        })()}
                         <span className="text-xs sm:text-sm text-gray-500">
                           {entry.start_time ? formatStartTime(entry.start_time) : formatStartTime(entry.created_at)}
                         </span>
