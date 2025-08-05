@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { TimeEntryService, type ManualTimeEntryData, type UpdateTimeEntryData } from '../../services/timeEntryService';
+import { CategoryService } from '../../services/categoryService';
 import { CSVExportService } from '../../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import type { TimeEntry } from '../../lib/supabase';
@@ -368,10 +369,18 @@ export function Activities() {
       const elapsedTime = data.duration * 60; // Convert duration to seconds
 
       if (modalMode === 'create') {
+        // Find the category ID if a category was selected
+        let categoryId: string | undefined;
+        if (data.category) {
+          const categories = await CategoryService.getHobbyCategories();
+          const selectedCategory = categories.find(cat => cat.name === data.category);
+          categoryId = selectedCategory?.id;
+        }
+
         const manualEntryData: ManualTimeEntryData = {
           name: data.name,
           description: data.description,
-          category: data.category,
+          categoryId: categoryId,
           startTime,
           endTime,
           elapsedTime,
@@ -380,10 +389,18 @@ export function Activities() {
         const newEntry = await TimeEntryService.createManualEntry(manualEntryData);
         setEntries([newEntry, ...entries]);
       } else if (modalMode === 'edit' && editingEntry) {
+        // Find the category ID if a category was selected
+        let categoryId: string | undefined;
+        if (data.category) {
+          const categories = await CategoryService.getHobbyCategories();
+          const selectedCategory = categories.find(cat => cat.name === data.category);
+          categoryId = selectedCategory?.id;
+        }
+
         const updateData: UpdateTimeEntryData = {
           name: data.name,
           description: data.description,
-          category: data.category,
+          categoryId: categoryId,
           startTime,
           endTime,
           elapsedTime,
@@ -448,7 +465,7 @@ export function Activities() {
         const manualEntryData: ManualTimeEntryData = {
           name: activity.name,
           description: activity.description,
-          category: undefined, // No category for sample activities
+          categoryId: undefined, // No category for sample activities
           startTime,
           endTime,
           elapsedTime: durationMinutes * 60, // Convert to seconds
