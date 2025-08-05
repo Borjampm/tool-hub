@@ -180,9 +180,15 @@ export class CSVExportService {
     // Validate required headers (only core fields are required for import)
     // Format matches export: Name, Description, Category, Start Time (Unix timestamp), End Time (Unix timestamp), Duration (seconds), Duration (formatted), Created At, Entry ID
     const requiredHeaders = ['Name', 'Start Time', 'End Time'];
-    const missingHeaders = requiredHeaders.filter(header => 
-      !headers.some(h => h.toLowerCase() === header.toLowerCase())
-    );
+    const missingHeaders = requiredHeaders.filter(header => {
+      if (header.toLowerCase() === 'start time') {
+        return !headers.some(h => h.toLowerCase().includes('start time'));
+      }
+      if (header.toLowerCase() === 'end time') {
+        return !headers.some(h => h.toLowerCase().includes('end time'));
+      }
+      return !headers.some(h => h.toLowerCase() === header.toLowerCase());
+    });
     
     if (missingHeaders.length > 0) {
       throw new Error(`Missing required columns: ${missingHeaders.join(', ')}`);
@@ -192,8 +198,8 @@ export class CSVExportService {
     const nameIndex = headers.findIndex(h => h.toLowerCase() === 'name');
     const descriptionIndex = headers.findIndex(h => h.toLowerCase() === 'description');
     const categoryIndex = headers.findIndex(h => h.toLowerCase() === 'category');
-    const startTimeIndex = headers.findIndex(h => h.toLowerCase() === 'start time');
-    const endTimeIndex = headers.findIndex(h => h.toLowerCase() === 'end time');
+    const startTimeIndex = headers.findIndex(h => h.toLowerCase().includes('start time'));
+    const endTimeIndex = headers.findIndex(h => h.toLowerCase().includes('end time'));
     // Note: Duration and Entry ID columns are ignored during import as they're calculated/generated
 
     const timeEntries: ManualTimeEntryData[] = [];
@@ -246,23 +252,19 @@ export class CSVExportService {
         // Calculate elapsed time in seconds
         const elapsedTime = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
 
-        // Handle category - convert name to ID if possible
-        let categoryId: string | undefined;
-        const categoryName = categoryIndex >= 0 ? values[categoryIndex]?.trim() : undefined;
-        
-        if (categoryName) {
-          // Try to find matching category ID (this will need categories passed to import)
-          // For now, we'll store as legacy category field to maintain compatibility
-        }
-
         const timeEntry: ManualTimeEntryData = {
           name,
           description: descriptionIndex >= 0 ? values[descriptionIndex]?.trim() || undefined : undefined,
-          categoryId: undefined, // Will be handled during import if categories are available
+          categoryId: undefined, // Will be resolved during import
           startTime,
           endTime,
           elapsedTime,
         };
+
+        // Store the category name for later processing during import
+        if (categoryIndex >= 0 && values[categoryIndex]?.trim()) {
+          (timeEntry as any)._categoryName = values[categoryIndex].trim();
+        }
 
         timeEntries.push(timeEntry);
       } catch (error) {
@@ -317,6 +319,19 @@ export class CSVExportService {
   }
 
   /**
+   * Generate a random color for new categories
+   */
+  private static generateRandomColor(): string {
+    const colors = [
+      '#EF4444', '#F97316', '#F59E0B', '#EAB308', '#84CC16',
+      '#22C55E', '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9',
+      '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF',
+      '#EC4899', '#F43F5E', '#EF4444', '#F87171', '#FB7185'
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  }
+
+  /**
    * Import time entries from CSV content, avoiding duplicates
    */
   static async importTimeEntriesFromCSV(csvContent: string, existingEntries: TimeEntry[]): Promise<{
@@ -326,6 +341,11 @@ export class CSVExportService {
   }> {
     try {
       const parsedEntries = this.parseCSVContent(csvContent);
+      
+      // Get existing categories to check for missing ones
+      const existingCategories = await CategoryService.getHobbyCategories();
+      const categoryMap = new Map<string, string>(); // name -> id
+      existingCategories.forEach(cat => categoryMap.set(cat.name, cat.id));
       
       let imported = 0;
       let skipped = 0;
@@ -347,7 +367,31 @@ export class CSVExportService {
             continue;
           }
 
-                      await TimeEntryService.createManualEntry(entry);
+          // Handle category - create if it doesn't exist
+          const categoryName = (entry as any)._categoryName;
+          if (categoryName && !categoryMap.has(categoryName)) {
+            try {
+              // Create new category with random color
+              const newCategory = await CategoryService.createCategory({
+                name: categoryName,
+                color: this.generateRandomColor()
+              });
+              categoryMap.set(categoryName, newCategory.id);
+            } catch (createError) {
+              console.warn(`Failed to create category "${categoryName}":`, createError);
+              // Continue without category if creation fails
+            }
+          }
+
+          // Set the category ID if we have a category
+          if (categoryName && categoryMap.has(categoryName)) {
+            entry.categoryId = categoryMap.get(categoryName);
+          }
+
+          // Remove the temporary category name field
+          delete (entry as any)._categoryName;
+
+          await TimeEntryService.createManualEntry(entry);
           imported++;
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : 'Unknown error';
