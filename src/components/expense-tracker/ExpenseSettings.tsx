@@ -126,12 +126,6 @@ export function ExpenseSettings() {
     return category.is_default === true;
   };
 
-  // Helper function to check if account is default (non-deletable)
-  const isDefaultAccount = (account: UserAccount): boolean => {
-    return account.name === 'Bank' && account.type === 'bank' || 
-           account.name === 'Cash' && account.type === 'cash';
-  };
-
   // Account functions
   const handleCreateAccount = async () => {
     try {
@@ -358,14 +352,12 @@ export function ExpenseSettings() {
                         >
                           Edit
                         </button>
-                        {!isDefaultAccount(account) && (
-                          <button
-                            onClick={() => handleDeleteAccount(account)}
-                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                          >
-                            Delete
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleDeleteAccount(account)}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          Delete
+                        </button>
                       </div>
                     )}
                   </div>

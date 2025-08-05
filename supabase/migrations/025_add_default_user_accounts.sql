@@ -3,42 +3,16 @@
 
 -- Step 1: Add default accounts for all existing users
 INSERT INTO user_accounts (user_id, name, type, color, description, is_active, created_at, updated_at)
-SELECT DISTINCT 
+SELECT DISTINCT
   u.id as user_id,
-  'Bank' as name,
-  'bank' as type,
-  '#3B82F6' as color,
-  'Default bank account' as description,
-  true as is_active,
-  NOW() as created_at,
-  NOW() as updated_at
-FROM auth.users u
-WHERE NOT EXISTS (
-  -- Don't create duplicates if user already has a bank account
-  SELECT 1 FROM user_accounts ua 
-  WHERE ua.user_id = u.id 
-  AND ua.name = 'Bank'
-  AND ua.type = 'bank'
-);
+  'Bank' as name, 'bank' as type, '#3B82F6' as color, '' as description, true as is_active, NOW(), NOW()
+FROM auth.users u WHERE NOT EXISTS (SELECT 1 FROM user_accounts ua WHERE ua.user_id = u.id AND ua.name = 'Bank' AND ua.type = 'bank');
 
 INSERT INTO user_accounts (user_id, name, type, color, description, is_active, created_at, updated_at)
-SELECT DISTINCT 
+SELECT DISTINCT
   u.id as user_id,
-  'Cash' as name,
-  'cash' as type,
-  '#10B981' as color,
-  'Default cash account' as description,
-  true as is_active,
-  NOW() as created_at,
-  NOW() as updated_at
-FROM auth.users u
-WHERE NOT EXISTS (
-  -- Don't create duplicates if user already has a cash account
-  SELECT 1 FROM user_accounts ua 
-  WHERE ua.user_id = u.id 
-  AND ua.name = 'Cash'
-  AND ua.type = 'cash'
-);
+  'Cash' as name, 'cash' as type, '#10B981' as color, '' as description, true as is_active, NOW(), NOW()
+FROM auth.users u WHERE NOT EXISTS (SELECT 1 FROM user_accounts ua WHERE ua.user_id = u.id AND ua.name = 'Cash' AND ua.type = 'cash');
 
 -- Step 2: Update the user creation trigger to include default accounts
 -- First, drop the existing trigger
@@ -53,7 +27,7 @@ AS $$
 BEGIN
   -- Create default hobby categories with explicit schema qualification
   INSERT INTO public.hobby_categories (user_id, name, color, created_at, updated_at)
-  VALUES 
+  VALUES
     (NEW.id, 'Work', '#3B82F6', NOW(), NOW()),
     (NEW.id, 'Exercise', '#10B981', NOW(), NOW()),
     (NEW.id, 'Learning', '#8B5CF6', NOW(), NOW()),
@@ -63,7 +37,7 @@ BEGIN
 
   -- Create default expense categories with explicit schema qualification
   INSERT INTO public.user_expense_categories (user_id, name, emoji, color, is_default, created_at, updated_at)
-  VALUES 
+  VALUES
     (NEW.id, 'Food', '🍔', '#EF4444', true, NOW(), NOW()),
     (NEW.id, 'Social Life', '🎉', '#F59E0B', true, NOW(), NOW()),
     (NEW.id, 'Transport', '🚗', '#3B82F6', true, NOW(), NOW()),
@@ -75,11 +49,11 @@ BEGIN
     (NEW.id, 'Trip', '✈️', '#84CC16', true, NOW(), NOW())
   ON CONFLICT (user_id, name) DO NOTHING;
 
-  -- Create default user accounts with explicit schema qualification
-  INSERT INTO public.user_accounts (user_id, name, type, color, description, is_active, created_at, updated_at)
-  VALUES 
-    (NEW.id, 'Bank', 'bank', '#3B82F6', 'Default bank account', true, NOW(), NOW()),
-    (NEW.id, 'Cash', 'cash', '#10B981', 'Default cash account', true, NOW(), NOW())
+      -- Create default user accounts with explicit schema qualification
+    INSERT INTO public.user_accounts (user_id, name, type, color, description, is_active, created_at, updated_at)
+    VALUES
+      (NEW.id, 'Bank', 'bank', '#3B82F6', '', true, NOW(), NOW()),
+      (NEW.id, 'Cash', 'cash', '#10B981', '', true, NOW(), NOW())
   ON CONFLICT (user_id, name) DO NOTHING;
 
   RETURN NEW;
