@@ -5,7 +5,6 @@ import type { UserExpenseCategory, UserAccount } from '../../lib/supabase';
 
 export function ExpenseSettings() {
   const [allCategories, setAllCategories] = useState<UserExpenseCategory[]>([]);
-  const [defaultAccounts, setDefaultAccounts] = useState<{ name: string; type: string; emoji: string; color: string }[]>([]);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -67,12 +66,6 @@ export function ExpenseSettings() {
         
         setAllCategories(allCategoriesData);
         setUserAccounts(accounts);
-        
-        // Set up default accounts (bank and cash)
-        setDefaultAccounts([
-          { name: 'bank', type: 'Bank', emoji: '🏦', color: '#3B82F6' },
-          { name: 'cash', type: 'Cash', emoji: '💵', color: '#10B981' }
-        ]);
     } catch (err) {
       console.error('Error loading settings data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load settings');
@@ -131,6 +124,12 @@ export function ExpenseSettings() {
   // Helper function to check if category is default (non-editable)
   const isDefaultCategory = (category: UserExpenseCategory): boolean => {
     return category.is_default === true;
+  };
+
+  // Helper function to check if account is default (non-deletable)
+  const isDefaultAccount = (account: UserAccount): boolean => {
+    return account.name === 'Bank' && account.type === 'bank' || 
+           account.name === 'Cash' && account.type === 'cash';
   };
 
   // Account functions
@@ -317,52 +316,7 @@ export function ExpenseSettings() {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Default Accounts */}
-            {defaultAccounts.map((account) => (
-              <div
-                key={account.name}
-                className="border-2 rounded-lg p-4 transition-all hover:shadow-lg"
-                style={{ 
-                  backgroundColor: account.color,
-                  borderColor: account.color
-                }}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center space-x-2 mb-1">
-                      <span className="text-lg">{account.emoji}</span>
-                      <span className="font-medium text-white text-shadow capitalize">{account.name}</span>
-                      <span className="text-xs bg-white text-gray-800 px-2 py-0.5 rounded-full font-medium shadow-sm">
-                        Default
-                      </span>
-                    </div>
-                    <p className="text-sm text-white text-shadow">{account.type}</p>
-                  </div>
-                  <div className="dropdown-container relative ml-2">
-                    <button
-                      onClick={() => toggleDropdown(`default-account-${account.name}`)}
-                      className="text-white hover:text-gray-200 p-2 rounded-full bg-black bg-opacity-20 hover:bg-opacity-40 transition-all shadow-sm"
-                    >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                      </svg>
-                    </button>
-                    {openDropdown === `default-account-${account.name}` && (
-                      <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
-                        <button
-                          onClick={() => alert('Editing default accounts is not yet implemented')}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                        >
-                          Edit
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-            
-            {/* Custom Accounts */}
+            {/* All User Accounts (including defaults) */}
             {userAccounts.map((account) => (
               <div
                 key={account.id}
@@ -404,12 +358,14 @@ export function ExpenseSettings() {
                         >
                           Edit
                         </button>
-                        <button
-                          onClick={() => handleDeleteAccount(account)}
-                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        >
-                          Delete
-                        </button>
+                        {!isDefaultAccount(account) && (
+                          <button
+                            onClick={() => handleDeleteAccount(account)}
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
