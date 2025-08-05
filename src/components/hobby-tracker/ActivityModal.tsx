@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { CategoryService } from '../../services/categoryService';
-import type { TimeEntry, UserCategory } from '../../lib/supabase';
+import type { TimeEntry, HobbyCategory } from '../../lib/supabase';
 import { toLocalDateTimeString } from '../../lib/dateUtils';
 
 export interface ActivityFormData {
@@ -31,7 +31,7 @@ export function ActivityModal({
 }: ActivityModalProps) {
   
   const { register, handleSubmit, formState: { errors }, setValue, reset } = useForm<ActivityFormData>();
-  const [categories, setCategories] = useState<UserCategory[]>([]);
+  const [categories, setCategories] = useState<HobbyCategory[]>([]);
   const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryColor, setNewCategoryColor] = useState('#3B82F6');
@@ -63,7 +63,7 @@ export function ActivityModal({
 
   const loadCategories = async () => {
     try {
-      const data = await CategoryService.getUserCategories();
+      const data = await CategoryService.getHobbyCategories();
       setCategories(data);
     } catch (error) {
       console.error('Failed to load categories:', error);

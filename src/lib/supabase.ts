@@ -24,7 +24,7 @@ export interface TimeEntry {
   updated_at: string;
 }
 
-export interface UserCategory {
+export interface HobbyCategory {
   id: string;
   user_id: string;
   name: string;
