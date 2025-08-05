@@ -4,6 +4,11 @@ import { TimeEntryService, type ManualTimeEntryData } from './timeEntryService';
 import { CategoryService } from './categoryService';
 import { formatDateTime } from '../lib/dateUtils';
 
+// Interface for temporary time entry data with category name
+interface TimeEntryWithCategoryName extends ManualTimeEntryData {
+  _categoryName?: string;
+}
+
 export class CSVExportService {
   /**
    * Convert time entries to CSV format
@@ -263,7 +268,7 @@ export class CSVExportService {
 
         // Store the category name for later processing during import
         if (categoryIndex >= 0 && values[categoryIndex]?.trim()) {
-          (timeEntry as any)._categoryName = values[categoryIndex].trim();
+          (timeEntry as TimeEntryWithCategoryName)._categoryName = values[categoryIndex].trim();
         }
 
         timeEntries.push(timeEntry);
@@ -368,7 +373,7 @@ export class CSVExportService {
           }
 
           // Handle category - create if it doesn't exist
-          const categoryName = (entry as any)._categoryName;
+          const categoryName = (entry as TimeEntryWithCategoryName)._categoryName;
           if (categoryName && !categoryMap.has(categoryName)) {
             try {
               // Create new category with random color
@@ -389,7 +394,7 @@ export class CSVExportService {
           }
 
           // Remove the temporary category name field
-          delete (entry as any)._categoryName;
+          delete (entry as TimeEntryWithCategoryName)._categoryName;
 
           await TimeEntryService.createManualEntry(entry);
           imported++;
