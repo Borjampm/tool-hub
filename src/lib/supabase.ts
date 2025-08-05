@@ -15,7 +15,8 @@ export interface TimeEntry {
   entry_id: string;
   name: string;
   description?: string;
-  category?: string;
+  category?: string; // Legacy field for backwards compatibility
+  category_id?: string; // Foreign key to hobby_categories.id
   start_time: string;
   end_time?: string;
   elapsed_time?: number;
@@ -50,8 +51,11 @@ export interface Transaction {
   type: 'income' | 'expense';
   amount: number;
   currency: string;
-  category: string;
-  account: string; // Now accepts any custom account name
+  category?: string; // Legacy field for backwards compatibility
+  category_id?: string; // Foreign key to expense_categories.id or user_expense_categories.id
+  category_type?: 'default' | 'user'; // Indicates which table category_id references
+  account?: string; // Legacy field for backwards compatibility
+  account_id?: string; // Foreign key to user_accounts.id
   title: string;
   description?: string;
   transaction_date: string;
