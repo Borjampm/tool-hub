@@ -143,6 +143,9 @@ export function Dashboard() {
       ? 'Last Week'
       : `Week of ${formatDate(activeWeekStart.toISOString().slice(0, 10))}`;
 
+  const activeTotalSeconds = activeWeekEntries.reduce((sum, e) => sum + (e.elapsed_time || 0), 0);
+  const activeAvgDailySeconds = Math.round(activeTotalSeconds / 7);
+
   const BarList = ({ title, data, max, summary }: { title: string; data: { name: string; color: string; totalSeconds: number }[]; max: number; summary: { totalSeconds: number; avgDailySeconds: number } }) => {
     return (
       <div className="bg-white rounded-lg shadow-lg">
@@ -241,11 +244,16 @@ export function Dashboard() {
               >
                 &lt;
               </button>
-              <div className="text-center">
+              <div className="flex-1 flex flex-col items-center">
                 <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{activeLabel}</h2>
-                <span className="text-xs sm:text-sm text-gray-500">
-                  {formatDate(activeWeekStart.toISOString().slice(0, 10))} - {formatDate(new Date(activeWeekEnd.getTime() - 1).toISOString().slice(0, 10))}
-                </span>
+                <div className="flex items-center gap-4 mt-1">
+                  <span className="text-xs sm:text-sm text-gray-500">
+                    {formatDate(activeWeekStart.toISOString().slice(0, 10))} - {formatDate(new Date(activeWeekEnd.getTime() - 1).toISOString().slice(0, 10))}
+                  </span>
+                  <span className="text-xs sm:text-sm text-gray-700 font-medium whitespace-nowrap">
+                    Total: {formatTime(activeTotalSeconds)} · Avg/day: {formatTime(activeAvgDailySeconds)}
+                  </span>
+                </div>
               </div>
               <button
                 onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
