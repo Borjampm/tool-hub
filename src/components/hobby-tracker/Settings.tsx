@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { CategoryService } from '../../services/categoryService';
+import { UserSettingsService } from '../../services/userSettingsService';
 import type { CreateCategoryData, UpdateCategoryData } from '../../services/categoryService';
 import type { HobbyCategory } from '../../lib/supabase';
 
@@ -16,6 +17,7 @@ export function Settings() {
   const [isCreating, setIsCreating] = useState(false);
   const [editingCategory, setEditingCategory] = useState<HobbyCategory | null>(null);
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [weeklyGoalHours, setWeeklyGoalHours] = useState<number>(2);
 
   const {
     register,
@@ -28,6 +30,7 @@ export function Settings() {
   // Load categories on component mount
   useEffect(() => {
     loadCategories();
+    loadSettings();
   }, []);
 
   const loadCategories = async () => {
@@ -41,6 +44,16 @@ export function Settings() {
       setError(err instanceof Error ? err.message : 'Failed to load categories');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const settings = await UserSettingsService.getSettings();
+      setWeeklyGoalHours(settings.weekly_hobby_goal_hours ?? 2);
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+      // non-fatal; keep default 2h
     }
   };
 
@@ -135,6 +148,51 @@ export function Settings() {
       <div className="mb-6 sm:mb-8">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
         <p className="mt-2 text-sm sm:text-base text-gray-600">Manage your categories and preferences</p>
+      </div>
+
+      {/* Preferences */}
+      <div className="bg-white shadow-lg rounded-lg mb-6">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Preferences</h2>
+          <p className="mt-1 text-sm text-gray-600">Set your weekly time goal</p>
+        </div>
+        <div className="p-4 sm:p-6">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                setError(null);
+                await UserSettingsService.updateSettings({ weeklyHobbyGoalHours: weeklyGoalHours });
+              } catch (err) {
+                console.error('Failed to save settings:', err);
+                setError(err instanceof Error ? err.message : 'Failed to save settings');
+              }
+            }}
+            className="space-y-4"
+          >
+            <div className="max-w-sm">
+              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="weeklyGoalHours">
+                Weekly hobby time goal (hours)
+              </label>
+              <input
+                id="weeklyGoalHours"
+                type="number"
+                min={0}
+                step={0.5}
+                value={weeklyGoalHours}
+                onChange={(e) => setWeeklyGoalHours(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+              />
+              <p className="text-xs text-gray-500 mt-1">Default is 2h per week</p>
+            </div>
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              Save Preferences
+            </button>
+          </form>
+        </div>
       </div>
 
       {error && (
