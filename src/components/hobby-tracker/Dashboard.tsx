@@ -107,6 +107,16 @@ export function Dashboard() {
     ...lastWeekData.map((d) => d.totalSeconds)
   );
 
+  // Weekly summaries
+  const getWeekSummary = (data: { totalSeconds: number }[]) => {
+    const totalSeconds = data.reduce((sum, d) => sum + d.totalSeconds, 0);
+    const avgDailySeconds = Math.round(totalSeconds / 7);
+    return { totalSeconds, avgDailySeconds };
+  };
+
+  const thisWeekSummary = getWeekSummary(thisWeekData);
+  const lastWeekSummary = getWeekSummary(lastWeekData);
+
   // Active week window controlled by arrows
   const getWeekStartFromOffset = (offset: number): Date => {
     const d = new Date(thisWeekStart);
@@ -133,11 +143,15 @@ export function Dashboard() {
       ? 'Last Week'
       : `Week of ${formatDate(activeWeekStart.toISOString().slice(0, 10))}`;
 
-  const BarList = ({ title, data, max }: { title: string; data: { name: string; color: string; totalSeconds: number }[]; max: number }) => {
+  const BarList = ({ title, data, max, summary }: { title: string; data: { name: string; color: string; totalSeconds: number }[]; max: number; summary: { totalSeconds: number; avgDailySeconds: number } }) => {
     return (
       <div className="bg-white rounded-lg shadow-lg">
-        <div className="p-4 sm:p-6 border-b border-gray-200">
+        <div className="p-4 sm:p-6 border-b border-gray-200 flex items-center justify-between">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{title}</h2>
+          <div className="text-xs sm:text-sm text-gray-700 font-medium whitespace-nowrap">
+            <span className="mr-3">Total: {formatTime(summary.totalSeconds)}</span>
+            <span>Avg/day: {formatTime(summary.avgDailySeconds)}</span>
+          </div>
         </div>
         <div className="p-4 sm:p-6">
           {data.length === 0 ? (
@@ -212,8 +226,8 @@ export function Dashboard() {
         ) : (
           <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            <BarList title="Last Week" data={lastWeekData} max={sharedMax} />
-            <BarList title="This Week" data={thisWeekData} max={sharedMax} />
+            <BarList title="Last Week" data={lastWeekData} max={sharedMax} summary={lastWeekSummary} />
+            <BarList title="This Week" data={thisWeekData} max={sharedMax} summary={thisWeekSummary} />
           </div>
 
           {/* Activities - single week with navigation */}
