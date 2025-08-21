@@ -4,7 +4,7 @@ import { CategoryService } from '../../services/categoryService';
 import { CSVExportService } from '../../services/csvExportService';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import type { TimeEntry, HobbyCategory } from '../../lib/supabase';
-import { formatDateTimeRounded, formatTimeRangeRounded, formatDuration } from '../../lib/dateUtils';
+import { formatDate, formatDateTimeRounded, formatTimeRangeRounded, formatDuration } from '../../lib/dateUtils';
 
 // New component for the file upload modal
 function FileUploadModal({ 
@@ -297,6 +297,7 @@ export function Activities() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0); // 0=this week, 1=last week, etc.
 
   useEffect(() => {
     loadEntries();
@@ -598,6 +599,46 @@ export function Activities() {
     }
   };
 
+  // Weekly pagination helpers (mirroring Dashboard weekly logic)
+  const getStartOfWeek = (date: Date): Date => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    const diffToMonday = (day + 6) % 7; // Mon=0, Sun=6
+    d.setDate(d.getDate() - diffToMonday);
+    return d;
+  };
+
+  const now = new Date();
+  const thisWeekStart = getStartOfWeek(now);
+  const lastWeekStart = new Date(thisWeekStart);
+  lastWeekStart.setDate(thisWeekStart.getDate() - 7);
+
+  const getWeekStartFromOffset = (offset: number): Date => {
+    const d = new Date(thisWeekStart);
+    d.setDate(thisWeekStart.getDate() - offset * 7);
+    return d;
+  };
+
+  const activeWeekStart = getWeekStartFromOffset(weekOffset);
+  const activeWeekEnd = new Date(activeWeekStart);
+  activeWeekEnd.setDate(activeWeekStart.getDate() + 7);
+
+  const toEntryDate = (e: TimeEntry) => (e.start_time ? new Date(e.start_time) : new Date(e.created_at));
+  const activeWeekEntries = entries
+    .filter((e) => {
+      const d = toEntryDate(e);
+      return d >= activeWeekStart && d < activeWeekEnd;
+    })
+    .sort((a, b) => toEntryDate(b).getTime() - toEntryDate(a).getTime());
+
+  const activeLabel =
+    activeWeekStart.getTime() === thisWeekStart.getTime()
+      ? 'This Week'
+      : activeWeekStart.getTime() === lastWeekStart.getTime()
+      ? 'Last Week'
+      : `Week of ${formatDate(activeWeekStart.toISOString().slice(0, 10))}`;
+
   if (isLoading) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -687,103 +728,120 @@ export function Activities() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-900">
-                All Activities ({entries.length})
-              </h2>
+            <div className="p-4 sm:p-6 border-b border-gray-200 flex items-center justify-between">
+              <button
+                onClick={() => setWeekOffset((o) => o + 1)}
+                className="p-2 rounded hover:bg-gray-100 touch-manipulation min-h-[44px] min-w-[44px]"
+                aria-label="Previous week"
+                title="Previous week"
+              >
+                &lt;
+              </button>
+              <div className="flex-1 flex flex-col items-center">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">{activeLabel}</h2>
+                <div className="text-xs sm:text-sm text-gray-500 mt-1">
+                  {formatDate(activeWeekStart.toISOString().slice(0, 10))} - {formatDate(new Date(activeWeekEnd.getTime() - 1).toISOString().slice(0, 10))}
+                </div>
+              </div>
+              <button
+                onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
+                className="p-2 rounded hover:bg-gray-100 touch-manipulation min-h-[44px] min-w-[44px]"
+                aria-label="Next week"
+                title="Next week"
+                disabled={weekOffset === 0}
+              >
+                &gt;
+              </button>
             </div>
-            
+
             <div className="divide-y divide-gray-200">
-              {entries.map((entry) => (
-                <div key={entry.id} className="p-4 sm:p-6 hover:bg-gray-50">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
-                        {entry.name}
-                      </h3>
-                      {entry.description && (
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                          {entry.description}
-                        </p>
-                      )}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
-                        {(() => {
-                          // Find category name and color using foreign key relationship
-                          let categoryName = null;
-                          let categoryColor = '#6B7280'; // Default gray
-                          
-                          if (entry.category_id) {
-                            const categoryInfo = categories.find(cat => cat.id === entry.category_id);
-                            if (categoryInfo) {
-                              categoryName = categoryInfo.name;
-                              categoryColor = categoryInfo.color || '#6B7280';
-                            }
-                          } else if (entry.category) {
-                            // Fallback to legacy category field
-                            categoryName = entry.category;
-                            // Try to find color from category name for legacy entries
-                            const categoryInfo = categories.find(cat => cat.name === entry.category);
-                            if (categoryInfo) {
-                              categoryColor = categoryInfo.color || '#6B7280';
-                            }
-                          }
-                          
-                          return categoryName ? (
-                            <span 
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
-                              style={{ backgroundColor: categoryColor }}
-                            >
-                              {categoryName}
-                            </span>
-                          ) : null;
-                        })()}
-                        <span className="text-xs sm:text-sm text-gray-500">
-                          {entry.start_time ? formatStartTime(entry.start_time) : formatStartTime(entry.created_at)}
-                        </span>
-                        {entry.end_time && entry.start_time && (
-                          <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
-                            {formatTimeRangeRounded(entry.start_time, entry.end_time)}
-                          </span>
+              {activeWeekEntries.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">No activities</div>
+              ) : (
+                activeWeekEntries.map((entry) => (
+                  <div key={entry.id} className="p-4 sm:p-6 hover:bg-gray-50">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">
+                          {entry.name}
+                        </h3>
+                        {entry.description && (
+                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                            {entry.description}
+                          </p>
                         )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between lg:justify-end lg:space-x-4">
-                      <div className="text-right">
-                        <div className="text-base sm:text-lg font-semibold text-gray-900">
-                          {entry.elapsed_time ? formatTime(entry.elapsed_time) : 'In progress...'}
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2">
+                          {(() => {
+                            let categoryName = null as string | null;
+                            let categoryColor = '#6B7280';
+                            if (entry.category_id) {
+                              const categoryInfo = categories.find(cat => cat.id === entry.category_id);
+                              if (categoryInfo) {
+                                categoryName = categoryInfo.name;
+                                categoryColor = categoryInfo.color || '#6B7280';
+                              }
+                            } else if (entry.category) {
+                              categoryName = entry.category;
+                              const categoryInfo = categories.find(cat => cat.name === entry.category);
+                              if (categoryInfo) {
+                                categoryColor = categoryInfo.color || '#6B7280';
+                              }
+                            }
+                            return categoryName ? (
+                              <span
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
+                                style={{ backgroundColor: categoryColor }}
+                              >
+                                {categoryName}
+                              </span>
+                            ) : null;
+                          })()}
+                          <span className="text-xs sm:text-sm text-gray-500">
+                            {entry.start_time ? formatStartTime(entry.start_time) : formatStartTime(entry.created_at)}
+                          </span>
+                          {entry.end_time && entry.start_time && (
+                            <span className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
+                              {formatTimeRangeRounded(entry.start_time, entry.end_time)}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      
-                      <div className="flex space-x-2 ml-4 lg:ml-0">
-                        <button
-                          onClick={() => handleEditActivity(entry)}
-                          className="text-blue-600 hover:text-blue-800 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
-                          title="Edit activity"
-                        >
-                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteActivity(entry.entry_id)}
-                          disabled={deletingId === entry.entry_id}
-                          className="text-red-600 hover:text-red-800 p-2 rounded focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 touch-manipulation"
-                          title="Delete activity"
-                        >
-                          {deletingId === entry.entry_id ? (
-                            <div className="animate-spin h-5 w-5 border-2 border-red-600 border-t-transparent rounded-full"></div>
-                          ) : (
+                      <div className="flex items-center justify-between lg:justify-end lg:space-x-4">
+                        <div className="text-right">
+                          <div className="text-base sm:text-lg font-semibold text-gray-900">
+                            {entry.elapsed_time ? formatTime(entry.elapsed_time) : 'In progress...'}
+                          </div>
+                        </div>
+                        <div className="flex space-x-2 ml-4 lg:ml-0">
+                          <button
+                            onClick={() => handleEditActivity(entry)}
+                            className="text-blue-600 hover:text-blue-800 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 touch-manipulation"
+                            title="Edit activity"
+                          >
                             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
-                          )}
-                        </button>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteActivity(entry.entry_id)}
+                            disabled={deletingId === entry.entry_id}
+                            className="text-red-600 hover:text-red-800 p-2 rounded focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 touch-manipulation"
+                            title="Delete activity"
+                          >
+                            {deletingId === entry.entry_id ? (
+                              <div className="animate-spin h-5 w-5 border-2 border-red-600 border-t-transparent rounded-full"></div>
+                            ) : (
+                              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}
