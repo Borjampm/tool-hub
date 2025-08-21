@@ -161,6 +161,33 @@ export class TimeEntryService {
   }
 
   /**
+   * Get the single in-progress time entry for the authenticated user, if any
+   */
+  static async getInProgressEntry(): Promise<TimeEntry | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to fetch time entries');
+    }
+
+    const { data: entry, error } = await supabase
+      .from('time_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .is('end_time', null)
+      .order('start_time', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching in-progress time entry:', error);
+      throw new Error(`Failed to fetch in-progress time entry: ${error.message}`);
+    }
+
+    return entry ?? null;
+  }
+
+  /**
    * Delete a time entry by entry_id for the authenticated user
    */
   static async deleteEntry(entryId: string): Promise<void> {
