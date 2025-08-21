@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { TimeEntryService } from '../../services/timeEntryService';
 import { CategoryService } from '../../services/categoryService';
 import type { TimeEntry, HobbyCategory } from '../../lib/supabase';
-import { formatDate, formatDateTimeRounded, formatDuration, formatTimeRangeRounded } from '../../lib/dateUtils';
+import { formatDateTimeRounded, formatDuration, formatTimeRangeRounded } from '../../lib/dateUtils';
 import { UserSettingsService } from '../../services/userSettingsService';
 
 export function Dashboard() {
@@ -10,7 +10,7 @@ export function Dashboard() {
   const [categories, setCategories] = useState<HobbyCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [weekOffset, setWeekOffset] = useState(0); // 0=this week, 1=last week, etc.
+  // weekOffset removed as dashboard no longer paginates activities by week
   const [weeklyGoalHours, setWeeklyGoalHours] = useState<number>(2);
 
   useEffect(() => {
@@ -159,34 +159,14 @@ export function Dashboard() {
   };
   const progressSegments = buildProgressSegments();
 
-  // Active week window controlled by arrows
-  const getWeekStartFromOffset = (offset: number): Date => {
-    const d = new Date(thisWeekStart);
-    d.setDate(thisWeekStart.getDate() - offset * 7);
-    return d;
-  };
+  // Removed weekly pagination for activities in dashboard
 
-  const activeWeekStart = getWeekStartFromOffset(weekOffset);
-  const activeWeekEnd = new Date(activeWeekStart);
-  activeWeekEnd.setDate(activeWeekStart.getDate() + 7);
-
+  // Recent completed activities (last 5 by start_time)
   const toEntryDate = (e: TimeEntry) => (e.start_time ? new Date(e.start_time) : new Date(e.created_at));
-  const activeWeekEntries = entries
-    .filter((e) => {
-      const d = toEntryDate(e);
-      return d >= activeWeekStart && d < activeWeekEnd;
-    })
-    .sort((a, b) => toEntryDate(b).getTime() - toEntryDate(a).getTime());
-
-  const activeLabel =
-    activeWeekStart.getTime() === thisWeekStart.getTime()
-      ? 'This Week'
-      : activeWeekStart.getTime() === lastWeekStart.getTime()
-      ? 'Last Week'
-      : `Week of ${formatDate(activeWeekStart.toISOString().slice(0, 10))}`;
-
-  const activeTotalSeconds = activeWeekEntries.reduce((sum, e) => sum + (e.elapsed_time || 0), 0);
-  const activeAvgDailySeconds = Math.round(activeTotalSeconds / 7);
+  const recentCompleted = entries
+    .filter((e) => !!e.end_time && (e.elapsed_time || 0) > 0)
+    .sort((a, b) => toEntryDate(b).getTime() - toEntryDate(a).getTime())
+    .slice(0, 5);
 
   const BarList = ({ title, data, max, summary }: { title: string; data: { name: string; color: string; totalSeconds: number }[]; max: number; summary: { totalSeconds: number; avgDailySeconds: number } }) => {
     return (
@@ -295,57 +275,31 @@ export function Dashboard() {
             <BarList title="This Week" data={thisWeekData} max={sharedMax} summary={thisWeekSummary} />
               </div>
 
-          {/* Activities - single week with navigation */}
+          {/* Recent activities - last 5 completed */}
           <div className="bg-white rounded-lg shadow-lg mt-4 sm:mt-6">
-            <div className="p-4 sm:p-6 border-b border-gray-200 flex items-center justify-between">
-              <button
-                onClick={() => setWeekOffset((o) => o + 1)}
-                className="p-2 rounded hover:bg-gray-100 touch-manipulation min-h-[44px] min-w-[44px]"
-                aria-label="Previous week"
-                title="Previous week"
-              >
-                &lt;
-              </button>
-              <div className="flex-1 flex flex-col items-center">
-                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">{activeLabel}</h2>
-                <div className="flex items-center gap-4 mt-1">
-                  <span className="text-xs sm:text-sm text-gray-500">
-                    {formatDate(activeWeekStart.toISOString().slice(0, 10))} - {formatDate(new Date(activeWeekEnd.getTime() - 1).toISOString().slice(0, 10))}
-                  </span>
-                  <span className="text-xs sm:text-sm text-gray-700 font-medium whitespace-nowrap">
-                    Total: {formatTime(activeTotalSeconds)} · Avg/day: {formatTime(activeAvgDailySeconds)}
-                  </span>
-              </div>
-              </div>
-              <button
-                onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
-                className="p-2 rounded hover:bg-gray-100 touch-manipulation min-h-[44px] min-w-[44px]"
-                aria-label="Next week"
-                title="Next week"
-                disabled={weekOffset === 0}
-              >
-                &gt;
-              </button>
+            <div className="p-4 sm:p-6 border-b border-gray-200">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Recent Activities</h2>
+              <p className="text-xs sm:text-sm text-gray-500">Last 5 completed</p>
             </div>
             <div className="divide-y divide-gray-100">
-              {activeWeekEntries.length === 0 ? (
-                <div className="p-6 text-center text-gray-500">No activities</div>
+              {recentCompleted.length === 0 ? (
+                <div className="p-6 text-center text-gray-500">No completed activities yet</div>
               ) : (
-                activeWeekEntries.map((entry) => {
+                recentCompleted.map((entry) => {
                   const cat = resolveCategoryForEntry(entry);
-                      return (
+                  return (
                     <div key={entry.id} className="p-4 sm:p-6">
                       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center flex-wrap gap-2">
                             <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">{entry.name}</h3>
-                            <span 
+                            <span
                               className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                               style={{ backgroundColor: cat.color }}
                             >
                               {cat.name}
-                          </span>
-                        </div>
+                            </span>
+                          </div>
                           {entry.description && (
                             <p className="text-sm text-gray-600 mt-1 line-clamp-2">{entry.description}</p>
                           )}
@@ -353,20 +307,20 @@ export function Dashboard() {
                             {entry.start_time && entry.end_time
                               ? `${formatDateTimeRounded(entry.start_time)} · ${formatTimeRangeRounded(entry.start_time, entry.end_time)}`
                               : formatDateTimeRounded(entry.created_at)}
-                        </div>
+                          </div>
                         </div>
                         <div className="text-right">
                           <div className="text-base sm:text-lg font-semibold text-gray-900">
                             {entry.elapsed_time ? formatTime(entry.elapsed_time) : 'In progress...'}
-                        </div>
+                          </div>
                         </div>
                       </div>
-                      </div>
+                    </div>
                   );
                 })
-                )}
-              </div>
+              )}
             </div>
+          </div>
           </>
         )}
       </div>
