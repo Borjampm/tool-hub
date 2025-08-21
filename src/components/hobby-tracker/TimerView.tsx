@@ -25,6 +25,7 @@ export function TimerView() {
   const [inProgress, setInProgress] = useState<TimeEntry[]>([]);
   const [selectedEntryToComplete, setSelectedEntryToComplete] = useState<TimeEntry | null>(null);
   const [selectedElapsedTime, setSelectedElapsedTime] = useState<number>(0);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const generateEntryId = () => {
     return `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -78,6 +79,23 @@ export function TimerView() {
     const elapsed = Math.max(0, Math.floor((Date.now() - new Date(entry.start_time).getTime()) / 1000));
     setSelectedElapsedTime(elapsed);
     setIsFormOpen(true);
+  };
+
+  const handleDeleteInProgress = async (entry: TimeEntry) => {
+    if (!confirm('Are you sure you want to delete this activity? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      setDeletingId(entry.entry_id);
+      setError(null);
+      await TimeEntryService.deleteEntry(entry.entry_id);
+      await loadInProgress();
+    } catch (err) {
+      console.error('Failed to delete in-progress entry:', err);
+      setError('Failed to delete activity');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleFormSubmit = async (data: MetadataFormData) => {
@@ -281,6 +299,13 @@ export function TimerView() {
                         className="px-3 py-1.5 text-xs sm:text-sm bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 touch-manipulation"
                       >
                         Stop
+                      </button>
+                      <button
+                        onClick={() => handleDeleteInProgress(entry)}
+                        disabled={deletingId === entry.entry_id}
+                        className="px-3 py-1.5 text-xs sm:text-sm border border-red-600 text-red-600 rounded-md hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 touch-manipulation"
+                      >
+                        {deletingId === entry.entry_id ? 'Deleting…' : 'Delete'}
                       </button>
                     </div>
                   </div>
