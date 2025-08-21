@@ -1,4 +1,5 @@
 import { createContext, useContext, useReducer, useEffect, type ReactNode } from 'react';
+import { TimeEntryService } from '../services/timeEntryService';
 
 interface TimerState {
   isRunning: boolean;
@@ -8,14 +9,14 @@ interface TimerState {
 }
 
 type TimerAction =
-  | { type: 'START'; entryId: string }
+  | { type: 'START'; entryId: string; startTimeMs?: number }
   | { type: 'STOP' }
   | { type: 'TICK' }
   | { type: 'RESET' };
 
 interface TimerContextType {
   state: TimerState;
-  startTimer: (entryId: string) => void;
+  startTimer: (entryId: string, startTimeMs?: number) => void;
   stopTimer: () => void;
   resetTimer: () => void;
 }
@@ -35,8 +36,9 @@ function timerReducer(state: TimerState, action: TimerAction): TimerState {
       return {
         ...state,
         isRunning: true,
-        startTime: Date.now(),
+        startTime: action.startTimeMs ?? Date.now(),
         entryId: action.entryId,
+        elapsedTime: action.startTimeMs ? Math.floor((Date.now() - action.startTimeMs) / 1000) : 0,
       };
     case 'STOP':
       return {
@@ -56,8 +58,31 @@ function timerReducer(state: TimerState, action: TimerAction): TimerState {
   }
 }
 
+const STORAGE_KEY = 'hobby_timer_state';
+
 export function TimerProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(timerReducer, initialState);
+  const [state, dispatch] = useReducer(
+    timerReducer,
+    initialState,
+    (init) => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as TimerState;
+          // Ensure sane values
+          return {
+            isRunning: !!parsed.isRunning,
+            elapsedTime: typeof parsed.elapsedTime === 'number' ? parsed.elapsedTime : 0,
+            startTime: typeof parsed.startTime === 'number' ? parsed.startTime : null,
+            entryId: parsed.entryId ?? null,
+          } as TimerState;
+        }
+      } catch (_e) {
+        // ignore
+      }
+      return init;
+    }
+  );
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout | undefined;
@@ -71,8 +96,38 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     };
   }, [state.isRunning]);
 
-  const startTimer = (entryId: string) => {
-    dispatch({ type: 'START', entryId });
+  // Persist state to localStorage to avoid reset flicker on navigation
+  useEffect(() => {
+    try {
+      if (!state.isRunning && state.entryId === null) {
+        localStorage.removeItem(STORAGE_KEY);
+      } else {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+    } catch (_e) {
+      // ignore storage errors
+    }
+  }, [state]);
+
+  // Resume any in-progress entry on provider mount
+  useEffect(() => {
+    (async () => {
+      try {
+        if (state.isRunning) return;
+        const inProgress = await TimeEntryService.getInProgressEntry();
+        if (inProgress && inProgress.start_time) {
+          dispatch({ type: 'START', entryId: inProgress.entry_id, startTimeMs: new Date(inProgress.start_time).getTime() });
+        }
+      } catch (err) {
+        // Non-fatal; ignore resume errors
+        console.error('Timer resume failed:', err);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const startTimer = (entryId: string, startTimeMs?: number) => {
+    dispatch({ type: 'START', entryId, startTimeMs });
   };
 
   const stopTimer = () => {

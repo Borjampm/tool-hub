@@ -43,6 +43,23 @@ export class TimeEntryService {
       throw new Error('User must be authenticated to create time entries');
     }
 
+    // Prevent multiple in-progress entries (end_time IS NULL)
+    const { data: existingInProgress, error: existingCheckError } = await supabase
+      .from('time_entries')
+      .select('id')
+      .eq('user_id', user.id)
+      .is('end_time', null)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingCheckError && existingCheckError.code !== 'PGRST116') {
+      console.error('Error checking in-progress time entries:', existingCheckError);
+      throw new Error(`Failed to validate existing in-progress entry: ${existingCheckError.message}`);
+    }
+    if (existingInProgress) {
+      throw new Error('You already have an activity in progress. Please stop it before starting a new one.');
+    }
+
     const { data: entry, error } = await supabase
       .from('time_entries')
       .insert({
@@ -144,6 +161,33 @@ export class TimeEntryService {
   }
 
   /**
+   * Get the single in-progress time entry for the authenticated user, if any
+   */
+  static async getInProgressEntry(): Promise<TimeEntry | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to fetch time entries');
+    }
+
+    const { data: entry, error } = await supabase
+      .from('time_entries')
+      .select('*')
+      .eq('user_id', user.id)
+      .is('end_time', null)
+      .order('start_time', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching in-progress time entry:', error);
+      throw new Error(`Failed to fetch in-progress time entry: ${error.message}`);
+    }
+
+    return entry ?? null;
+  }
+
+  /**
    * Delete a time entry by entry_id for the authenticated user
    */
   static async deleteEntry(entryId: string): Promise<void> {
@@ -239,5 +283,31 @@ export class TimeEntryService {
     }
 
     return entry;
+  }
+
+  /**
+   * Check if the authenticated user has an in-progress entry (end_time IS NULL)
+   */
+  static async hasInProgressEntry(): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to fetch time entries');
+    }
+
+    const { data: existing, error } = await supabase
+      .from('time_entries')
+      .select('id')
+      .eq('user_id', user.id)
+      .is('end_time', null)
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error checking in-progress time entries:', error);
+      throw new Error(`Failed to check in-progress entries: ${error.message}`);
+    }
+
+    return !!existing;
   }
 } 

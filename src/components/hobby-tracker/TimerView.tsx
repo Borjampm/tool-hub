@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTimer } from '../../contexts/TimerContext';
 import { TimerDisplay } from './TimerDisplay';
 import { TimerControls } from './TimerControls';
@@ -25,12 +25,36 @@ export function TimerView() {
     return `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
+  // On mount, resume in-progress entry (if any)
+  useEffect(() => {
+    (async () => {
+      try {
+        // If already running, no need to resume
+        if (state.isRunning && state.entryId) return;
+        const inProgress = await TimeEntryService.getInProgressEntry();
+        if (inProgress && inProgress.start_time) {
+          startTimer(inProgress.entry_id, new Date(inProgress.start_time).getTime());
+        }
+      } catch (err) {
+        console.error('Failed to resume in-progress timer:', err);
+      }
+    })();
+    // We intentionally run only on initial mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleStart = async () => {
     const entryId = generateEntryId();
     setIsLoading(true);
     setError(null);
     
     try {
+      // Guard: prevent multiple in-progress activities
+      const alreadyRunning = await TimeEntryService.hasInProgressEntry();
+      if (alreadyRunning) {
+        throw new Error('You already have an activity in progress. Please stop it before starting a new one.');
+      }
+
       // Create entry in database
       await TimeEntryService.createEntry({
         entryId,
@@ -43,7 +67,7 @@ export function TimerView() {
       console.log(`✅ Time entry created:`, entryId);
     } catch (err) {
       console.error('Failed to start timer:', err);
-      setError('Failed to start timer. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to start timer. Please try again.');
     } finally {
       setIsLoading(false);
     }

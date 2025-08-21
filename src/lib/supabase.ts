@@ -77,3 +77,10 @@ export interface UserAccount {
 
 // ExpenseCategory interface removed - all expense categories are now user-specific
 // Use UserExpenseCategory instead 
+
+export interface UserSettings {
+  user_id: string;
+  weekly_hobby_goal_hours: number; // total target hours per week
+  created_at: string;
+  updated_at: string;
+}

@@ -434,53 +434,97 @@ export function Activities() {
   };
 
   const generateSampleActivities = async () => {
-    const sampleActivities = [
-      { name: 'Daily standup meeting', description: 'Team sync and planning for the day' },
-      { name: 'Code review session', description: 'Reviewing pull requests from team members' },
-      { name: 'Learning React hooks', description: 'Deep dive into useEffect and custom hooks' },
-      { name: 'Morning jog', description: 'Cardio workout around the neighborhood' },
-      { name: 'Lunch break', description: 'Enjoyed a nice sandwich and caught up with colleagues' },
-      { name: 'Bug fixing', description: 'Fixed critical login issue reported by users' },
-      { name: 'Reading technical articles', description: 'Staying up to date with latest React trends' },
-      { name: 'Grocery shopping', description: 'Weekly grocery run to stock up on essentials' },
-      { name: 'Yoga session', description: 'Relaxing yoga practice to unwind' },
-      { name: 'Project planning', description: 'Planning next sprint and prioritizing features' },
+    // Define a small set of sample categories with colors
+    const sampleCategories: { name: string; color: string }[] = [
+      { name: 'Work', color: '#2563EB' },
+      { name: 'Exercise', color: '#10B981' },
+      { name: 'Learning', color: '#F59E0B' },
+      { name: 'Personal', color: '#8B5CF6' },
+      { name: 'Errands', color: '#EF4444' },
+    ];
+
+    // Sample activities mapped to a category name
+    const sampleActivities: { name: string; description: string; category: string }[] = [
+      { name: 'Daily standup meeting', description: 'Team sync and planning for the day', category: 'Work' },
+      { name: 'Code review session', description: 'Reviewing pull requests from team members', category: 'Work' },
+      { name: 'Learning React hooks', description: 'Deep dive into useEffect and custom hooks', category: 'Learning' },
+      { name: 'Morning jog', description: 'Cardio workout around the neighborhood', category: 'Exercise' },
+      { name: 'Lunch break', description: 'Enjoyed a nice sandwich and caught up with colleagues', category: 'Personal' },
+      { name: 'Bug fixing', description: 'Fixed critical login issue reported by users', category: 'Work' },
+      { name: 'Reading technical articles', description: 'Staying up to date with latest React trends', category: 'Learning' },
+      { name: 'Grocery shopping', description: 'Weekly grocery run to stock up on essentials', category: 'Errands' },
+      { name: 'Yoga session', description: 'Relaxing yoga practice to unwind', category: 'Exercise' },
+      { name: 'Project planning', description: 'Planning next sprint and prioritizing features', category: 'Work' },
     ];
 
     try {
       setError(null);
+
+      // Ensure the sample categories exist for the current user
+      const existingCategories = await CategoryService.getHobbyCategories();
+      const nameToCategory = new Map<string, HobbyCategory>();
+      existingCategories.forEach((c) => nameToCategory.set(c.name.trim(), c));
+
+      const createdCategories: HobbyCategory[] = [];
+      for (const cat of sampleCategories) {
+        if (!nameToCategory.has(cat.name)) {
+          try {
+            const created = await CategoryService.createCategory({ name: cat.name, color: cat.color });
+            nameToCategory.set(created.name.trim(), created);
+            createdCategories.push(created);
+          } catch (createErr) {
+            // If creation fails, continue without blocking the rest
+            console.warn(`Failed to create sample category "${cat.name}":`, createErr);
+          }
+        }
+      }
+
+      // Refresh local categories state if we created any new ones
+      if (createdCategories.length > 0) {
+        setCategories([...existingCategories, ...createdCategories]);
+      }
+
       const now = new Date();
       const promises = sampleActivities.map(async (activity) => {
         // Generate random duration between 15 minutes and 8 hours
         const durationMinutes = Math.floor(Math.random() * (8 * 60 - 15)) + 15;
-        
+
         // Generate random start time within the last 14 days
         const daysBack = Math.floor(Math.random() * 14);
         const hoursBack = Math.floor(Math.random() * 24);
         const minutesBack = Math.floor(Math.random() * 60);
-        
+
         const startTime = new Date(now);
         startTime.setDate(startTime.getDate() - daysBack);
         startTime.setHours(startTime.getHours() - hoursBack);
         startTime.setMinutes(startTime.getMinutes() - minutesBack);
-        
+
         const endTime = new Date(startTime);
         endTime.setMinutes(endTime.getMinutes() + durationMinutes);
-        
+
+        // Resolve category ID for this activity (if available)
+        const matchedCategory = nameToCategory.get(activity.category);
+        const categoryId = matchedCategory ? matchedCategory.id : undefined;
+
         const manualEntryData: ManualTimeEntryData = {
           name: activity.name,
           description: activity.description,
-          categoryId: undefined, // No category for sample activities
+          categoryId,
           startTime,
           endTime,
           elapsedTime: durationMinutes * 60, // Convert to seconds
         };
-        
+
         return TimeEntryService.createManualEntry(manualEntryData);
       });
-      
+
       const newEntries = await Promise.all(promises);
-      setEntries([...newEntries.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()), ...entries]);
+      setEntries([
+        ...newEntries.sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ),
+        ...entries,
+      ]);
     } catch (err) {
       console.error('Failed to create sample activities:', err);
       setError('Failed to create sample activities');
