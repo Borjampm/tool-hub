@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTimer } from '../../contexts/TimerContext';
 import { TimerDisplay } from './TimerDisplay';
 import { TimerControls } from './TimerControls';
@@ -6,6 +6,8 @@ import { MetadataForm } from './MetadataForm';
 import { ActivityModal, type ActivityFormData } from './ActivityModal';
 import { TimeEntryService, type ManualTimeEntryData } from '../../services/timeEntryService';
 import { CategoryService } from '../../services/categoryService';
+import type { TimeEntry } from '../../lib/supabase';
+import { formatDateTimeRounded } from '../../lib/dateUtils';
 
 interface MetadataFormData {
   name: string;
@@ -20,9 +22,25 @@ export function TimerView() {
   const [isLoading, setIsLoading] = useState(false);
   const [isManualEntryLoading, setIsManualEntryLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [inProgress, setInProgress] = useState<TimeEntry[]>([]);
+  const [selectedEntryToComplete, setSelectedEntryToComplete] = useState<TimeEntry | null>(null);
+  const [selectedElapsedTime, setSelectedElapsedTime] = useState<number>(0);
 
   const generateEntryId = () => {
     return `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  useEffect(() => {
+    loadInProgress();
+  }, []);
+
+  const loadInProgress = async () => {
+    try {
+      const entries = await TimeEntryService.getInProgressEntries();
+      setInProgress(entries);
+    } catch (err) {
+      console.error('Failed to load in-progress entries:', err);
+    }
   };
 
   const handleStart = async () => {
@@ -52,10 +70,19 @@ export function TimerView() {
   const handleStop = () => {
     stopTimer();
     setIsFormOpen(true);
+    loadInProgress();
+  };
+
+  const handleStopInProgress = (entry: TimeEntry) => {
+    setSelectedEntryToComplete(entry);
+    const elapsed = Math.max(0, Math.floor((Date.now() - new Date(entry.start_time).getTime()) / 1000));
+    setSelectedElapsedTime(elapsed);
+    setIsFormOpen(true);
   };
 
   const handleFormSubmit = async (data: MetadataFormData) => {
-    if (!state.entryId) return;
+    const completingEntryId = selectedEntryToComplete ? selectedEntryToComplete.entry_id : state.entryId;
+    if (!completingEntryId) return;
     
     setIsLoading(true);
     setError(null);
@@ -70,19 +97,25 @@ export function TimerView() {
       }
 
       // Complete the entry in database
-      await TimeEntryService.completeEntry(state.entryId, {
+      await TimeEntryService.completeEntry(completingEntryId, {
         name: data.name,
         description: data.description,
         categoryId: categoryId,
         endTime: new Date(),
-        elapsedTime: state.elapsedTime,
+        elapsedTime: selectedEntryToComplete ? Math.max(selectedElapsedTime, 1) : state.elapsedTime,
       });
       
-      console.log(`✅ Time entry completed:`, state.entryId);
+      console.log(`✅ Time entry completed:`, completingEntryId);
       
-      // Reset the timer after successful submission
-      resetTimer();
+      if (selectedEntryToComplete) {
+        setSelectedEntryToComplete(null);
+      } else {
+        // Reset the timer after successful submission
+        resetTimer();
+      }
       setIsFormOpen(false);
+      // Refresh in-progress list after completing an activity
+      loadInProgress();
     } catch (err) {
       console.error('Failed to save time entry:', err);
       setError('Failed to save time entry. Please try again.');
@@ -223,6 +256,40 @@ export function TimerView() {
         isLoading={isManualEntryLoading}
         mode="create"
       />
+
+      {/* In-progress activities */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 mt-6 sm:mt-8">
+        <div className="bg-white rounded-lg shadow-lg">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">In Progress</h2>
+          </div>
+          {inProgress.length === 0 ? (
+            <div className="p-6 text-center text-gray-500">No activities in progress</div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {inProgress.map((entry) => (
+                <div key={entry.id} className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-sm sm:text-base font-medium text-gray-900 truncate">{entry.name || 'Untitled Activity'}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">Started {formatDateTimeRounded(entry.start_time)}</p>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      <span className="text-xs sm:text-sm text-gray-700 font-medium">Running…</span>
+                      <button
+                        onClick={() => handleStopInProgress(entry)}
+                        className="px-3 py-1.5 text-xs sm:text-sm bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 touch-manipulation"
+                      >
+                        Stop
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 } 
