@@ -3,6 +3,7 @@ import { TimeEntryService } from '../../services/timeEntryService';
 import { CategoryService } from '../../services/categoryService';
 import type { TimeEntry, HobbyCategory } from '../../lib/supabase';
 import { formatDate, formatDateTimeRounded, formatDuration, formatTimeRangeRounded } from '../../lib/dateUtils';
+import { UserSettingsService } from '../../services/userSettingsService';
 
 export function Dashboard() {
   const [entries, setEntries] = useState<TimeEntry[]>([]);
@@ -10,9 +11,11 @@ export function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [weekOffset, setWeekOffset] = useState(0); // 0=this week, 1=last week, etc.
+  const [weeklyGoalHours, setWeeklyGoalHours] = useState<number>(2);
 
   useEffect(() => {
     loadEntries();
+    loadSettings();
   }, []);
 
   const loadEntries = async () => {
@@ -30,6 +33,16 @@ export function Dashboard() {
       setError('Failed to load time entries');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const settings = await UserSettingsService.getSettings();
+      setWeeklyGoalHours(settings.weekly_hobby_goal_hours ?? 2);
+    } catch (err) {
+      console.error('Failed to load settings:', err);
+      // keep default
     }
   };
 
@@ -117,6 +130,35 @@ export function Dashboard() {
   const thisWeekSummary = getWeekSummary(thisWeekData);
   const lastWeekSummary = getWeekSummary(lastWeekData);
 
+  // Weekly progress bar (this week) segments
+  const goalSeconds = Math.max(1, Math.round((weeklyGoalHours || 0) * 3600));
+  const thisWeekEntriesChrono = entries
+    .filter((e) => {
+      const startedAt = e.start_time ? new Date(e.start_time) : new Date(e.created_at);
+      return startedAt >= thisWeekStart && startedAt < nextWeekStart && (e.elapsed_time || 0) > 0;
+    })
+    .sort((a, b) => {
+      const da = a.start_time ? new Date(a.start_time).getTime() : new Date(a.created_at).getTime();
+      const db = b.start_time ? new Date(b.start_time).getTime() : new Date(b.created_at).getTime();
+      return da - db;
+    });
+
+  type ProgressSeg = { color: string; widthPct: number };
+  const buildProgressSegments = (): ProgressSeg[] => {
+    const segs: ProgressSeg[] = [];
+    let accumulated = 0;
+    for (const entry of thisWeekEntriesChrono) {
+      if (accumulated >= goalSeconds) break;
+      const segSeconds = Math.min(goalSeconds - accumulated, entry.elapsed_time || 0);
+      if (segSeconds <= 0) continue;
+      const { color } = resolveCategoryForEntry(entry);
+      segs.push({ color, widthPct: (segSeconds / goalSeconds) * 100 });
+      accumulated += segSeconds;
+    }
+    return segs;
+  };
+  const progressSegments = buildProgressSegments();
+
   // Active week window controlled by arrows
   const getWeekStartFromOffset = (offset: number): Date => {
     const d = new Date(thisWeekStart);
@@ -203,7 +245,27 @@ export function Dashboard() {
       <div className="space-y-6 sm:space-y-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-sm sm:text-base text-gray-600">Your hobby tracking analytics and insights</p>
+                      <p className="text-sm sm:text-base text-gray-600">Your hobby tracking analytics and insights</p>
+          {/* Weekly progress towards goal */}
+          <div className="mt-3">
+            {thisWeekSummary.totalSeconds >= goalSeconds && (
+              <div className="mb-2 text-xs sm:text-sm font-medium text-green-700 flex items-center gap-2">
+                <span>🎉</span>
+                <span>Congratulations! You met your weekly goal.</span>
+              </div>
+            )}
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs sm:text-sm text-gray-700 font-medium">This week progress</span>
+              <span className="text-xs sm:text-sm text-gray-500">{formatDuration(thisWeekSummary.totalSeconds)} / {formatDuration(goalSeconds)}</span>
+            </div>
+            <div className="w-full h-3 sm:h-4 rounded bg-gray-100 overflow-hidden">
+              <div className="flex h-full">
+                {progressSegments.map((seg, idx) => (
+                  <div key={idx} className="h-full" style={{ width: `${seg.widthPct}%`, backgroundColor: seg.color }} />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         {error && (
@@ -231,7 +293,7 @@ export function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <BarList title="Last Week" data={lastWeekData} max={sharedMax} summary={lastWeekSummary} />
             <BarList title="This Week" data={thisWeekData} max={sharedMax} summary={thisWeekSummary} />
-          </div>
+              </div>
 
           {/* Activities - single week with navigation */}
           <div className="bg-white rounded-lg shadow-lg mt-4 sm:mt-6">
@@ -253,7 +315,7 @@ export function Dashboard() {
                   <span className="text-xs sm:text-sm text-gray-700 font-medium whitespace-nowrap">
                     Total: {formatTime(activeTotalSeconds)} · Avg/day: {formatTime(activeAvgDailySeconds)}
                   </span>
-                </div>
+              </div>
               </div>
               <button
                 onClick={() => setWeekOffset((o) => Math.max(0, o - 1))}
@@ -271,19 +333,19 @@ export function Dashboard() {
               ) : (
                 activeWeekEntries.map((entry) => {
                   const cat = resolveCategoryForEntry(entry);
-                  return (
+                      return (
                     <div key={entry.id} className="p-4 sm:p-6">
                       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center flex-wrap gap-2">
                             <h3 className="text-base sm:text-lg font-medium text-gray-900 truncate">{entry.name}</h3>
-                            <span
+                            <span 
                               className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
                               style={{ backgroundColor: cat.color }}
                             >
                               {cat.name}
-                            </span>
-                          </div>
+                          </span>
+                        </div>
                           {entry.description && (
                             <p className="text-sm text-gray-600 mt-1 line-clamp-2">{entry.description}</p>
                           )}
@@ -291,20 +353,20 @@ export function Dashboard() {
                             {entry.start_time && entry.end_time
                               ? `${formatDateTimeRounded(entry.start_time)} · ${formatTimeRangeRounded(entry.start_time, entry.end_time)}`
                               : formatDateTimeRounded(entry.created_at)}
-                          </div>
+                        </div>
                         </div>
                         <div className="text-right">
                           <div className="text-base sm:text-lg font-semibold text-gray-900">
                             {entry.elapsed_time ? formatTime(entry.elapsed_time) : 'In progress...'}
-                          </div>
+                        </div>
                         </div>
                       </div>
-                    </div>
+                      </div>
                   );
                 })
-              )}
+                )}
+              </div>
             </div>
-          </div>
           </>
         )}
       </div>
