@@ -271,8 +271,12 @@ export function Dashboard() {
         ) : (
           <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-            <BarList title="Last Week" data={lastWeekData} max={sharedMax} summary={lastWeekSummary} />
-            <BarList title="This Week" data={thisWeekData} max={sharedMax} summary={thisWeekSummary} />
+            <div className="order-2 md:order-1">
+              <BarList title="Last Week" data={lastWeekData} max={sharedMax} summary={lastWeekSummary} />
+            </div>
+            <div className="order-1 md:order-2">
+              <BarList title="This Week" data={thisWeekData} max={sharedMax} summary={thisWeekSummary} />
+            </div>
               </div>
 
           {/* Recent activities - last 5 completed */}
