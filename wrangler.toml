@@ -1,0 +1,9 @@
+name = "tool-hub"
+compatibility_date = "2025-09-03"   # use today's or recent date
+
+# (Optional but recommended for a SPA)
+[assets]
+# With the Vite plugin you usually don't need to set directory,
+# but you *can* set SPA routing behavior:
+directory = "./dist"
+not_found_handling = "single-page-application"
