@@ -15,6 +15,20 @@ interface TimeEntryWithCategoryName extends ManualTimeEntryData {
 
 export class CSVExportService {
   /**
+   * Remove emoji presentation characters, variation selectors and ZWJ from a string
+   */
+  private static stripEmoji(input: string): string {
+    if (!input) return '';
+    return input.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, '');
+  }
+
+  /**
+   * Normalize category names for comparison: strip emoji, collapse spaces, lowercase
+   */
+  private static normalizeCategoryKey(input: string): string {
+    return this.stripEmoji(input).toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  }
+  /**
    * Convert time entries to CSV format
    */
   static formatTimeEntriesToCSV(entries: TimeEntry[], categories: HobbyCategory[] = []): string {
@@ -213,7 +227,7 @@ export class CSVExportService {
         type,
         title: note,
         description,
-        categoryName: (category || '').replace(/^\p{Emoji}+/u, '').trim() || category, // strip leading emoji if present
+        categoryName: this.stripEmoji((category || '').toString()).replace(/\s+/g, ' ').trim() || (category || '').toString(),
         accountName: accountFirst,
         amount,
         currency,
@@ -613,7 +627,7 @@ export class CSVExportService {
     ]);
 
     const categoryNameToId = new Map<string, string>();
-    existingCategories.forEach(c => categoryNameToId.set(c.name, c.id));
+    existingCategories.forEach(c => categoryNameToId.set(this.normalizeCategoryKey(c.name), c.id));
 
     const accountNameToId = new Map<string, string>();
     existingAccounts.forEach(a => accountNameToId.set(a.name, a.id));
@@ -673,16 +687,18 @@ export class CSVExportService {
         seenComposite.add(rowCompositeWithin);
 
         // Ensure category exists
-        let categoryId = categoryNameToId.get(row.categoryName);
+        const rowCategoryKey = this.normalizeCategoryKey(row.categoryName);
+        let categoryId = categoryNameToId.get(rowCategoryKey);
         if (!categoryId) {
           try {
+            const newCategoryName = this.stripEmoji(row.categoryName).replace(/\s+/g, ' ').trim();
             const created = await ExpenseCategoryService.createUserExpenseCategory({
-              name: row.categoryName,
+              name: newCategoryName,
               emoji: '🧾',
               color: this.generateRandomColor(),
             });
             categoryId = created.id;
-            categoryNameToId.set(created.name, created.id);
+            categoryNameToId.set(this.normalizeCategoryKey(created.name), created.id);
           } catch (createErr) {
             console.warn(`Failed to create expense category "${row.categoryName}":`, createErr);
           }
