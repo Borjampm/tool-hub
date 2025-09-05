@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import type { TimeEntry, HobbyCategory, Transaction, UserExpenseCategory, UserAccount } from '../lib/supabase';
 import { TimeEntryService, type ManualTimeEntryData } from './timeEntryService';
 import { CategoryService } from './categoryService';
+import * as XLSX from 'xlsx';
 import { ExpenseCategoryService } from './expenseCategoryService';
 import { UserAccountService } from './userAccountService';
 import { TransactionService } from './transactionService';
@@ -92,6 +93,265 @@ export class CSVExportService {
     return [headers.join(','), ...csvRows].join('\n');
   }
 
+  /**
+   * Parse semicolon-delimited Excel-CSV (provided example format) into normalized rows
+   * Header example:
+   * Period;Accounts;Category;Subcategory;Note;CLP;Income/Expense;Description;Amount;Currency;Accounts
+   * Rules:
+   * - Ignore Subcategory
+   * - Use Note as title/name
+   * - Ignore last Accounts column (not the first one)
+   * - Map Income/Expense: "Income" => income, anything else => expense
+   * - Period format dd-mm-yyyy (with dashes); convert to ISO yyyy-mm-dd
+   */
+  static parseExcelCsvTransactions(content: string): Array<{
+    date: string;
+    type: 'income' | 'expense';
+    title: string;
+    description?: string;
+    categoryName: string;
+    accountName: string;
+    amount: number;
+    currency: string;
+  }> {
+    const lines = content.trim().split('\n').filter(l => l.trim().length > 0);
+    if (lines.length < 2) throw new Error('Excel CSV must include headers and at least one row');
+
+    const header = lines[0].split(';').map(h => h.trim().toLowerCase());
+
+    const idxPeriod = header.findIndex(h => h === 'period');
+    const idxAccountsFirst = header.findIndex(h => h === 'accounts');
+    const idxCategory = header.findIndex(h => h === 'category');
+    const idxSubcategory = header.findIndex(h => h === 'subcategory');
+    const idxNote = header.findIndex(h => h === 'note');
+    const idxIncomeExpense = header.findIndex(h => h === 'income/expense');
+    const idxDescription = header.findIndex(h => h === 'description');
+    const idxAmount = header.findIndex(h => h === 'amount' || h === 'clp');
+    const idxCurrency = header.findIndex(h => h === 'currency');
+    const idxAccountsLast = header.lastIndexOf('accounts');
+
+    const missing: string[] = [];
+    if (idxPeriod < 0) missing.push('Period');
+    if (idxAccountsFirst < 0) missing.push('Accounts');
+    if (idxCategory < 0) missing.push('Category');
+    if (idxNote < 0) missing.push('Note');
+    if (idxIncomeExpense < 0) missing.push('Income/Expense');
+    if (idxAmount < 0) missing.push('Amount/CLP');
+    if (idxCurrency < 0) missing.push('Currency');
+    if (missing.length) throw new Error(`Missing required columns: ${missing.join(', ')}`);
+
+    const normalizeDate = (dmyWithDashes: string): string => {
+      // dd-mm-yyyy -> yyyy-mm-dd
+      const parts = dmyWithDashes.split('-').map(p => p.trim());
+      if (parts.length !== 3) throw new Error(`Invalid Period date: ${dmyWithDashes}`);
+      const [dayStr, monthStr, yearStr] = parts;
+      const day = parseInt(dayStr, 10);
+      const month = parseInt(monthStr, 10);
+      const year = parseInt(yearStr, 10);
+      if (!year || month < 1 || month > 12 || day < 1 || day > 31) throw new Error(`Invalid Period date: ${dmyWithDashes}`);
+      return `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    };
+
+    const result: Array<{
+      date: string;
+      type: 'income' | 'expense';
+      title: string;
+      description?: string;
+      categoryName: string;
+      accountName: string;
+      amount: number;
+      currency: string;
+    }> = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(';');
+      // Guard: ensure we have at least as many columns as expected
+      if (cols.length <= Math.max(idxPeriod, idxAccountsFirst, idxCategory, idxNote, idxIncomeExpense, idxAmount, idxCurrency)) {
+        console.warn('Skipping malformed Excel CSV row (insufficient columns)', { rowIndex: i + 1, row: lines[i] });
+        continue;
+      }
+
+      const period = cols[idxPeriod]?.trim();
+      const accountFirst = cols[idxAccountsFirst]?.trim();
+      const category = cols[idxCategory]?.trim();
+      const note = cols[idxNote]?.trim();
+      const incomeExpense = cols[idxIncomeExpense]?.trim().toLowerCase();
+      const description = idxDescription >= 0 ? cols[idxDescription]?.trim() : '';
+      const amountStr = cols[idxAmount]?.trim();
+      const currency = cols[idxCurrency]?.trim() || 'CLP';
+      const accountLast = idxAccountsLast >= 0 ? cols[idxAccountsLast]?.trim() : '';
+
+      if (!period || !accountFirst || !category || !note || !amountStr) {
+        console.warn('Skipping Excel CSV row with missing required fields', { rowIndex: i + 1, period, accountFirst, category, note, amountStr });
+        continue;
+      }
+
+      // Ignore subcategory and the last accounts column explicitly
+      void idxSubcategory;
+      void accountLast;
+
+      // Normalize
+      let type: 'income' | 'expense' = 'expense';
+      if (incomeExpense === 'income') type = 'income';
+
+      const amount = Number((amountStr || '').replace(/\./g, '').replace(/,/g, ''));
+      if (!isFinite(amount)) {
+        console.warn('Skipping Excel CSV row with invalid amount', { rowIndex: i + 1, amountStr });
+        continue;
+      }
+
+      let isoDate: string;
+      try {
+        isoDate = normalizeDate(period);
+      } catch (e) {
+        console.warn('Skipping Excel CSV row with invalid Period date', { rowIndex: i + 1, period, error: e });
+        continue;
+      }
+
+      result.push({
+        date: isoDate,
+        type,
+        title: note,
+        description,
+        categoryName: (category || '').replace(/^\p{Emoji}+/u, '').trim() || category, // strip leading emoji if present
+        accountName: accountFirst,
+        amount,
+        currency,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Import transactions from XLSX file content (binary ArrayBuffer)
+   */
+  static async importTransactionsFromXlsxFile(file: File, existingTransactions: Transaction[]): Promise<{
+    imported: number;
+    skipped: number;
+    errors: string[];
+  }> {
+    const arrayBuffer = await file.arrayBuffer();
+    const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) throw new Error('No sheet found in XLSX file');
+
+    // Read as array-of-arrays to avoid header collisions
+    const aoa = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1, defval: '' }) as unknown as string[][];
+    if (!aoa || aoa.length < 2) return { imported: 0, skipped: 0, errors: [] };
+
+    const headerRow = (aoa[0] || []).map(h => (h || '').toString().trim().toLowerCase());
+    const findIndex = (name: string) => headerRow.findIndex(h => h === name);
+    const idxPeriod = findIndex('period');
+    const idxAccountsFirst = headerRow.findIndex(h => h === 'accounts');
+    const idxCategory = findIndex('category');
+    const idxSubcategory = findIndex('subcategory');
+    const idxNote = findIndex('note');
+    const idxIncomeExpense = findIndex('income/expense');
+    const idxDescription = findIndex('description');
+    const idxAmount = findIndex('amount') >= 0 ? findIndex('amount') : findIndex('clp');
+    const idxCurrency = findIndex('currency');
+    const idxAccountsLast = headerRow.lastIndexOf('accounts');
+
+    const missing: string[] = [];
+    if (idxPeriod < 0) missing.push('Period');
+    if (idxAccountsFirst < 0) missing.push('Accounts');
+    if (idxCategory < 0) missing.push('Category');
+    if (idxNote < 0) missing.push('Note');
+    if (idxIncomeExpense < 0) missing.push('Income/Expense');
+    if (idxAmount < 0) missing.push('Amount/CLP');
+    if (idxCurrency < 0) missing.push('Currency');
+    if (missing.length) throw new Error(`Missing required columns: ${missing.join(', ')}`);
+
+    const excelSerialToIso = (val: unknown): string => {
+      if (val instanceof Date) {
+        const yyyy = String(val.getFullYear()).padStart(4, '0');
+        const mm = String(val.getMonth() + 1).padStart(2, '0');
+        const dd = String(val.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+      if (typeof val === 'number') {
+        // Convert Excel serial date to JS date; epoch 1899-12-30
+        const jsTime = Math.round((val - 25569) * 86400 * 1000);
+        const d = new Date(jsTime);
+        const yyyy = String(d.getFullYear()).padStart(4, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+      // Expect dd-mm-yyyy
+      const s = (val || '').toString().trim();
+      const parts = s.split('-');
+      if (parts.length !== 3) throw new Error('Invalid date');
+      const [dd, mm, yyyy] = parts;
+      return `${yyyy.padStart(4,'0')}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+    };
+
+    const normalizedRows: Array<{
+      date: string; type: 'income' | 'expense'; title: string; description?: string;
+      categoryName: string; accountName: string; amount: number; currency: string;
+    }> = [];
+    const skippedLogs: string[] = [];
+
+    for (let r = 1; r < aoa.length; r++) {
+      const row = aoa[r] || [];
+      const period = row[idxPeriod] ?? '';
+      const accountFirst = row[idxAccountsFirst] ?? '';
+      const category = row[idxCategory] ?? '';
+      const note = row[idxNote] ?? '';
+      const incomeExpense = (row[idxIncomeExpense] ?? '').toString().toLowerCase();
+      const description = idxDescription >= 0 ? (row[idxDescription] ?? '').toString() : '';
+      const amountCell = row[idxAmount] ?? '';
+      const currency = (row[idxCurrency] ?? 'CLP').toString();
+      const accountLast = idxAccountsLast >= 0 ? row[idxAccountsLast] : '';
+
+      void idxSubcategory; // ignored
+      void accountLast; // ignored
+
+      try {
+        const isoDate = excelSerialToIso(period);
+        const type = incomeExpense === 'income' ? 'income' : 'expense';
+        const title = (note || '').toString().trim();
+        const categoryName = (category || '').toString().replace(/^\p{Emoji}+/u, '').trim() || (category || '').toString();
+        const accountName = (accountFirst || '').toString().trim();
+        const amount = typeof amountCell === 'number' ? amountCell : Number((amountCell as string).replace(/\./g, '').replace(/,/g, ''));
+
+        if (!isoDate || !title || !categoryName || !accountName || !isFinite(amount)) {
+          skippedLogs.push(`Row ${r + 1}: Missing or invalid fields`);
+          continue;
+        }
+
+        normalizedRows.push({ date: isoDate, type, title, description, categoryName, accountName, amount, currency });
+      } catch (e) {
+        skippedLogs.push(`Row ${r + 1}: ${(e as Error).message}`);
+      }
+    }
+
+    if (normalizedRows.length === 0) {
+      return { imported: 0, skipped: skippedLogs.length, errors: skippedLogs };
+    }
+
+    // Route through existing CSV importer by generating a temporary CSV string
+    const mockCsv = ['Date,Type,Title,Description,Category,Account,Amount,Currency']
+      .concat(
+        normalizedRows.map(r => [
+          r.date.split('-').reverse().join('/'),
+          r.type,
+          r.title,
+          r.description || '',
+          r.categoryName,
+          r.accountName,
+          String(r.amount),
+          r.currency,
+        ].join(','))
+      )
+      .join('\n');
+
+    const res = await this.importTransactionsFromCSV(mockCsv, existingTransactions);
+    if (skippedLogs.length > 0) res.errors.push(...skippedLogs);
+    return res;
+  }
   /**
    * Convert transactions to CSV format
    */

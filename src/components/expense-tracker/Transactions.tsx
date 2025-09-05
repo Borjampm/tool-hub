@@ -159,39 +159,60 @@ export function Transactions() {
     }
   };
 
-  const fileInputId = 'transactions-import-file';
-  const openImportPicker = () => {
-    const input = document.getElementById(fileInputId) as HTMLInputElement | null;
+  const csvInputId = 'transactions-import-csv-file';
+  const xlsxInputId = 'transactions-import-xlsx-file';
+  const openCsvPicker = () => {
+    const input = document.getElementById(csvInputId) as HTMLInputElement | null;
+    if (input) input.click();
+  };
+  const openXlsxPicker = () => {
+    const input = document.getElementById(xlsxInputId) as HTMLInputElement | null;
     if (input) input.click();
   };
 
-  const handleImportChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const handleCsvImportChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       setIsImporting(true);
       setImportResult(null);
       setExportError('');
-
       if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
         throw new Error('Please select a CSV file');
       }
-
-      const csvContent = await CSVExportService.readFileAsText(file);
-      const result = await CSVExportService.importTransactionsFromCSV(csvContent, transactions);
+      const content = await CSVExportService.readFileAsText(file);
+      const result = await CSVExportService.importTransactionsFromCSV(content, transactions);
       setImportResult(result);
-
-      // Refresh data if anything imported
-      if (result.imported > 0) {
-        await loadData();
-      }
+      if (result.imported > 0) await loadData();
     } catch (err) {
       console.error('Failed to import transactions CSV:', err);
       setExportError(err instanceof Error ? err.message : 'Failed to import CSV');
     } finally {
       setIsImporting(false);
-      // Reset the input so selecting the same file again triggers change
-      const input = document.getElementById(fileInputId) as HTMLInputElement | null;
+      const input = document.getElementById(csvInputId) as HTMLInputElement | null;
+      if (input) input.value = '';
+    }
+  };
+
+  const handleXlsxImportChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsImporting(true);
+      setImportResult(null);
+      setExportError('');
+      if (!file.name.endsWith('.xlsx')) {
+        throw new Error('Please select an XLSX file');
+      }
+      const result = await CSVExportService.importTransactionsFromXlsxFile(file, transactions);
+      setImportResult(result);
+      if (result.imported > 0) await loadData();
+    } catch (err) {
+      console.error('Failed to import transactions XLSX:', err);
+      setExportError(err instanceof Error ? err.message : 'Failed to import XLSX');
+    } finally {
+      setIsImporting(false);
+      const input = document.getElementById(xlsxInputId) as HTMLInputElement | null;
       if (input) input.value = '';
     }
   };
@@ -288,6 +309,32 @@ export function Transactions() {
               )}
               <button
                 type="button"
+                onClick={openCsvPicker}
+                disabled={isImporting}
+                className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border ${
+                  isImporting
+                    ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+                title="Import CSV"
+              >
+                {isImporting ? 'Importing…' : 'Import CSV'}
+              </button>
+              <button
+                type="button"
+                onClick={openXlsxPicker}
+                disabled={isImporting}
+                className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border ${
+                  isImporting
+                    ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+                title="Import XLSX"
+              >
+                {isImporting ? 'Importing…' : 'Import XLSX'}
+              </button>
+              <button
+                type="button"
                 onClick={handleExportCSV}
                 disabled={isExporting}
                 className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border ${
@@ -298,24 +345,19 @@ export function Transactions() {
               >
                 {isExporting ? 'Preparing CSV…' : 'Download CSV'}
               </button>
-              <button
-                type="button"
-                onClick={openImportPicker}
-                disabled={isImporting}
-                className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border ${
-                  isImporting
-                    ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                {isImporting ? 'Importing…' : 'Import Data'}
-              </button>
               <input
-                id={fileInputId}
+                id={csvInputId}
                 type="file"
                 accept=".csv,text/csv"
                 className="hidden"
-                onChange={handleImportChange}
+                onChange={handleCsvImportChange}
+              />
+              <input
+                id={xlsxInputId}
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                className="hidden"
+                onChange={handleXlsxImportChange}
               />
               {import.meta.env.DEV && (
                 <>
