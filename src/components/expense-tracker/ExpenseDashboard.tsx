@@ -30,6 +30,18 @@ function PieChart({ slices, size = 220, strokeWidth = 64 }: { slices: PieSlice[]
     );
   }
 
+  // Special case: single positive slice → draw full ring with that color
+  const positiveSlices = slices.filter(s => s.value > 0);
+  if (positiveSlices.length === 1) {
+    const only = positiveSlices[0];
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={center} cy={center} r={radius} fill="none" stroke="#F3F4F6" strokeWidth={strokeWidth} />
+        <circle cx={center} cy={center} r={radius} fill="none" stroke={only.color} strokeWidth={strokeWidth} />
+      </svg>
+    );
+  }
+
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {/* Background ring */}
