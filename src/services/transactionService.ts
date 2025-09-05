@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { RecurringTransactionService } from './recurringTransactionService';
 import type { Transaction, UserExpenseCategory, UserAccount } from '../lib/supabase';
 
 export interface CreateTransactionData {
@@ -95,6 +96,13 @@ export class TransactionService {
     
     if (!user) {
       throw new Error('User must be authenticated to fetch transactions');
+    }
+
+    // Materialize recurring instances into the DB before querying
+    try {
+      await RecurringTransactionService.materializeForRange(startDate, endDate);
+    } catch (e) {
+      console.warn('Recurring materialization failed; proceeding with direct fetch:', e);
     }
 
     const { data: transactions, error } = await supabase
