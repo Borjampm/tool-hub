@@ -10,30 +10,132 @@ export function Transactions() {
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState('');
 
   // Load transactions and categories
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setIsLoading(true);
-        const [transactionData, categoryData, accountData] = await Promise.all([
-          TransactionService.getAllTransactions(),
-          TransactionService.getExpenseCategories(),
-          UserAccountService.getUserAccounts()
-        ]);
-        setTransactions(transactionData);
-        setCategories(categoryData);
-        setAccounts(accountData);
-      } catch (err) {
-        console.error('Error loading transactions:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load transactions');
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+      const [transactionData, categoryData, accountData] = await Promise.all([
+        TransactionService.getAllTransactions(),
+        TransactionService.getExpenseCategories(),
+        UserAccountService.getUserAccounts()
+      ]);
+      setTransactions(transactionData);
+      setCategories(categoryData);
+      setAccounts(accountData);
+    } catch (err) {
+      console.error('Error loading transactions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load transactions');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadData();
   }, []);
+
+  // Dev-only sample data generator
+  const generateSampleTransactions = async () => {
+    if (!import.meta.env.DEV) return;
+    setGenerateError('');
+    setIsGenerating(true);
+    try {
+      // Ensure we have at least one account
+      let userAccounts = accounts;
+      if (userAccounts.length === 0) {
+        try {
+          const createdBank = await UserAccountService.createAccount({ name: 'Bank', type: 'bank', color: '#3B82F6' });
+          const createdCash = await UserAccountService.createAccount({ name: 'Cash', type: 'cash', color: '#10B981' });
+          userAccounts = [createdBank, createdCash];
+          setAccounts(userAccounts);
+        } catch (e) {
+          // If creating defaults fails, re-fetch accounts in case defaults were auto-created
+          userAccounts = await UserAccountService.getUserAccounts();
+          setAccounts(userAccounts);
+        }
+      }
+
+      // Ensure categories are available
+      let userCategories = categories;
+      if (userCategories.length === 0) {
+        userCategories = await TransactionService.getExpenseCategories();
+        setCategories(userCategories);
+      }
+
+      if (userCategories.length === 0 || userAccounts.length === 0) {
+        throw new Error('No categories or accounts available to generate transactions');
+      }
+
+      const titles = [
+        'Groceries',
+        'Coffee',
+        'Dinner out',
+        'Gas refill',
+        'Online purchase',
+        'Electricity bill',
+        'Phone plan',
+        'Gym membership',
+        'Book purchase',
+        'Gift'
+      ];
+
+      const descriptions = [
+        'Monthly expense',
+        'Quick visit',
+        'Weekend treat',
+        'Recurring payment',
+        'One-time purchase',
+        'Discount applied',
+        'Subscription renewal'
+      ];
+
+      const randomChoice = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+      const randomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+      const today = new Date();
+      const toYYYYMMDD = (d: Date) => d.toISOString().split('T')[0];
+
+      // Generate 15 sample transactions over the last 30 days
+      const toCreate: Array<Promise<Transaction>> = [];
+      for (let i = 0; i < 15; i++) {
+        const dayOffset = randomInt(0, 30);
+        const date = new Date(today);
+        date.setDate(today.getDate() - dayOffset);
+
+        const type: 'income' | 'expense' = Math.random() < 0.15 ? 'income' : 'expense';
+        const amount = type === 'income' ? randomInt(20000, 150000) : randomInt(1000, 60000);
+        const category = randomChoice(userCategories);
+        const account = randomChoice(userAccounts);
+
+        const payload = {
+          type,
+          amount,
+          currency: 'CLP',
+          categoryId: category.id,
+          accountId: account.id,
+          title: randomChoice(titles),
+          description: Math.random() < 0.5 ? randomChoice(descriptions) : '',
+          transactionDate: toYYYYMMDD(date),
+        };
+
+        toCreate.push(TransactionService.createTransaction(payload));
+      }
+
+      // Create in parallel
+      await Promise.allSettled(toCreate);
+
+      // Reload data
+      await loadData();
+    } catch (e) {
+      console.error('Error generating sample transactions:', e);
+      setGenerateError(e instanceof Error ? e.message : 'Failed to generate sample transactions');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   // Get category emoji by ID
   const getCategoryEmoji = (categoryId: string | null) => {
@@ -116,6 +218,26 @@ export function Transactions() {
                 {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} total
               </p>
             </div>
+            {import.meta.env.DEV && (
+              <div className="flex items-center space-x-3">
+                {generateError && (
+                  <span className="text-sm text-red-600">{generateError}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={generateSampleTransactions}
+                  disabled={isGenerating}
+                  className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border ${
+                    isGenerating
+                      ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                  }`}
+                  title="Generate sample transactions (development only)"
+                >
+                  {isGenerating ? 'Generating…' : 'Generate sample data'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
