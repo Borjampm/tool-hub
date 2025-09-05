@@ -17,13 +17,34 @@ export function Transactions() {
   const [exportError, setExportError] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+  const [currentMonthDate, setCurrentMonthDate] = useState<Date>(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
 
-  // Load transactions and categories
-  const loadData = async () => {
+  const toYYYYMMDD = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const getMonthRange = (monthDate: Date) => {
+    const start = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const end = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+    return {
+      startDate: toYYYYMMDD(start),
+      endDate: toYYYYMMDD(end),
+    };
+  };
+
+  // Load transactions for the visible month along with categories and accounts
+  const loadMonthData = async () => {
     try {
       setIsLoading(true);
+      const { startDate, endDate } = getMonthRange(currentMonthDate);
       const [transactionData, categoryData, accountData] = await Promise.all([
-        TransactionService.getAllTransactions(),
+        TransactionService.getTransactionsInDateRange(startDate, endDate),
         TransactionService.getExpenseCategories(),
         UserAccountService.getUserAccounts()
       ]);
@@ -39,8 +60,23 @@ export function Transactions() {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadMonthData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMonthDate]);
+
+  const goToPreviousMonth = () => {
+    setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const getMonthLabel = (monthDate: Date) => {
+    const month = String(monthDate.getMonth() + 1).padStart(2, '0');
+    const year = monthDate.getFullYear();
+    return `${month}/${year}`; // Follows dd/mm/yyyy family style for UI consistency
+  };
 
   // Dev-only sample data generator
   const generateSampleTransactions = async () => {
@@ -132,8 +168,8 @@ export function Transactions() {
       // Create in parallel
       await Promise.allSettled(toCreate);
 
-      // Reload data
-      await loadData();
+      // Reload current month's data
+      await loadMonthData();
     } catch (e) {
       console.error('Error generating sample transactions:', e);
       setGenerateError(e instanceof Error ? e.message : 'Failed to generate sample transactions');
@@ -183,7 +219,7 @@ export function Transactions() {
       const content = await CSVExportService.readFileAsText(file);
       const result = await CSVExportService.importTransactionsFromCSV(content, transactions);
       setImportResult(result);
-      if (result.imported > 0) await loadData();
+      if (result.imported > 0) await loadMonthData();
     } catch (err) {
       console.error('Failed to import transactions CSV:', err);
       setExportError(err instanceof Error ? err.message : 'Failed to import CSV');
@@ -206,7 +242,7 @@ export function Transactions() {
       }
       const result = await CSVExportService.importTransactionsFromXlsxFile(file, transactions);
       setImportResult(result);
-      if (result.imported > 0) await loadData();
+      if (result.imported > 0) await loadMonthData();
     } catch (err) {
       console.error('Failed to import transactions XLSX:', err);
       setExportError(err instanceof Error ? err.message : 'Failed to import XLSX');
@@ -294,8 +330,29 @@ export function Transactions() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Transaction History</h2>
+              <div className="mt-2 flex items-center space-x-3">
+                <button
+                  type="button"
+                  onClick={goToPreviousMonth}
+                  className="inline-flex items-center justify-center h-9 w-9 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 touch-manipulation"
+                  title="Previous month"
+                >
+                  ‹
+                </button>
+                <span className="text-gray-900 font-medium">
+                  {getMonthLabel(currentMonthDate)}
+                </span>
+                <button
+                  type="button"
+                  onClick={goToNextMonth}
+                  className="inline-flex items-center justify-center h-9 w-9 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 touch-manipulation"
+                  title="Next month"
+                >
+                  ›
+                </button>
+              </div>
               <p className="text-gray-600 mt-1">
-                {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} total
+                {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in {getMonthLabel(currentMonthDate)}
               </p>
             </div>
             <div className="flex items-center space-x-3">
