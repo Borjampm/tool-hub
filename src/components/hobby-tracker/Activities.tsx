@@ -632,6 +632,8 @@ export function Activities() {
     })
     .sort((a, b) => toEntryDate(b).getTime() - toEntryDate(a).getTime());
 
+  const activeWeekTotalSeconds = activeWeekEntries.reduce((sum, e) => sum + (e.elapsed_time || 0), 0);
+
   const activeLabel =
     activeWeekStart.getTime() === thisWeekStart.getTime()
       ? 'This Week'
@@ -741,6 +743,9 @@ export function Activities() {
                 <h2 className="text-base sm:text-lg font-semibold text-gray-900">{activeLabel}</h2>
                 <div className="text-xs sm:text-sm text-gray-500 mt-1">
                   {formatDate(activeWeekStart.toISOString().slice(0, 10))} - {formatDate(new Date(activeWeekEnd.getTime() - 1).toISOString().slice(0, 10))}
+                </div>
+                <div className="text-xs sm:text-sm text-gray-700 font-medium mt-1">
+                  Total: {formatTime(activeWeekTotalSeconds)}
                 </div>
               </div>
               <button
