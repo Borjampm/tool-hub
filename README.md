@@ -1,107 +1,95 @@
-# Marqness - Personal Productivity & Tracking Hub
+# Tool Hub — Everyday Tools and Experiments
 
-**Marqness** is a comprehensive personal productivity platform designed to help you track, monitor, and analyze various aspects of your life. Built with modern web technologies, it provides a seamless experience across multiple specialized applications, all unified under one elegant interface.
+Tool Hub is a personal hub to interact with the tools I use every day, while also serving as a sandbox to build, try, and easily deploy new experimental features. Each tool is an app that can evolve independently, yet share common building blocks like authentication, UI components, and data services.
 
-## 🎯 What is Marqness?
-
-Marqness is a personal productivity hub that brings together multiple tracking applications:
+## 🎯 What’s inside
 
 ### 🎨 Hobby Tracker
-Your dedicated space for tracking creative pursuits and personal interests:
-- **⏱️ Track Time**: Start and stop timers for any hobby activity with a simple click
-- **📝 Add Context**: Describe your hobby sessions with names, descriptions, and custom categories  
-- **📊 Analyze Patterns**: View detailed analytics and insights about your hobby engagement
-- **🏷️ Custom Categories**: Organize your activities with personalized categories
+Track creative pursuits and personal activities.
+- **⏱️ Timers**: Start/stop/resume activity sessions
+- **📝 Context**: Name, describe, and categorize sessions
+- **📊 Insights**: Dashboard with trends and activity breakdowns
+- **📜 History**: Activity log with filtering and CSV export
+- **⚙️ Settings**: Manage personal hobby categories
 
-### 💰 Expense Tracker *(Coming Soon)*
-Smart financial management for your personal expenses:
-- **💳 Track Spending**: Monitor your daily expenses and financial habits
-- **📈 Budget Analysis**: Understand your spending patterns and optimize your budget
-- **🏷️ Category Management**: Organize expenses by custom categories
-- **📊 Financial Insights**: Visual analytics for better financial decision-making
+### 💰 Expense Tracker (active development)
+Manage personal expenses and categories.
+- **➕ Add Transactions**: Amount, description, date, account, and category
+- **🗂 Categories**: Personal expense categories with colors
+- **🏦 Accounts**: Default personal accounts
+- **📃 Transactions List**: Browse and filter transaction history
+- **📈 Dashboard**: Early overview of spending (iterating)
 
-### 🚀 More Apps Coming Soon
-The platform is designed to grow with additional productivity applications:
-- **📚 Data Explorer** *(Planned)*
-- **🏃 AI Chat** *(Planned)*
-- **🎯 Telegram Bot** *(Planned)*
+> The hub is designed to grow. New apps can be added quickly and shipped independently without breaking existing ones.
 
-## 🌟 Platform Features
+## 🧩 Architecture at a glance
 
-### Unified Experience
-- **🏠 App Hub**: Seamless navigation between different tracking applications
-- **🔒 Single Sign-On**: One account access to all your tracking apps
-- **📱 Responsive Design**: Consistent experience across desktop, tablet, and mobile
-- **🎨 Cohesive Design**: Unified design language across all applications
+Apps are independent, but share common elements:
+- **Independent apps**: Each app lives in its own folder under `src/components/` and ships its own UI and flows
+- **Shared UI**: Common components under `src/components/shared/` (landing page, auth, guards, verification, etc.)
+- **Contexts**: Cross-app providers under `src/contexts/` (authentication, timers)
+- **Services**: App-agnostic data/services under `src/services/` (time entries, categories, transactions, CSV export, settings)
+- **Lib**: Integration and utilities under `src/lib/` (Supabase client, date/time helpers)
+- **Database**: Supabase config and SQL migrations under `supabase/`
 
-### Privacy & Security
-- **🔒 Data Privacy**: Your tracking data is completely private and secure
-- **👤 Personal Data**: Each user's data is isolated and protected
-- **🔐 Secure Authentication**: Industry-standard authentication system
-- **📱 Cross-Device Sync**: Access your data from any device
+This modular approach lets you build and deploy new tools without coupling them to existing apps.
 
-## 🚀 Quick Start
+## 🚀 Getting started
 
-### For Users
+### Prerequisites
+- Node.js 18+
+- npm or yarn
 
-1. **Visit the Application**: Navigate to your Marqness instance
-2. **Create Account**: Sign up with your email and password  
-3. **Choose Your App**: Select from available tracking applications
-4. **Start Tracking**: Begin using your chosen application immediately
-5. **Switch Apps**: Easily navigate between different tracking tools as needed
-
-### For Developers
-
-#### Prerequisites
-- **Node.js** (version 18+ recommended)
-- **npm** or **yarn**
-
-#### Installation
+### Installation
 
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd marqness-server/marqness-front
+cd tool-hub
 
 # Install dependencies
 npm install
 
-# Set up environment
+# Environment variables
 cp .env.example .env
 
-# Start local Supabase (for development)
+# (Optional) Start local Supabase for development
 npx supabase start
 
-# Start development server
+# Run the app
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173/`
+The app will be available at `http://localhost:5173/`.
 
-## 🛠 Tech Stack
+## 🧭 Using the hub
+1. **Sign in** using the built-in auth flow
+2. **Pick an app** on the landing page (Hobby Tracker, Expense Tracker)
+3. **Use the tool**:
+   - Hobby Tracker: start a timer, add context, review history, export CSV, manage categories
+   - Expense Tracker: add transactions, manage categories and accounts, review lists (early)
+4. **Switch apps** anytime from the hub navigation
 
-Marqness is built with modern, reliable technologies:
+## 🗂 Project structure
 
-### Frontend
-- **⚡ Vite** - Fast build tool and dev server for optimal development experience
-- **⚛️ React 19** - Latest React with improved performance and developer experience
-- **📘 TypeScript** - Type-safe JavaScript for better code quality and developer productivity
-- **🎨 TailwindCSS v4** - Latest utility-first CSS framework for rapid UI development
-- **🔍 ESLint** - Code linting and formatting for consistent code quality
+```
+src/
+├── components/
+│   ├── shared/                    # Shared UI (landing, auth, guards, verification)
+│   ├── hobby-tracker/             # Hobby Tracker app (views, modals, timer components)
+│   └── expense-tracker/           # Expense Tracker app (pages, forms, lists)
+├── contexts/                      # Cross-app React contexts (auth, timer)
+├── services/                      # App-agnostic services (CRUD, CSV, categories, transactions)
+├── lib/                           # Supabase client, date/time utilities
+└── supabase/                      # Supabase config and SQL migrations
+```
 
-### Backend & Database
-- **🗄️ Supabase** - Backend-as-a-Service with PostgreSQL database
-- **🔒 Row Level Security** - Database-level security ensuring user data isolation
-- **🔐 Supabase Auth** - Secure user authentication and session management
-- **📊 Real-time Features** - Live updates and synchronization across devices
+## 🔐 Auth, data, and standards
+- **Authentication**: Supabase Auth with guards and modals in `src/components/shared/`
+- **Row Level Security**: Users can only access their own data
+- **Date & time display**: Uses shared utilities for dd/mm/yyyy and 24-hour formats
 
-### Development Tools
-- **📦 NPM** - Package management
-- **🔧 React Context** - State management for applications and authentication
-- **📋 React Hook Form** - Form handling and validation
-- **🎯 TypeScript Strict Mode** - Enhanced type safety with verbatimModuleSyntax
-
-## 📋 Available Scripts
+## 📦 Scripts
 
 | Command | Description |
 |---------|-------------|
@@ -111,102 +99,30 @@ Marqness is built with modern, reliable technologies:
 | `npm run lint` | Run ESLint to check code quality |
 | `npm run lint:fix` | Run ESLint and auto-fix issues |
 
-## 🏗 Project Structure
+## 🛠 Tech stack
+- **Vite**, **React 19**, **TypeScript**, **TailwindCSS v4**
+- **Supabase** (PostgreSQL, Auth, RLS)
+- **ESLint**, **React Context**, **React Hook Form**
 
-```
-marqness-front/
-├── src/
-│   ├── components/              # React components
-│   │   ├── shared/             # Shared components across apps
-│   │   │   ├── LandingPage.tsx # App hub and navigation
-│   │   │   ├── AuthGuard.tsx   # Authentication protection
-│   │   │   └── AuthModal.tsx   # User authentication
-│   │   ├── hobby-tracker/      # Hobby tracking application
-│   │   │   ├── HobbyTrackerApp.tsx # Main hobby tracker
-│   │   │   ├── TimerView.tsx   # Timer interface
-│   │   │   ├── Dashboard.tsx   # Analytics and insights
-│   │   │   ├── Activities.tsx  # Activity management
-│   │   │   └── Settings.tsx    # Categories and settings
-│   │   └── expense-tracker/    # Expense tracking application
-│   │       └── ExpenseTracker.tsx # Under development
-│   ├── contexts/               # React Context providers
-│   │   ├── AuthContext.tsx     # User authentication state
-│   │   └── TimerContext.tsx    # Timer state management
-│   ├── services/               # API and business logic
-│   │   ├── timeEntryService.ts # Hobby entry CRUD operations
-│   │   ├── categoryService.ts  # Category management
-│   │   └── csvExportService.ts # Data export functionality
-│   └── lib/
-│       └── supabase.ts         # Database configuration
-├── docs/                       # Documentation
-│   └── troubleshooting.md      # Technical troubleshooting guide
-└── supabase/                  # Database migrations and config
-    └── migrations/            # SQL migration files
-```
+## 🧪 Add a new experimental app
+1. Create a folder under `src/components/<your-app>/`
+2. Build your UI and logic (optionally create services under `src/services/`)
+3. Add navigation to the app from `src/components/shared/LandingPage.tsx`
+4. Reuse shared auth, contexts, and styles where helpful
+5. Deploy — existing apps remain unaffected
 
-## 🔒 Security & Privacy
+## ☁️ Deployment
+- Host the frontend on your platform of choice (e.g., Vercel/Netlify). Build with `npm run build`.
+- Provision Supabase and set the environment variables from your project into `.env`.
+- Database migrations live in `supabase/migrations/` — review SQL before applying.
 
-- **🛡️ Row Level Security**: Database policies ensure users can only access their own data
-- **🔐 Secure Authentication**: Industry-standard authentication with Supabase Auth
-- **📊 Data Isolation**: Complete separation of user data at the database level
-- **🔒 Session Management**: Secure session handling with automatic token refresh
-- **🏠 Unified Security**: Consistent security model across all applications
+> Safety note: Do not run database push commands blindly. Review migration content and apply changes intentionally.
 
-## 📚 Additional Documentation
-
-- **[Troubleshooting Guide](docs/troubleshooting.md)** - Solutions for common development issues
-- **[Authentication Setup](README-AUTHENTICATION.md)** - Detailed authentication system guide
-- **[Supabase Integration](README-SUPABASE.md)** - Backend setup and configuration
-
-## 🤝 Development Workflow
-
-1. **Start Development**: `npm run dev`
-2. **Make Changes**: Edit files in `src/` directory
-3. **Check Code Quality**: `npm run lint`
-4. **Build for Production**: `npm run build`
-5. **Preview Build**: `npm run preview`
-
-## 🎨 UI/UX Design Principles
-
-- **🎯 Simplicity**: Clean, intuitive interface focused on core workflows
-- **📱 Responsive**: Works seamlessly across all device sizes
-- **⚡ Performance**: Fast loading times and smooth interactions
-- **♿ Accessibility**: Designed with accessibility best practices
-- **🌙 Modern Design**: Contemporary UI with thoughtful use of color and spacing
-- **🔄 Consistency**: Unified design language across all applications
-
-## 📈 Use Cases
-
-**Perfect for:**
-- **Personal Productivity Enthusiasts**: People who want to track multiple aspects of their life
-- **Hobbyists & Creatives**: Tracking time spent on personal interests and creative projects
-- **Budget-Conscious Individuals**: Managing personal finances and understanding spending habits
-- **Data-Driven Decision Makers**: People who use analytics to optimize their lifestyle
-- **Privacy-Focused Users**: Individuals who want full control over their personal data
-
-**Key Benefits:**
-- **All-in-One Platform**: Multiple tracking applications in one unified interface
-- **Simple, Distraction-Free**: Clean interface focused on essential functionality
-- **Automatic Sync**: Data backup and synchronization across devices
-- **Detailed Analytics**: Comprehensive insights across all your tracking data
-- **Complete Privacy**: Full data ownership and privacy protection
-- **Cross-Platform**: Works consistently across all devices and browsers
-
-## 🔮 Roadmap
-
-### Near Term
-- **💰 Expense Tracker**: Complete development of financial tracking features
-- **📊 Cross-App Analytics**: Unified insights across all applications
-- **🔄 Data Import/Export**: Enhanced data portability features
-
-### Future Applications
-- **📚 Reading Tracker**: Track books, articles, and reading progress
-- **🏃 Fitness Logger**: Exercise and wellness tracking
-- **🎯 Goal Tracker**: Personal goal setting and achievement monitoring
-- **🌱 Habit Tracker**: Daily habit formation and tracking
+## 📚 Additional docs
+- `docs/troubleshooting.md`: Common issues and fixes
+- `docs/README-AUTHENTICATION.md`: Auth setup and flows
+- `docs/README-SUPABASE.md`: Supabase configuration and local dev
 
 ---
 
-**Ready to take control of your personal productivity?** 🚀
-
-*Marqness brings together all your tracking needs in one place, helping you understand your patterns and make better decisions about how you spend your time and resources.*
+This hub helps me run daily tools and ship experiments fast, without entangling apps. Build something new, plug it in, and deploy.
