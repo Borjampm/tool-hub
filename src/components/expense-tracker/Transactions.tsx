@@ -3,6 +3,7 @@ import { TransactionService } from '../../services/transactionService';
 import { UserAccountService } from '../../services/userAccountService';
 import type { Transaction, UserExpenseCategory, UserAccount } from '../../lib/supabase';
 import { formatDate } from '../../lib/dateUtils';
+import { CSVExportService } from '../../services/csvExportService';
 
 export function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -12,6 +13,8 @@ export function Transactions() {
   const [error, setError] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
 
   // Load transactions and categories
   const loadData = async () => {
@@ -51,7 +54,7 @@ export function Transactions() {
           const createdCash = await UserAccountService.createAccount({ name: 'Cash', type: 'cash', color: '#10B981' });
           userAccounts = [createdBank, createdCash];
           setAccounts(userAccounts);
-        } catch (e) {
+        } catch {
           // If creating defaults fails, re-fetch accounts in case defaults were auto-created
           userAccounts = await UserAccountService.getUserAccounts();
           setAccounts(userAccounts);
@@ -137,6 +140,23 @@ export function Transactions() {
     }
   };
 
+  const handleExportCSV = async () => {
+    if (transactions.length === 0) {
+      setExportError('No transactions to export');
+      return;
+    }
+    try {
+      setIsExporting(true);
+      setExportError('');
+      CSVExportService.downloadTransactionsCSVDirect(transactions, categories, accounts);
+    } catch (err) {
+      console.error('Failed to export transactions CSV:', err);
+      setExportError('Failed to export transactions as CSV. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Get category emoji by ID
   const getCategoryEmoji = (categoryId: string | null) => {
     if (!categoryId) return '📝';
@@ -218,26 +238,51 @@ export function Transactions() {
                 {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} total
               </p>
             </div>
-            {import.meta.env.DEV && (
-              <div className="flex items-center space-x-3">
-                {generateError && (
-                  <span className="text-sm text-red-600">{generateError}</span>
-                )}
-                <button
-                  type="button"
-                  onClick={generateSampleTransactions}
-                  disabled={isGenerating}
-                  className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border ${
-                    isGenerating
-                      ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  }`}
-                  title="Generate sample transactions (development only)"
-                >
-                  {isGenerating ? 'Generating…' : 'Generate sample data'}
-                </button>
-              </div>
-            )}
+            <div className="flex items-center space-x-3">
+              {exportError && (
+                <span className="text-sm text-red-600">{exportError}</span>
+              )}
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                disabled={isExporting}
+                className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border ${
+                  isExporting
+                    ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                {isExporting ? 'Preparing CSV…' : 'Download CSV'}
+              </button>
+              <button
+                type="button"
+                disabled
+                className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border bg-white text-gray-400 border-gray-200 cursor-not-allowed"
+                title="Import coming soon"
+              >
+                Import Data
+              </button>
+              {import.meta.env.DEV && (
+                <>
+                  {generateError && (
+                    <span className="text-sm text-red-600">{generateError}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={generateSampleTransactions}
+                    disabled={isGenerating}
+                    className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border ${
+                      isGenerating
+                        ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                    title="Generate sample transactions (development only)"
+                  >
+                    {isGenerating ? 'Generating…' : 'Generate sample data'}
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 

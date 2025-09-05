@@ -1,8 +1,8 @@
 import { supabase } from '../lib/supabase';
-import type { TimeEntry, HobbyCategory } from '../lib/supabase';
+import type { TimeEntry, HobbyCategory, Transaction, UserExpenseCategory, UserAccount } from '../lib/supabase';
 import { TimeEntryService, type ManualTimeEntryData } from './timeEntryService';
 import { CategoryService } from './categoryService';
-import { formatDateTime } from '../lib/dateUtils';
+import { formatDateTime, formatDate } from '../lib/dateUtils';
 
 // Interface for temporary time entry data with category name
 interface TimeEntryWithCategoryName extends ManualTimeEntryData {
@@ -87,6 +87,97 @@ export class CSVExportService {
 
     // Combine headers and rows
     return [headers.join(','), ...csvRows].join('\n');
+  }
+
+  /**
+   * Convert transactions to CSV format
+   */
+  static formatTransactionsToCSV(
+    transactions: Transaction[],
+    categories: UserExpenseCategory[] = [],
+    accounts: UserAccount[] = []
+  ): string {
+    const headers = [
+      'Date',
+      'Type',
+      'Title',
+      'Description',
+      'Category',
+      'Account',
+      'Amount',
+      'Currency',
+      'Created At',
+      'Transaction ID',
+    ];
+
+    const escapeCSVValue = (value: string | number | null | undefined): string => {
+      if (value === null || value === undefined) return '';
+      const str = String(value);
+      if (str.includes(',') || str.includes('\n') || str.includes('"')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const getCategoryName = (t: Transaction): string => {
+      if (t.category_id) {
+        const cat = categories.find(c => c.id === t.category_id);
+        if (cat) return cat.name;
+      }
+      return t.category || '';
+    };
+
+    const getAccountName = (t: Transaction): string => {
+      if (t.account_id) {
+        const acc = accounts.find(a => a.id === t.account_id);
+        if (acc) return acc.name;
+      }
+      return t.account || '';
+    };
+
+    const rows = transactions.map(t => {
+      return [
+        formatDate(t.transaction_date),
+        t.type,
+        escapeCSVValue(t.title),
+        escapeCSVValue(t.description || ''),
+        escapeCSVValue(getCategoryName(t)),
+        escapeCSVValue(getAccountName(t)),
+        // Keep amount as raw number string to preserve data fidelity
+        String(t.amount),
+        t.currency,
+        formatDateTime(t.created_at),
+        t.transaction_id,
+      ].join(',');
+    });
+
+    return [headers.join(','), ...rows].join('\n');
+  }
+
+  /**
+   * Download transactions CSV directly without storage
+   */
+  static downloadTransactionsCSVDirect(
+    transactions: Transaction[],
+    categories: UserExpenseCategory[] = [],
+    accounts: UserAccount[] = [],
+    filename?: string
+  ): void {
+    try {
+      const csvContent = this.formatTransactionsToCSV(transactions, categories, accounts);
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || `transactions-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Direct CSV download error (transactions):', error);
+      throw error;
+    }
   }
 
   /**
