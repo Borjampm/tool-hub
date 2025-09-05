@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { RecurringTransactionService } from './recurringTransactionService';
 import type { Transaction, UserExpenseCategory, UserAccount } from '../lib/supabase';
 
 export interface CreateTransactionData {
@@ -80,6 +81,41 @@ export class TransactionService {
 
     if (error) {
       console.error('Error fetching transactions:', error);
+      throw new Error(`Failed to fetch transactions: ${error.message}`);
+    }
+
+    return transactions || [];
+  }
+
+  /**
+   * Get transactions within an inclusive date range [startDate, endDate]
+   * Dates must be in YYYY-MM-DD (ISO date, no time)
+   */
+  static async getTransactionsInDateRange(startDate: string, endDate: string): Promise<Transaction[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('User must be authenticated to fetch transactions');
+    }
+
+    // Materialize recurring instances into the DB before querying
+    try {
+      await RecurringTransactionService.materializeForRange(startDate, endDate);
+    } catch (e) {
+      console.warn('Recurring materialization failed; proceeding with direct fetch:', e);
+    }
+
+    const { data: transactions, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('transaction_date', startDate)
+      .lte('transaction_date', endDate)
+      .order('transaction_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching transactions in date range:', error);
       throw new Error(`Failed to fetch transactions: ${error.message}`);
     }
 

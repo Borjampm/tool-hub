@@ -4,14 +4,22 @@ import { ExpenseCategoryService } from '../../services/expenseCategoryService';
 import { UserAccountService } from '../../services/userAccountService';
 import type { CreateTransactionData } from '../../services/transactionService';
 import type { UserAccount } from '../../lib/supabase';
+import { RecurringTransactionService } from '../../services/recurringTransactionService';
 
 export function AddTransaction() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [successTitle, setSuccessTitle] = useState('');
+  const [successSubtitle, setSuccessSubtitle] = useState('');
   const [categories, setCategories] = useState<{ id: string; name: string; emoji: string; created_at: string }[]>([]);
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
   const [dateDisplayValue, setDateDisplayValue] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly');
+  const [recurringInterval, setRecurringInterval] = useState<number>(1);
+  const [endDateDisplayValue, setEndDateDisplayValue] = useState('');
+  const [endDateISO, setEndDateISO] = useState<string>('');
 
   // Get current date in YYYY-MM-DD format for internal storage
   const getCurrentDate = () => {
@@ -146,6 +154,27 @@ export function AddTransaction() {
     setError('');
   };
 
+  const handleEndDateChange = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, '');
+    let formatted = '';
+    if (digitsOnly.length > 0) {
+      formatted = digitsOnly.substring(0, 2);
+      if (digitsOnly.length >= 3) {
+        formatted += '/' + digitsOnly.substring(2, 4);
+        if (digitsOnly.length >= 5) {
+          formatted += '/' + digitsOnly.substring(4, 8);
+        }
+      }
+    }
+    setEndDateDisplayValue(formatted);
+    if (formatted.length === 10) {
+      const iso = parseDateFromDisplay(formatted);
+      setEndDateISO(iso);
+    } else {
+      setEndDateISO('');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -174,8 +203,30 @@ export function AddTransaction() {
         throw new Error('Transaction date is required');
       }
 
-      await TransactionService.createTransaction(formData);
-      setSuccess(true);
+      if (isRecurring) {
+        // Create recurring rule (do not create one-off transaction to avoid duplicates)
+        await RecurringTransactionService.createRule({
+          type: formData.type,
+          amount: formData.amount,
+          currency: formData.currency,
+          categoryId: formData.categoryId || undefined,
+          accountId: formData.accountId || undefined,
+          title: formData.title,
+          description: formData.description,
+          startDate: formData.transactionDate,
+          endDate: endDateISO || undefined,
+          frequency: recurringFrequency,
+          interval: recurringInterval,
+        });
+        setSuccessTitle('Recurring rule created');
+        setSuccessSubtitle('Occurrences will appear automatically as months load.');
+        setSuccess(true);
+      } else {
+        await TransactionService.createTransaction(formData);
+        setSuccessTitle('Transaction Added!');
+        setSuccessSubtitle('Your transaction has been successfully recorded.');
+        setSuccess(true);
+      }
       
       // Show success message briefly, then reset form for next transaction
       setTimeout(() => {
@@ -193,6 +244,11 @@ export function AddTransaction() {
           transactionDate: currentDate, // reset to current date
         });
         setDateDisplayValue(formatDateForDisplay(currentDate));
+        setIsRecurring(false);
+        setRecurringFrequency('monthly');
+        setRecurringInterval(1);
+        setEndDateDisplayValue('');
+        setEndDateISO('');
       }, 1500);
 
     } catch (err) {
@@ -209,10 +265,10 @@ export function AddTransaction() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="text-center">
             <div className="text-4xl mb-4">✅</div>
-            <h2 className="text-2xl font-bold text-green-900 mb-2">Transaction Added!</h2>
-            <p className="text-gray-600 mb-2">
-              Your transaction has been successfully recorded.
-            </p>
+            <h2 className="text-2xl font-bold text-green-900 mb-2">{successTitle}</h2>
+            {successSubtitle && (
+              <p className="text-gray-600 mb-2">{successSubtitle}</p>
+            )}
             <p className="text-sm text-gray-500">
               Preparing form for next transaction...
             </p>
@@ -411,6 +467,62 @@ export function AddTransaction() {
               placeholder="Optional description or notes..."
               disabled={isLoading}
             />
+          </div>
+
+          {/* Recurring (basic) */}
+          <div className="border-t border-gray-200 pt-4">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">Make recurring</label>
+              <button
+                type="button"
+                onClick={() => setIsRecurring(v => !v)}
+                className={`px-3 py-1 rounded-md text-sm ${isRecurring ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+              >
+                {isRecurring ? 'On' : 'Off'}
+              </button>
+            </div>
+            {isRecurring && (
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                  <select
+                    value={recurringFrequency}
+                    onChange={(e) => setRecurringFrequency(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isLoading}
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Interval</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={recurringInterval}
+                    onChange={(e) => setRecurringInterval(Math.max(1, parseInt(e.target.value || '1', 10)))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">End date (optional) <span className="text-xs text-gray-500">(dd/mm/yyyy)</span></label>
+                  <input
+                    type="text"
+                    value={endDateDisplayValue}
+                    onChange={(e) => handleEndDateChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="DD/MM/YYYY"
+                    maxLength={10}
+                    pattern="\d{2}/\d{2}/\d{4}"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Error Message */}
