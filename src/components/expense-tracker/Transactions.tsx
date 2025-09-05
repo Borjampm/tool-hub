@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { TransactionService } from '../../services/transactionService';
 import { UserAccountService } from '../../services/userAccountService';
 import type { Transaction, UserExpenseCategory, UserAccount } from '../../lib/supabase';
@@ -77,6 +77,25 @@ export function Transactions() {
     const year = monthDate.getFullYear();
     return `${month}/${year}`; // Follows dd/mm/yyyy family style for UI consistency
   };
+
+  const summary = useMemo(() => {
+    const incomesByCurrency: Record<string, number> = {};
+    const expensesByCurrency: Record<string, number> = {};
+    for (const t of transactions) {
+      const curr = t.currency;
+      if (t.type === 'income') {
+        incomesByCurrency[curr] = (incomesByCurrency[curr] || 0) + t.amount;
+      } else {
+        expensesByCurrency[curr] = (expensesByCurrency[curr] || 0) + t.amount;
+      }
+    }
+    const currencies = Array.from(new Set([...Object.keys(incomesByCurrency), ...Object.keys(expensesByCurrency)]));
+    const netByCurrency: Record<string, number> = {};
+    currencies.forEach(c => {
+      netByCurrency[c] = (incomesByCurrency[c] || 0) - (expensesByCurrency[c] || 0);
+    });
+    return { incomesByCurrency, expensesByCurrency, netByCurrency, currencies };
+  }, [transactions]);
 
   // Dev-only sample data generator
   const generateSampleTransactions = async () => {
@@ -354,6 +373,26 @@ export function Transactions() {
               <p className="text-gray-600 mt-1">
                 {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in {getMonthLabel(currentMonthDate)}
               </p>
+              {summary.currencies.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {summary.currencies.map((curr) => (
+                    <div key={curr} className="flex flex-wrap items-center gap-2 text-sm">
+                      <span className="inline-flex items-center px-2 py-1 rounded bg-red-50 text-red-700">
+                        Expenses: -{formatAmount(summary.expensesByCurrency[curr] || 0, curr)}
+                      </span>
+                      <span className="inline-flex items-center px-2 py-1 rounded bg-green-50 text-green-700">
+                        Income: +{formatAmount(summary.incomesByCurrency[curr] || 0, curr)}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-1 rounded ${
+                        (summary.netByCurrency[curr] || 0) >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                      }`}>
+                        Total: {(summary.netByCurrency[curr] || 0) >= 0 ? '+' : '-'}
+                        {formatAmount(Math.abs(summary.netByCurrency[curr] || 0), curr)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-3">
               {exportError && (
