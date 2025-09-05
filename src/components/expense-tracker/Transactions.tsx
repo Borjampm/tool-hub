@@ -15,6 +15,8 @@ export function Transactions() {
   const [generateError, setGenerateError] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
 
   // Load transactions and categories
   const loadData = async () => {
@@ -157,6 +159,43 @@ export function Transactions() {
     }
   };
 
+  const fileInputId = 'transactions-import-file';
+  const openImportPicker = () => {
+    const input = document.getElementById(fileInputId) as HTMLInputElement | null;
+    if (input) input.click();
+  };
+
+  const handleImportChange: React.ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsImporting(true);
+      setImportResult(null);
+      setExportError('');
+
+      if (!file.name.endsWith('.csv') && file.type !== 'text/csv') {
+        throw new Error('Please select a CSV file');
+      }
+
+      const csvContent = await CSVExportService.readFileAsText(file);
+      const result = await CSVExportService.importTransactionsFromCSV(csvContent, transactions);
+      setImportResult(result);
+
+      // Refresh data if anything imported
+      if (result.imported > 0) {
+        await loadData();
+      }
+    } catch (err) {
+      console.error('Failed to import transactions CSV:', err);
+      setExportError(err instanceof Error ? err.message : 'Failed to import CSV');
+    } finally {
+      setIsImporting(false);
+      // Reset the input so selecting the same file again triggers change
+      const input = document.getElementById(fileInputId) as HTMLInputElement | null;
+      if (input) input.value = '';
+    }
+  };
+
   // Get category emoji by ID
   const getCategoryEmoji = (categoryId: string | null) => {
     if (!categoryId) return '📝';
@@ -242,6 +281,11 @@ export function Transactions() {
               {exportError && (
                 <span className="text-sm text-red-600">{exportError}</span>
               )}
+              {importResult && (
+                <span className="text-sm text-gray-600">
+                  Imported {importResult.imported}, skipped {importResult.skipped}
+                </span>
+              )}
               <button
                 type="button"
                 onClick={handleExportCSV}
@@ -256,12 +300,23 @@ export function Transactions() {
               </button>
               <button
                 type="button"
-                disabled
-                className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border bg-white text-gray-400 border-gray-200 cursor-not-allowed"
-                title="Import coming soon"
+                onClick={openImportPicker}
+                disabled={isImporting}
+                className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium border ${
+                  isImporting
+                    ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
               >
-                Import Data
+                {isImporting ? 'Importing…' : 'Import Data'}
               </button>
+              <input
+                id={fileInputId}
+                type="file"
+                accept=".csv,text/csv"
+                className="hidden"
+                onChange={handleImportChange}
+              />
               {import.meta.env.DEV && (
                 <>
                   {generateError && (

@@ -2,6 +2,9 @@ import { supabase } from '../lib/supabase';
 import type { TimeEntry, HobbyCategory, Transaction, UserExpenseCategory, UserAccount } from '../lib/supabase';
 import { TimeEntryService, type ManualTimeEntryData } from './timeEntryService';
 import { CategoryService } from './categoryService';
+import { ExpenseCategoryService } from './expenseCategoryService';
+import { UserAccountService } from './userAccountService';
+import { TransactionService } from './transactionService';
 import { formatDateTime, formatDate } from '../lib/dateUtils';
 
 // Interface for temporary time entry data with category name
@@ -137,17 +140,18 @@ export class CSVExportService {
 
     const rows = transactions.map(t => {
       return [
-        formatDate(t.transaction_date),
-        t.type,
+        escapeCSVValue(formatDate(t.transaction_date)),
+        escapeCSVValue(t.type),
         escapeCSVValue(t.title),
         escapeCSVValue(t.description || ''),
         escapeCSVValue(getCategoryName(t)),
         escapeCSVValue(getAccountName(t)),
         // Keep amount as raw number string to preserve data fidelity
-        String(t.amount),
-        t.currency,
-        formatDateTime(t.created_at),
-        t.transaction_id,
+        escapeCSVValue(String(t.amount)),
+        escapeCSVValue(t.currency),
+        // Created At contains a comma due to 24h time formatting, so ensure it is escaped
+        escapeCSVValue(formatDateTime(t.created_at)),
+        escapeCSVValue(t.transaction_id),
       ].join(',');
     });
 
@@ -178,6 +182,292 @@ export class CSVExportService {
       console.error('Direct CSV download error (transactions):', error);
       throw error;
     }
+  }
+
+  /**
+   * Parse CSV content for transactions and return an array of normalized transaction data
+   * Expected headers (case-insensitive):
+   * Date (dd/mm/yyyy), Type, Title, Description, Category, Account, Amount, Currency
+   */
+  static parseTransactionsCSVContent(csvContent: string): Array<{
+    date: string; // YYYY-MM-DD
+    type: 'income' | 'expense';
+    title: string;
+    description?: string;
+    categoryName: string;
+    accountName: string;
+    amount: number;
+    currency: string;
+    transactionId?: string;
+  }> {
+    const lines = csvContent.trim().split('\n');
+    if (lines.length < 2) {
+      throw new Error('CSV file must contain at least a header row and one data row');
+    }
+
+    const headerLine = lines[0];
+    const headers = this.parseCSVRow(headerLine).map(h => h.trim().toLowerCase());
+
+    const idx = {
+      // Use strict equality for 'date' to avoid matching 'created at'
+      date: headers.findIndex(h => h === 'date'),
+      type: headers.findIndex(h => h === 'type'),
+      title: headers.findIndex(h => h === 'title'),
+      description: headers.findIndex(h => h === 'description'),
+      category: headers.findIndex(h => h === 'category'),
+      account: headers.findIndex(h => h === 'account'),
+      amount: headers.findIndex(h => h === 'amount'),
+      currency: headers.findIndex(h => h === 'currency'),
+      transactionId: headers.findIndex(h => h.includes('transaction id') || h === 'transaction id'),
+    };
+    const idxCreatedAt = headers.findIndex(h => h === 'created at');
+
+    const missing: string[] = [];
+    if (idx.date < 0) missing.push('Date');
+    if (idx.type < 0) missing.push('Type');
+    if (idx.title < 0) missing.push('Title');
+    if (idx.category < 0) missing.push('Category');
+    if (idx.account < 0) missing.push('Account');
+    if (idx.amount < 0) missing.push('Amount');
+    // currency is optional; default to CLP if missing
+
+    if (missing.length > 0) {
+      throw new Error(`Missing required columns: ${missing.join(', ')}`);
+    }
+
+    const toISODate = (ddmmyyyy: string): string => {
+      const parts = ddmmyyyy.split('/').map(p => p.trim());
+      if (parts.length !== 3) {
+        throw new Error(`Invalid date format: ${ddmmyyyy} (expected dd/mm/yyyy)`);
+      }
+      const [dayStr, monthStr, yearStr] = parts;
+      const day = parseInt(dayStr, 10);
+      const month = parseInt(monthStr, 10);
+      const year = parseInt(yearStr, 10);
+      if (!year || month < 1 || month > 12 || day < 1 || day > 31) {
+        throw new Error(`Invalid date: ${ddmmyyyy}`);
+      }
+      const yyyy = String(year).padStart(4, '0');
+      const mm = String(month).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const results: Array<{
+      date: string;
+      type: 'income' | 'expense';
+      title: string;
+      description?: string;
+      categoryName: string;
+      accountName: string;
+      amount: number;
+      currency: string;
+      transactionId?: string;
+    }> = [];
+
+    const errors: string[] = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      try {
+        const rawValues = this.parseCSVRow(line);
+
+        // Handle unescaped comma in Created At (e.g., "dd/mm/yyyy, hh:mm") by merging adjacent cells
+        let values = rawValues;
+        if (
+          idxCreatedAt >= 0 &&
+          values.length === headers.length + 1 &&
+          /\d{2}\/\d{2}\/\d{4}/.test(values[idxCreatedAt] || '') &&
+          /\d{1,2}:\d{2}/.test(values[idxCreatedAt + 1] || '')
+        ) {
+          const merged = values.slice();
+          merged[idxCreatedAt] = `${(values[idxCreatedAt] || '').trim()}, ${(values[idxCreatedAt + 1] || '').trim()}`;
+          merged.splice(idxCreatedAt + 1, 1);
+          values = merged;
+          console.debug('Merged split Created At columns in CSV row to realign fields', { rowIndex: i + 1, createdAt: merged[idxCreatedAt] });
+        }
+
+        const dateStr = values[idx.date]?.trim();
+        const typeStr = values[idx.type]?.trim().toLowerCase();
+        const title = values[idx.title]?.trim();
+        const description = idx.description >= 0 ? values[idx.description]?.trim() : '';
+        const categoryName = values[idx.category]?.trim();
+        const accountName = values[idx.account]?.trim();
+        const amountStr = values[idx.amount]?.trim();
+        const currency = idx.currency >= 0 ? (values[idx.currency]?.trim() || 'CLP') : 'CLP';
+        const transactionId = idx.transactionId >= 0 ? values[idx.transactionId]?.trim() : undefined;
+
+        if (!dateStr || !typeStr || !title || !categoryName || !accountName || !amountStr) {
+          throw new Error('Missing required fields');
+        }
+        if (typeStr !== 'income' && typeStr !== 'expense') {
+          throw new Error(`Invalid type: ${typeStr}`);
+        }
+
+        const amount = Number(amountStr.replace(/,/g, ''));
+        if (!isFinite(amount)) {
+          throw new Error(`Invalid amount: ${amountStr}`);
+        }
+
+        const isoDate = toISODate(dateStr);
+
+        results.push({
+          date: isoDate,
+          type: typeStr as 'income' | 'expense',
+          title,
+          description,
+          categoryName,
+          accountName,
+          amount,
+          currency,
+          transactionId,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Unknown error';
+        errors.push(`Row ${i + 1}: ${msg}`);
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new Error(`CSV parsing errors:\n${errors.join('\n')}`);
+    }
+
+    return results;
+  }
+
+  /**
+   * Import transactions from CSV content
+   */
+  static async importTransactionsFromCSV(csvContent: string, existingTransactions: Transaction[]): Promise<{
+    imported: number;
+    skipped: number;
+    errors: string[];
+  }> {
+    // Parse rows
+    const rows = this.parseTransactionsCSVContent(csvContent);
+
+    // Load existing categories/accounts
+    const [existingCategories, existingAccounts] = await Promise.all([
+      ExpenseCategoryService.getUserExpenseCategories(),
+      UserAccountService.getUserAccounts(),
+    ]);
+
+    const categoryNameToId = new Map<string, string>();
+    existingCategories.forEach(c => categoryNameToId.set(c.name, c.id));
+
+    const accountNameToId = new Map<string, string>();
+    existingAccounts.forEach(a => accountNameToId.set(a.name, a.id));
+
+    // Prepare duplicate detection (existing + within-file)
+    const existingIds = new Set<string>();
+    const existingComposite = new Set<string>();
+    for (const t of existingTransactions) {
+      if (t.transaction_id) existingIds.add(t.transaction_id);
+      const comp = `${t.title}|${t.type}|${t.transaction_date}|${Number(t.amount)}|${t.currency}`;
+      existingComposite.add(comp);
+    }
+
+    const seenIds = new Set<string>();
+    const seenComposite = new Set<string>();
+
+    const errors: string[] = [];
+    let imported = 0;
+    let skipped = 0;
+
+    for (const row of rows) {
+      try {
+        // Build duplicate keys
+        const rawId = row.transactionId?.trim();
+        // Accept only IDs that match our generation pattern: txn_<timestamp>_<random>
+        const rowId = rawId && /^txn_\d+_[a-z0-9]+$/i.test(rawId) ? rawId : undefined;
+        if (rawId && !rowId) {
+          console.info('Ignoring invalid transactionId format in CSV row; will use composite dedupe instead', { rawId, title: row.title, date: row.date });
+        }
+        const rowComposite = `${row.title}|${row.type}|${row.date}|${Number(row.amount)}|${row.currency}`;
+        const rowCompositeWithin = `${rowComposite}|${row.categoryName}|${row.accountName}`;
+
+        // Skip duplicates (in DB or in current file)
+        if (rowId && existingIds.has(rowId)) {
+          console.info('Skipping duplicate by existing transactionId', { transactionId: rowId, title: row.title, date: row.date });
+          skipped++;
+          continue;
+        }
+        if (existingComposite.has(rowComposite)) {
+          console.info('Skipping duplicate by existing composite', { key: rowComposite, title: row.title, date: row.date });
+          skipped++;
+          continue;
+        }
+        if (rowId && seenIds.has(rowId)) {
+          console.info('Skipping duplicate within file by transactionId', { transactionId: rowId, title: row.title, date: row.date });
+          skipped++;
+          continue;
+        }
+        if (seenComposite.has(rowCompositeWithin)) {
+          console.info('Skipping duplicate within file by composite', { key: rowCompositeWithin, title: row.title, date: row.date });
+          skipped++;
+          continue;
+        }
+
+        // Mark as seen to prevent duplicates within same import
+        if (rowId) seenIds.add(rowId);
+        seenComposite.add(rowCompositeWithin);
+
+        // Ensure category exists
+        let categoryId = categoryNameToId.get(row.categoryName);
+        if (!categoryId) {
+          try {
+            const created = await ExpenseCategoryService.createUserExpenseCategory({
+              name: row.categoryName,
+              emoji: '🧾',
+              color: this.generateRandomColor(),
+            });
+            categoryId = created.id;
+            categoryNameToId.set(created.name, created.id);
+          } catch (createErr) {
+            console.warn(`Failed to create expense category "${row.categoryName}":`, createErr);
+          }
+        }
+
+        // Ensure account exists
+        let accountId = accountNameToId.get(row.accountName);
+        if (!accountId) {
+          try {
+            const created = await UserAccountService.createAccount({
+              name: row.accountName,
+              type: 'other',
+              color: '#6B7280',
+              description: '',
+            });
+            accountId = created.id;
+            accountNameToId.set(created.name, created.id);
+          } catch (createErr) {
+            console.warn(`Failed to create account "${row.accountName}":`, createErr);
+          }
+        }
+
+        if (!categoryId || !accountId) {
+          throw new Error(`Missing category or account for "${row.title}"`);
+        }
+
+        await TransactionService.createTransaction({
+          type: row.type,
+          amount: row.amount,
+          currency: row.currency,
+          categoryId,
+          accountId,
+          title: row.title,
+          description: row.description || undefined,
+          transactionDate: row.date,
+        });
+        imported++;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        console.error('Failed to import row', { title: row.title, date: row.date, reason: msg, row });
+        errors.push(`Failed to import "${row.title}" (${row.date}): ${msg}`);
+      }
+    }
+
+    return { imported, skipped, errors };
   }
 
   /**
@@ -518,4 +808,4 @@ export class CSVExportService {
       reader.readAsText(file);
     });
   }
-} 
+}
