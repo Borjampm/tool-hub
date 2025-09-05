@@ -21,12 +21,56 @@ export function Transactions() {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editDateDisplayValue, setEditDateDisplayValue] = useState('');
+  const [editForm, setEditForm] = useState<{
+    transactionId: string;
+    type: 'income' | 'expense';
+    amount: number;
+    currency: string;
+    categoryId: string;
+    accountId: string;
+    title: string;
+    description: string;
+    transactionDate: string; // YYYY-MM-DD
+  }>({
+    transactionId: '',
+    type: 'expense',
+    amount: 0,
+    currency: 'CLP',
+    categoryId: '',
+    accountId: '',
+    title: '',
+    description: '',
+    transactionDate: '',
+  });
 
   const toYYYYMMDD = (d: Date) => {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  };
+
+  const formatDateForDisplay = (dateString: string) => {
+    if (!dateString) return '';
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+
+  const parseDateFromDisplay = (displayDate: string) => {
+    if (!displayDate) return '';
+    const parts = displayDate.split('/');
+    if (parts.length !== 3) return '';
+    const [day, month, year] = parts;
+    const dayNum = parseInt(day, 10);
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    if (Number.isNaN(dayNum) || Number.isNaN(monthNum) || Number.isNaN(yearNum)) return '';
+    if (dayNum < 1 || dayNum > 31 || monthNum < 1 || monthNum > 12 || yearNum < 1900) return '';
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   };
 
   const getMonthRange = (monthDate: Date) => {
@@ -96,6 +140,101 @@ export function Transactions() {
     });
     return { incomesByCurrency, expensesByCurrency, netByCurrency, currencies };
   }, [transactions]);
+
+  const openEditModal = (t: Transaction) => {
+    const transactionId = t.transaction_id;
+    const categoryId = t.category_id || '';
+    const accountId = t.account_id || '';
+    const transactionDate = t.transaction_date; // already YYYY-MM-DD
+    setEditForm({
+      transactionId,
+      type: t.type,
+      amount: t.amount,
+      currency: t.currency,
+      categoryId,
+      accountId,
+      title: t.title,
+      description: t.description || '',
+      transactionDate,
+    });
+    setEditDateDisplayValue(formatDateForDisplay(transactionDate));
+    setEditError('');
+    setIsEditOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditOpen(false);
+  };
+
+  const handleEditInputChange = (field: keyof typeof editForm, value: string | number) => {
+    setEditForm(prev => ({ ...prev, [field]: value }));
+    setEditError('');
+  };
+
+  const handleEditDateChange = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, '');
+    let formatted = '';
+    if (digitsOnly.length > 0) {
+      formatted = digitsOnly.substring(0, 2);
+      if (digitsOnly.length >= 3) {
+        formatted += '/' + digitsOnly.substring(2, 4);
+        if (digitsOnly.length >= 5) {
+          formatted += '/' + digitsOnly.substring(4, 8);
+        }
+      }
+    }
+    setEditDateDisplayValue(formatted);
+    if (formatted.length === 10) {
+      const iso = parseDateFromDisplay(formatted);
+      handleEditInputChange('transactionDate', iso || '');
+    } else {
+      handleEditInputChange('transactionDate', '');
+    }
+  };
+
+  const saveEdit = async () => {
+    try {
+      setIsSavingEdit(true);
+      setEditError('');
+
+      if (!editForm.title.trim()) throw new Error('Title is required');
+      if (!editForm.categoryId) throw new Error('Category is required');
+      if (!editForm.accountId) throw new Error('Account is required');
+      if (!editForm.transactionDate) throw new Error('Transaction date is required');
+      if (editForm.amount <= 0) throw new Error('Amount must be greater than 0');
+
+      await TransactionService.updateTransaction(editForm.transactionId, {
+        type: editForm.type,
+        amount: editForm.amount,
+        currency: editForm.currency,
+        categoryId: editForm.categoryId,
+        accountId: editForm.accountId,
+        title: editForm.title,
+        description: editForm.description,
+        transactionDate: editForm.transactionDate,
+      });
+
+      closeEditModal();
+      await loadMonthData();
+    } catch (e) {
+      console.error('Failed to save transaction edit:', e);
+      setEditError(e instanceof Error ? e.message : 'Failed to save changes');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDelete = async (t: Transaction) => {
+    const ok = window.confirm('Delete this transaction? This action cannot be undone.');
+    if (!ok) return;
+    try {
+      await TransactionService.deleteTransaction(t.transaction_id);
+      await loadMonthData();
+    } catch (e) {
+      console.error('Failed to delete transaction:', e);
+      setError(e instanceof Error ? e.message : 'Failed to delete transaction');
+    }
+  };
 
   // Dev-only sample data generator
   const generateSampleTransactions = async () => {
@@ -546,6 +685,24 @@ export function Transactions() {
                       {transaction.type === 'income' ? '+' : '-'}
                       {formatAmount(transaction.amount, transaction.currency)}
                     </div>
+                    <div className="mt-2 flex items-center justify-end space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(transaction)}
+                        className="px-3 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 touch-manipulation"
+                        title="Edit transaction"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(transaction)}
+                        className="px-3 py-1 text-sm rounded-md border border-red-300 bg-white text-red-700 hover:bg-red-50 touch-manipulation"
+                        title="Delete transaction"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -553,6 +710,170 @@ export function Transactions() {
           )}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {isEditOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Edit Transaction</h3>
+              <p className="text-sm text-gray-500">Update the details and save your changes.</p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Transaction Type</label>
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => handleEditInputChange('type', 'expense')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                      editForm.type === 'expense' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    💸 Expense
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleEditInputChange('type', 'income')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                      editForm.type === 'income' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    💰 Income
+                  </button>
+                </div>
+              </div>
+
+              {/* Amount & Currency */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={editForm.amount || ''}
+                    onChange={(e) => handleEditInputChange('amount', parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+                  <select
+                    value={editForm.currency}
+                    onChange={(e) => handleEditInputChange('currency', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="CLP">CLP</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                <select
+                  value={editForm.categoryId}
+                  onChange={(e) => handleEditInputChange('categoryId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {(category as any).emoji ? `${(category as any).emoji} ` : ''}{category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Account */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Account *</label>
+                <select
+                  value={editForm.accountId}
+                  onChange={(e) => handleEditInputChange('accountId', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select an account</option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={(e) => handleEditInputChange('title', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter transaction title"
+                />
+              </div>
+
+              {/* Date */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Transaction Date * <span className="text-xs text-gray-500">(dd/mm/yyyy)</span>
+                </label>
+                <input
+                  type="text"
+                  value={editDateDisplayValue}
+                  onChange={(e) => handleEditDateChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="DD/MM/YYYY"
+                  maxLength={10}
+                  pattern="\d{2}/\d{2}/\d{4}"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  rows={3}
+                  value={editForm.description}
+                  onChange={(e) => handleEditInputChange('description', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                  placeholder="Optional description or notes..."
+                />
+              </div>
+
+              {editError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{editError}</div>
+              )}
+
+              {/* Actions */}
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 touch-manipulation"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveEdit}
+                  disabled={isSavingEdit}
+                  className={`px-4 py-2 rounded-md text-white touch-manipulation ${isSavingEdit ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                >
+                  {isSavingEdit ? 'Saving…' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
