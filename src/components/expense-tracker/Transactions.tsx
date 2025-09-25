@@ -485,10 +485,10 @@ export function Transactions() {
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {/* Header */}
         <div className="p-6 border-b border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <h2 className="text-2xl font-bold text-gray-900">Transaction History</h2>
-              <div className="mt-2 flex items-center space-x-3">
+              <div className="mt-2 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   onClick={goToPreviousMonth}
@@ -533,7 +533,7 @@ export function Transactions() {
                 </div>
               )}
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-wrap items-center gap-3 sm:justify-end">
               {exportError && (
                 <span className="text-sm text-red-600">{exportError}</span>
               )}
@@ -630,11 +630,11 @@ export function Transactions() {
             </div>
           ) : (
             transactions.map((transaction) => (
-              <div key={transaction.id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex items-start justify-between">
+              <div key={transaction.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   {/* Left side - Transaction info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-3 mb-2">
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
                       {/* Type indicator */}
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         transaction.type === 'income' 
@@ -658,13 +658,13 @@ export function Transactions() {
                     </div>
                     
                     {/* Title */}
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">
+                    <h3 className="text-lg font-medium text-gray-900 mb-1 break-words leading-tight">
                       {transaction.title}
                     </h3>
                     
                     {/* Description */}
                     {transaction.description && (
-                      <p className="text-sm text-gray-600 mb-2">
+                      <p className="text-sm text-gray-600 mb-2 break-words">
                         {transaction.description}
                       </p>
                     )}
@@ -676,8 +676,8 @@ export function Transactions() {
                   </div>
                   
                   {/* Right side - Amount */}
-                  <div className="ml-4 flex-shrink-0 text-right">
-                    <div className={`text-xl font-bold ${
+                  <div className="flex-shrink-0 text-left md:ml-4 md:text-right">
+                    <div className={`text-xl font-bold leading-tight ${
                       transaction.type === 'income' 
                         ? 'text-green-600' 
                         : 'text-red-600'
@@ -685,7 +685,7 @@ export function Transactions() {
                       {transaction.type === 'income' ? '+' : '-'}
                       {formatAmount(transaction.amount, transaction.currency)}
                     </div>
-                    <div className="mt-2 flex items-center justify-end space-x-2">
+                    <div className="mt-2 flex flex-wrap items-center gap-2 justify-start md:justify-end">
                       <button
                         type="button"
                         onClick={() => openEditModal(transaction)}
