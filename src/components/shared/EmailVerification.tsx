@@ -112,7 +112,7 @@ export function EmailVerification({ onComplete }: EmailVerificationProps) {
                 Email Verified Successfully!
               </h1>
               <p className="text-gray-600 mb-6">
-                Welcome to Marqness! Your account has been confirmed and you&apos;re ready to start tracking your time.
+                Welcome to Tool Hub! Your account has been confirmed and you are ready to use the hub.
               </p>
               <div className="mb-4">
                 <p className="text-sm text-gray-500">

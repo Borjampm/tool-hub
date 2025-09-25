@@ -1,6 +1,6 @@
 # Authentication System Guide
 
-This document explains how user authentication works in the Marqness hobby tracking application.
+This document explains how user authentication works in the Tool Hub applications.
 
 ## 🔐 Authentication Overview
 

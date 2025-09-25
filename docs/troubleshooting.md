@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-This guide covers common issues and solutions when developing with Marqness.
+This guide covers common issues and solutions when developing with Tool Hub.
 
 ## 🚨 Common Issues & Solutions
 
