@@ -62,7 +62,7 @@ export function LandingPage() {
             
             <p className="text-base sm:text-lg md:text-xl text-gray-600 md:max-w-2xl md:mx-auto">
               <span className="md:hidden">Your personal productivity hub</span>
-              <span className="hidden md:inline">Your personal productivity hub for tracking hobbies and managing expenses</span>
+              <span className="hidden md:inline">Your personal productivity hub for tracking hobbies, managing expenses, and exploring music tools</span>
             </p>
           </div>
 
@@ -91,10 +91,22 @@ export function LandingPage() {
                 Monitor spending & expenses
               </p>
             </button>
+
+            {/* Music Tools Button */}
+            <button
+              onClick={() => navigate('/music-tools')}
+              className="bg-white rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation min-h-[120px] sm:min-h-[140px] flex flex-col items-center justify-center group col-span-2"
+            >
+              <div className="text-2xl sm:text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">🎵</div>
+              <h2 className="text-sm sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">Music Tools</h2>
+              <p className="text-xs sm:text-sm text-gray-600 text-center leading-tight">
+                Experiment with audio utilities & practice aids
+              </p>
+            </button>
           </div>
 
           {/* Desktop layout - visible only on medium screens and up */}
-          <div className="hidden md:grid md:grid-cols-2 gap-6 sm:gap-8 max-w-2xl mx-auto mb-8 sm:mb-12">
+          <div className="hidden md:grid md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto mb-8 sm:mb-12">
             {/* Hobby Tracker Card */}
             <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300">
               <div className="text-3xl sm:text-4xl mb-4">🎯</div>
@@ -122,6 +134,21 @@ export function LandingPage() {
                 className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium touch-manipulation min-h-[44px] text-base sm:text-lg"
               >
                 Track Expenses
+              </button>
+            </div>
+
+            {/* Music Tools Card */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300">
+              <div className="text-3xl sm:text-4xl mb-4">🎵</div>
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Music Tools</h2>
+              <p className="text-sm sm:text-base text-gray-600 mb-6">
+                Experiment with tuning helpers, practice timers, and future music-focused utilities in one place
+              </p>
+              <button
+                onClick={() => navigate('/music-tools')}
+                className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg hover:bg-purple-700 transition-colors duration-200 font-medium touch-manipulation min-h-[44px] text-base sm:text-lg"
+              >
+                Explore Music Tools
               </button>
             </div>
           </div>
