@@ -22,8 +22,8 @@ Manage personal expenses and categories.
 
 ### 🎵 Music Tools (foundations in progress)
 Explore and prototype music-focused utilities.
-- ** Metronome**: Practice music
-- ** Reader**: Practice music reading
+- **🎚️ Metronome**: Dial tempo, pick subdivisions, and rehearse with sample-accurate audio clicks
+- **📖 Reading Practice**: Build sight-reading skills
 
 > The hub is designed to grow. New apps can be added quickly and shipped independently without breaking existing ones.
 
