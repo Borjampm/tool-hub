@@ -46,7 +46,7 @@ export function ExpenseNavbar({ activeTab, onTabChange }: ExpenseNavbarProps) {
               onClick={() => navigate('/')}
               className="text-xl font-semibold text-gray-900 mr-4 sm:mr-8 hover:text-emerald-600 transition-colors duration-200 cursor-pointer touch-manipulation min-h-[44px] flex items-center"
             >
-              Marqness
+              Tool Hub
             </button>
             
             {/* Desktop Navigation - Hidden on mobile */}
