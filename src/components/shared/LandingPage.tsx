@@ -28,7 +28,7 @@ export function LandingPage() {
         <div className="md:w-full">
           <div className="mb-6 sm:mb-8 md:mb-12">
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 md:mb-4">
-              Welcome to <span className="text-indigo-600">Marqness</span>
+              Welcome to <span className="text-indigo-600">Tool Hub</span>
             </h1>
             
             {/* Authentication Status */}
@@ -61,8 +61,8 @@ export function LandingPage() {
             </div>
             
             <p className="text-base sm:text-lg md:text-xl text-gray-600 md:max-w-2xl md:mx-auto">
-              <span className="md:hidden">Your personal productivity hub</span>
-              <span className="hidden md:inline">Your personal productivity hub for tracking hobbies, managing expenses, and exploring music tools</span>
+              <span className="md:hidden">Your everyday tools and experiments</span>
+              <span className="hidden md:inline">A personal hub for everyday tools — track hobbies, manage expenses — and a sandbox to build, try, and deploy new experiments</span>
             </p>
           </div>
 

@@ -27,7 +27,7 @@ export function EmailVerified() {
             </h1>
             
             <p className="text-gray-600 mb-8">
-              Your email has been successfully verified. You can now access all features of Marqness and start tracking your productivity!
+              Your email has been successfully verified. You can now access all Tool Hub apps and start using your tools.
             </p>
 
             {/* Action Buttons */}
@@ -56,7 +56,7 @@ export function EmailVerified() {
           {/* Welcome message */}
           <div className="mt-6 text-center">
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Welcome to <span className="text-indigo-600">Marqness</span>!
+              Welcome to <span className="text-indigo-600">Tool Hub</span>!
             </h2>
             <p className="text-gray-600">
               Ready to boost your productivity and track your journey?

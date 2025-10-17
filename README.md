@@ -128,7 +128,3 @@ src/
 - `docs/troubleshooting.md`: Common issues and fixes
 - `docs/README-AUTHENTICATION.md`: Auth setup and flows
 - `docs/README-SUPABASE.md`: Supabase configuration and local dev
-
----
-
-This hub helps me run daily tools and ship experiments fast, without entangling apps. Build something new, plug it in, and deploy.

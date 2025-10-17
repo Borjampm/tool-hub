@@ -136,7 +136,7 @@ export function SignInPage() {
               ← Back to Home
             </Link>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Welcome to <span className="text-indigo-600">Marqness</span>
+              Welcome to <span className="text-indigo-600">Tool Hub</span>
             </h1>
             <p className="text-gray-600">
               {isSignUp ? 'Create your account to get started' : 'Sign in to your account'}
@@ -235,7 +235,7 @@ export function SignInPage() {
           {/* Additional Info */}
           <div className="mt-6 text-center text-sm text-gray-600">
             <p>Your data is private and secure.</p>
-            <p>Start tracking your productivity today!</p>
+            <p>Start using your tools today!</p>
           </div>
         </div>
       </div>
