@@ -78,7 +78,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
           } as TimerState;
         }
       } catch (_e) {
-        // ignore
+        console.error('Error loading timer state:', _e);
       }
       return init;
     }
@@ -105,7 +105,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       }
     } catch (_e) {
-      // ignore storage errors
+      console.error('Error persisting timer state:', _e);
     }
   }, [state]);
 
@@ -123,7 +123,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         console.error('Timer resume failed:', err);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const startTimer = (entryId: string, startTimeMs?: number) => {

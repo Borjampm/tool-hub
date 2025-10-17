@@ -172,7 +172,7 @@ export function MetronomeView() {
     return loadPromise;
   }, []);
 
-  const playClick = useCallback((accent: boolean, startTime: number) => {
+  const playClick = useCallback((startTime: number) => {
     const context = audioContextRef.current;
     const buffer = sampleBufferRef.current;
 
@@ -220,7 +220,7 @@ export function MetronomeView() {
 
     while (nextTickTimeRef.current < context.currentTime + SCHEDULE_AHEAD_SECONDS) {
       const accent = subdivisionIndexRef.current === 0;
-      playClick(accent, nextTickTimeRef.current);
+      playClick(nextTickTimeRef.current);
       scheduleVisualPulse(accent, nextTickTimeRef.current);
 
       nextTickTimeRef.current += secondsPerSubdivision;
