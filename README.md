@@ -20,6 +20,11 @@ Manage personal expenses and categories.
 - **📃 Transactions List**: Browse and filter transaction history
 - **📈 Dashboard**: Early overview of spending (iterating)
 
+### 🎵 Music Tools (foundations in progress)
+Explore and prototype music-focused utilities.
+- **🎚️ Metronome**: Dial tempo, pick subdivisions, and rehearse with sample-accurate audio clicks
+- **📖 Reading Practice**: Build sight-reading skills
+
 > The hub is designed to grow. New apps can be added quickly and shipped independently without breaking existing ones.
 
 ## 🧩 Architecture at a glance
@@ -64,7 +69,7 @@ The app will be available at `http://localhost:5173/`.
 
 ## 🧭 Using the hub
 1. **Sign in** using the built-in auth flow
-2. **Pick an app** on the landing page (Hobby Tracker, Expense Tracker)
+2. **Pick an app** on the landing page (Hobby Tracker, Expense Tracker, Music Tools)
 3. **Use the tool**:
    - Hobby Tracker: start a timer, add context, review history, export CSV, manage categories
    - Expense Tracker: add transactions, manage categories and accounts, review lists (early)
@@ -77,7 +82,8 @@ src/
 ├── components/
 │   ├── shared/                    # Shared UI (landing, auth, guards, verification)
 │   ├── hobby-tracker/             # Hobby Tracker app (views, modals, timer components)
-│   └── expense-tracker/           # Expense Tracker app (pages, forms, lists)
+│   ├── expense-tracker/           # Expense Tracker app (pages, forms, lists)
+│   └── music-tools/               # Music Tools app (experiments and utilities)
 ├── contexts/                      # Cross-app React contexts (auth, timer)
 ├── services/                      # App-agnostic services (CRUD, CSV, categories, transactions)
 ├── lib/                           # Supabase client, date/time utilities

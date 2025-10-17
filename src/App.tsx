@@ -6,6 +6,7 @@ import { AccountManagement } from './components/shared/AccountManagement';
 import { SignInPage } from './components/shared/SignInPage';
 import { EmailVerified } from './components/shared/EmailVerified';
 import { EmailVerificationCallback } from './components/shared/EmailVerificationCallback';
+import { MusicToolsApp } from './components/music-tools/MusicToolsApp';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/verify-email" element={<EmailVerificationCallback />} />
         <Route path="/hobby-tracker" element={<HobbyTrackerApp />} />
         <Route path="/expense-tracker" element={<ExpenseTracker />} />
+        <Route path="/music-tools" element={<MusicToolsApp />} />
         <Route path="/account" element={<AccountManagement />} />
       </Routes>
     </Router>
