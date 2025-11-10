@@ -218,8 +218,11 @@ export function AddTransaction() {
           frequency: recurringFrequency,
           interval: recurringInterval,
         });
-        setSuccessTitle('Recurring rule created');
-        setSuccessSubtitle('Occurrences will appear automatically as months load.');
+        setSuccessTitle('Recurring Transaction Created! 🔄');
+        const frequencyText = recurringInterval > 1 
+          ? `Every ${recurringInterval} ${recurringFrequency === 'daily' ? 'days' : recurringFrequency === 'weekly' ? 'weeks' : recurringFrequency === 'monthly' ? 'months' : 'years'}`
+          : recurringFrequency === 'daily' ? 'Daily' : recurringFrequency === 'weekly' ? 'Weekly' : recurringFrequency === 'monthly' ? 'Monthly' : 'Yearly';
+        setSuccessSubtitle(`${frequencyText} transactions will appear automatically in your history.`);
         setSuccess(true);
       } else {
         await TransactionService.createTransaction(formData);
