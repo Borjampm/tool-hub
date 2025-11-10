@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { TransactionService } from '../../services/transactionService';
 import { UserAccountService } from '../../services/userAccountService';
+import { RecurringTransactionService } from '../../services/recurringTransactionService';
+import type { UpdateScope } from '../../services/recurringTransactionService';
 import type { Transaction, UserExpenseCategory, UserAccount } from '../../lib/supabase';
 import { formatDate } from '../../lib/dateUtils';
 import { CSVExportService } from '../../services/csvExportService';
@@ -35,6 +37,8 @@ export function Transactions() {
     title: string;
     description: string;
     transactionDate: string; // YYYY-MM-DD
+    isRecurring: boolean;
+    recurringRuleId: string | null;
   }>({
     transactionId: '',
     type: 'expense',
@@ -45,7 +49,11 @@ export function Transactions() {
     title: '',
     description: '',
     transactionDate: '',
+    isRecurring: false,
+    recurringRuleId: null,
   });
+  const [showRecurringDialog, setShowRecurringDialog] = useState(false);
+  const [recurringUpdateScope, setRecurringUpdateScope] = useState<UpdateScope>('this-only');
 
   const toYYYYMMDD = (d: Date) => {
     const y = d.getFullYear();
@@ -87,6 +95,16 @@ export function Transactions() {
     try {
       setIsLoading(true);
       const { startDate, endDate } = getMonthRange(currentMonthDate);
+      
+      // First, materialize recurring transactions for this month range
+      try {
+        await RecurringTransactionService.materializeForRange(startDate, endDate);
+      } catch (materializeErr) {
+        console.error('Error materializing recurring transactions:', materializeErr);
+        // Continue loading even if materialization fails
+      }
+
+      // Then load the transactions
       const [transactionData, categoryData, accountData] = await Promise.all([
         TransactionService.getTransactionsInDateRange(startDate, endDate),
         TransactionService.getExpenseCategories(),
@@ -146,6 +164,9 @@ export function Transactions() {
     const categoryId = t.category_id || '';
     const accountId = t.account_id || '';
     const transactionDate = t.transaction_date; // already YYYY-MM-DD
+    const isRecurring = !!(t as any).recurring_rule_id;
+    const recurringRuleId = (t as any).recurring_rule_id || null;
+    
     setEditForm({
       transactionId,
       type: t.type,
@@ -156,9 +177,12 @@ export function Transactions() {
       title: t.title,
       description: t.description || '',
       transactionDate,
+      isRecurring,
+      recurringRuleId,
     });
     setEditDateDisplayValue(formatDateForDisplay(transactionDate));
     setEditError('');
+    setRecurringUpdateScope('this-only'); // Default to editing just this occurrence
     setIsEditOpen(true);
   };
 
@@ -193,6 +217,12 @@ export function Transactions() {
   };
 
   const saveEdit = async () => {
+    // If recurring, show scope dialog first
+    if (editForm.isRecurring && !showRecurringDialog) {
+      setShowRecurringDialog(true);
+      return;
+    }
+
     try {
       setIsSavingEdit(true);
       setEditError('');
@@ -203,17 +233,36 @@ export function Transactions() {
       if (!editForm.transactionDate) throw new Error('Transaction date is required');
       if (editForm.amount <= 0) throw new Error('Amount must be greater than 0');
 
-      await TransactionService.updateTransaction(editForm.transactionId, {
-        type: editForm.type,
-        amount: editForm.amount,
-        currency: editForm.currency,
-        categoryId: editForm.categoryId,
-        accountId: editForm.accountId,
-        title: editForm.title,
-        description: editForm.description,
-        transactionDate: editForm.transactionDate,
-      });
+      if (editForm.isRecurring) {
+        // Use recurring transaction update method
+        await RecurringTransactionService.updateRecurringTransaction(
+          editForm.transactionId,
+          {
+            type: editForm.type,
+            amount: editForm.amount,
+            currency: editForm.currency,
+            categoryId: editForm.categoryId,
+            accountId: editForm.accountId,
+            title: editForm.title,
+            description: editForm.description,
+          },
+          recurringUpdateScope
+        );
+      } else {
+        // Regular transaction update
+        await TransactionService.updateTransaction(editForm.transactionId, {
+          type: editForm.type,
+          amount: editForm.amount,
+          currency: editForm.currency,
+          categoryId: editForm.categoryId,
+          accountId: editForm.accountId,
+          title: editForm.title,
+          description: editForm.description,
+          transactionDate: editForm.transactionDate,
+        });
+      }
 
+      setShowRecurringDialog(false);
       closeEditModal();
       await loadMonthData();
     } catch (e) {
@@ -225,14 +274,36 @@ export function Transactions() {
   };
 
   const handleDelete = async (t: Transaction) => {
-    const ok = window.confirm('Delete this transaction? This action cannot be undone.');
-    if (!ok) return;
-    try {
-      await TransactionService.deleteTransaction(t.transaction_id);
-      await loadMonthData();
-    } catch (e) {
-      console.error('Failed to delete transaction:', e);
-      setError(e instanceof Error ? e.message : 'Failed to delete transaction');
+    const isRecurring = !!(t as any).recurring_rule_id;
+    
+    if (isRecurring) {
+      // For recurring transactions, offer options
+      const choice = window.confirm(
+        'This is a recurring transaction.\n\n' +
+        'Click OK to skip just this occurrence (it won\'t appear again).\n' +
+        'Click Cancel to keep it.'
+      );
+      
+      if (!choice) return;
+      
+      try {
+        await RecurringTransactionService.skipOccurrence(t.transaction_id);
+        await loadMonthData();
+      } catch (e) {
+        console.error('Failed to skip recurring transaction:', e);
+        setError(e instanceof Error ? e.message : 'Failed to skip transaction');
+      }
+    } else {
+      // Regular transaction - permanent delete
+      const ok = window.confirm('Delete this transaction? This action cannot be undone.');
+      if (!ok) return;
+      try {
+        await TransactionService.deleteTransaction(t.transaction_id);
+        await loadMonthData();
+      } catch (e) {
+        console.error('Failed to delete transaction:', e);
+        setError(e instanceof Error ? e.message : 'Failed to delete transaction');
+      }
     }
   };
 
@@ -629,8 +700,12 @@ export function Transactions() {
               </p>
             </div>
           ) : (
-            transactions.map((transaction) => (
-              <div key={transaction.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors">
+            transactions.map((transaction) => {
+              const isRecurring = !!(transaction as any).recurring_rule_id;
+              const isSkipped = !!(transaction as any).is_recurring_skipped;
+              
+              return (
+              <div key={transaction.id} className={`p-4 sm:p-6 hover:bg-gray-50 transition-colors ${isSkipped ? 'opacity-50' : ''}`}>
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   {/* Left side - Transaction info */}
                   <div className="flex-1 min-w-0">
@@ -643,6 +718,19 @@ export function Transactions() {
                       }`}>
                         {transaction.type === 'income' ? '💰 Income' : '💸 Expense'}
                       </span>
+                      
+                      {/* Recurring indicator */}
+                      {isRecurring && !isSkipped && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800" title="Recurring transaction">
+                          🔄 Recurring
+                        </span>
+                      )}
+                      
+                      {isSkipped && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800" title="Skipped occurrence">
+                          ⏭️ Skipped
+                        </span>
+                      )}
                       
                       {/* Category */}
                       <span className="inline-flex items-center space-x-1 text-sm text-gray-600">
@@ -686,38 +774,113 @@ export function Transactions() {
                       {formatAmount(transaction.amount, transaction.currency)}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2 justify-start md:justify-end">
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(transaction)}
-                        className="px-3 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 touch-manipulation"
-                        title="Edit transaction"
-                      >
-                        Edit
-                      </button>
+                      {!isSkipped && (
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(transaction)}
+                          className="px-3 py-1 text-sm rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 touch-manipulation"
+                          title="Edit transaction"
+                        >
+                          Edit
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleDelete(transaction)}
                         className="px-3 py-1 text-sm rounded-md border border-red-300 bg-white text-red-700 hover:bg-red-50 touch-manipulation"
-                        title="Delete transaction"
+                        title={isRecurring ? 'Skip this occurrence' : 'Delete transaction'}
                       >
-                        Delete
+                        {isSkipped ? 'Deleted' : isRecurring ? 'Skip' : 'Delete'}
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
-            ))
+            );
+            })
           )}
         </div>
       </div>
+
+      {/* Recurring Update Scope Dialog */}
+      {showRecurringDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-lg w-full max-w-md p-6">
+            <div className="mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Update Recurring Transaction</h3>
+              <p className="text-sm text-gray-500 mt-2">How would you like to update this recurring transaction?</p>
+            </div>
+            
+            <div className="space-y-3 mb-6">
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="scope"
+                  value="this-only"
+                  checked={recurringUpdateScope === 'this-only'}
+                  onChange={(e) => setRecurringUpdateScope(e.target.value as UpdateScope)}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">Just this occurrence</div>
+                  <div className="text-sm text-gray-500">Only update this month&apos;s transaction</div>
+                </div>
+              </label>
+              
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="scope"
+                  value="this-and-future"
+                  checked={recurringUpdateScope === 'this-and-future'}
+                  onChange={(e) => setRecurringUpdateScope(e.target.value as UpdateScope)}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">This and all future occurrences</div>
+                  <div className="text-sm text-gray-500">Update this month and all future months</div>
+                </div>
+              </label>
+            </div>
+            
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRecurringDialog(false);
+                  setIsSavingEdit(false);
+                }}
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveEdit}
+                disabled={isSavingEdit}
+                className={`px-4 py-2 rounded-md text-white ${isSavingEdit ? 'bg-indigo-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+              >
+                {isSavingEdit ? 'Saving…' : 'Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal */}
       {isEditOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto p-4 sm:p-6">
             <div className="mb-4">
-              <h3 className="text-xl font-semibold text-gray-900">Edit Transaction</h3>
+              <h3 className="text-xl font-semibold text-gray-900">
+                Edit {editForm.isRecurring ? 'Recurring ' : ''}Transaction
+              </h3>
               <p className="text-sm text-gray-500">Update the details and save your changes.</p>
+              {editForm.isRecurring && (
+                <p className="text-sm text-blue-600 mt-1">
+                  🔄 This is a recurring transaction
+                </p>
+              )}
             </div>
 
             <div className="space-y-4">
