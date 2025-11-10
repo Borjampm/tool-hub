@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { TransactionService } from '../../services/transactionService';
 import { UserAccountService } from '../../services/userAccountService';
 import { RecurringTransactionService } from '../../services/recurringTransactionService';
@@ -27,6 +27,8 @@ export function Transactions() {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editError, setEditError] = useState('');
   const [editDateDisplayValue, setEditDateDisplayValue] = useState('');
+  const [recurringStartDateDisplayValue, setRecurringStartDateDisplayValue] = useState('');
+  const [recurringEndDateDisplayValue, setRecurringEndDateDisplayValue] = useState('');
   const [editForm, setEditForm] = useState<{
     transactionId: string;
     type: 'income' | 'expense';
@@ -39,6 +41,11 @@ export function Transactions() {
     transactionDate: string; // YYYY-MM-DD
     isRecurring: boolean;
     recurringRuleId: string | null;
+    // Schedule fields (only for recurring)
+    recurringFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+    recurringInterval: number;
+    recurringStartDate: string; // YYYY-MM-DD
+    recurringEndDate: string; // YYYY-MM-DD or empty
   }>({
     transactionId: '',
     type: 'expense',
@@ -51,9 +58,14 @@ export function Transactions() {
     transactionDate: '',
     isRecurring: false,
     recurringRuleId: null,
+    recurringFrequency: 'monthly',
+    recurringInterval: 1,
+    recurringStartDate: '',
+    recurringEndDate: '',
   });
   const [showRecurringDialog, setShowRecurringDialog] = useState(false);
   const [recurringUpdateScope, setRecurringUpdateScope] = useState<UpdateScope>('this-only');
+  const editDateInputRef = useRef<HTMLInputElement>(null);
 
   const toYYYYMMDD = (d: Date) => {
     const y = d.getFullYear();
@@ -159,13 +171,37 @@ export function Transactions() {
     return { incomesByCurrency, expensesByCurrency, netByCurrency, currencies };
   }, [transactions]);
 
-  const openEditModal = (t: Transaction) => {
+  const openEditModal = async (t: Transaction) => {
     const transactionId = t.transaction_id;
     const categoryId = t.category_id || '';
     const accountId = t.account_id || '';
     const transactionDate = t.transaction_date; // already YYYY-MM-DD
     const isRecurring = !!(t as any).recurring_rule_id;
     const recurringRuleId = (t as any).recurring_rule_id || null;
+    
+    // Load rule data if recurring
+    let ruleData = {
+      frequency: 'monthly' as const,
+      interval: 1,
+      startDate: transactionDate,
+      endDate: '',
+    };
+    
+    if (isRecurring && recurringRuleId) {
+      try {
+        const rule = await RecurringTransactionService.getRuleForTransaction(transactionId);
+        if (rule) {
+          ruleData = {
+            frequency: rule.frequency || 'monthly',
+            interval: rule.interval || 1,
+            startDate: rule.start_date || transactionDate,
+            endDate: rule.end_date || '',
+          };
+        }
+      } catch (err) {
+        console.error('Error loading recurring rule:', err);
+      }
+    }
     
     setEditForm({
       transactionId,
@@ -179,8 +215,14 @@ export function Transactions() {
       transactionDate,
       isRecurring,
       recurringRuleId,
+      recurringFrequency: ruleData.frequency,
+      recurringInterval: ruleData.interval,
+      recurringStartDate: ruleData.startDate,
+      recurringEndDate: ruleData.endDate,
     });
     setEditDateDisplayValue(formatDateForDisplay(transactionDate));
+    setRecurringStartDateDisplayValue(formatDateForDisplay(ruleData.startDate));
+    setRecurringEndDateDisplayValue(formatDateForDisplay(ruleData.endDate));
     setEditError('');
     setRecurringUpdateScope('this-only'); // Default to editing just this occurrence
     setIsEditOpen(true);
@@ -195,8 +237,23 @@ export function Transactions() {
     setEditError('');
   };
 
-  const handleEditDateChange = (value: string) => {
+  const handleEditDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const value = input.value;
+    const cursorPosition = input.selectionStart || 0;
+    
+    // Get digits only from the current value
     const digitsOnly = value.replace(/\D/g, '');
+    
+    // Count digits before cursor position
+    let digitsBeforeCursor = 0;
+    for (let i = 0; i < cursorPosition && i < value.length; i++) {
+      if (/\d/.test(value[i])) {
+        digitsBeforeCursor++;
+      }
+    }
+    
+    // Format the digits
     let formatted = '';
     if (digitsOnly.length > 0) {
       formatted = digitsOnly.substring(0, 2);
@@ -207,6 +264,28 @@ export function Transactions() {
         }
       }
     }
+    
+    // Calculate new cursor position
+    let newCursorPosition = formatted.length;
+    if (digitsBeforeCursor > 0) {
+      // Count slashes before the target digit position
+      let slashesBefore = 0;
+      let digitsCounted = 0;
+      for (let i = 0; i < formatted.length; i++) {
+        if (formatted[i] === '/') {
+          if (digitsCounted < digitsBeforeCursor) {
+            slashesBefore++;
+          }
+        } else {
+          digitsCounted++;
+          if (digitsCounted === digitsBeforeCursor) {
+            newCursorPosition = i + 1;
+            break;
+          }
+        }
+      }
+    }
+    
     setEditDateDisplayValue(formatted);
     if (formatted.length === 10) {
       const iso = parseDateFromDisplay(formatted);
@@ -214,6 +293,13 @@ export function Transactions() {
     } else {
       handleEditInputChange('transactionDate', '');
     }
+    
+    // Restore cursor position after state update
+    setTimeout(() => {
+      if (editDateInputRef.current) {
+        editDateInputRef.current.setSelectionRange(newCursorPosition, newCursorPosition);
+      }
+    }, 0);
   };
 
   const saveEdit = async () => {
@@ -235,17 +321,33 @@ export function Transactions() {
 
       if (editForm.isRecurring) {
         // Use recurring transaction update method
+        const updateData: any = {
+          type: editForm.type,
+          amount: editForm.amount,
+          currency: editForm.currency,
+          categoryId: editForm.categoryId,
+          accountId: editForm.accountId,
+          title: editForm.title,
+          description: editForm.description,
+        };
+        
+        // Only include transactionDate for 'this-only' scope
+        // For other scopes, date changes don't make sense (rule defines the schedule)
+        if (recurringUpdateScope === 'this-only') {
+          updateData.transactionDate = editForm.transactionDate;
+        }
+        
+        // Include schedule fields for 'this-and-future' and 'rule-only' scopes
+        if (recurringUpdateScope === 'this-and-future' || recurringUpdateScope === 'rule-only') {
+          updateData.frequency = editForm.recurringFrequency;
+          updateData.interval = editForm.recurringInterval;
+          updateData.startDate = editForm.recurringStartDate;
+          updateData.endDate = editForm.recurringEndDate || null;
+        }
+        
         await RecurringTransactionService.updateRecurringTransaction(
           editForm.transactionId,
-          {
-            type: editForm.type,
-            amount: editForm.amount,
-            currency: editForm.currency,
-            categoryId: editForm.categoryId,
-            accountId: editForm.accountId,
-            title: editForm.title,
-            description: editForm.description,
-          },
+          updateData,
           recurringUpdateScope
         );
       } else {
@@ -823,7 +925,7 @@ export function Transactions() {
                 />
                 <div>
                   <div className="font-medium text-gray-900">Just this occurrence</div>
-                  <div className="text-sm text-gray-500">Only update this month&apos;s transaction</div>
+                  <div className="text-sm text-gray-500">Only update this month&apos;s transaction (including date changes). Schedule changes will be ignored.</div>
                 </div>
               </label>
               
@@ -838,10 +940,33 @@ export function Transactions() {
                 />
                 <div>
                   <div className="font-medium text-gray-900">This and all future occurrences</div>
-                  <div className="text-sm text-gray-500">Update this month and all future months</div>
+                  <div className="text-sm text-gray-500">Update this month and all future months. Schedule changes will be applied.</div>
+                </div>
+              </label>
+              
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="scope"
+                  value="rule-only"
+                  checked={recurringUpdateScope === 'rule-only'}
+                  onChange={(e) => setRecurringUpdateScope(e.target.value as UpdateScope)}
+                  className="mt-1"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">Rule only</div>
+                  <div className="text-sm text-gray-500">Update the rule (affects future materializations). Schedule changes will be applied.</div>
                 </div>
               </label>
             </div>
+            
+            {recurringUpdateScope === 'this-and-future' && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Schedule changes (frequency, interval, dates) will be applied. Transaction date changes only apply when updating &quot;Just this occurrence&quot;.
+                </p>
+              </div>
+            )}
             
             <div className="flex items-center justify-end space-x-3">
               <button
@@ -989,9 +1114,10 @@ export function Transactions() {
                   Transaction Date * <span className="text-xs text-gray-500">(dd/mm/yyyy)</span>
                 </label>
                 <input
+                  ref={editDateInputRef}
                   type="text"
                   value={editDateDisplayValue}
-                  onChange={(e) => handleEditDateChange(e.target.value)}
+                  onChange={handleEditDateChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="DD/MM/YYYY"
                   maxLength={10}
@@ -1010,6 +1136,121 @@ export function Transactions() {
                   placeholder="Optional description or notes..."
                 />
               </div>
+
+              {/* Recurring Schedule Fields */}
+              {editForm.isRecurring && (
+                <div className="border-t border-gray-200 pt-4 space-y-4">
+                  <div className="mb-2">
+                    <h4 className="text-sm font-medium text-gray-900">Recurring Schedule</h4>
+                    <p className="text-xs text-blue-600 mt-1">
+                      💡 Schedule changes will only be applied when you select &quot;This and all future occurrences&quot; or &quot;Rule only&quot; in the next step.
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                      <select
+                        value={editForm.recurringFrequency}
+                        onChange={(e) => handleEditInputChange('recurringFrequency', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Interval</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={editForm.recurringInterval}
+                        onChange={(e) => handleEditInputChange('recurringInterval', Math.max(1, parseInt(e.target.value || '1', 10)))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Start Date <span className="text-xs text-gray-500">(dd/mm/yyyy)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={recurringStartDateDisplayValue}
+                      onChange={(e) => {
+                        const formatted = e.target.value.replace(/\D/g, '');
+                        let display = '';
+                        if (formatted.length > 0) {
+                          display = formatted.substring(0, 2);
+                          if (formatted.length >= 3) {
+                            display += '/' + formatted.substring(2, 4);
+                            if (formatted.length >= 5) {
+                              display += '/' + formatted.substring(4, 8);
+                            }
+                          }
+                        }
+                        setRecurringStartDateDisplayValue(display);
+                        if (display.length === 10) {
+                          const iso = parseDateFromDisplay(display);
+                          if (iso) handleEditInputChange('recurringStartDate', iso);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="DD/MM/YYYY"
+                      maxLength={10}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      End Date (optional) <span className="text-xs text-gray-500">(dd/mm/yyyy)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={recurringEndDateDisplayValue}
+                      onChange={(e) => {
+                        const formatted = e.target.value.replace(/\D/g, '');
+                        let display = '';
+                        if (formatted.length > 0) {
+                          display = formatted.substring(0, 2);
+                          if (formatted.length >= 3) {
+                            display += '/' + formatted.substring(2, 4);
+                            if (formatted.length >= 5) {
+                              display += '/' + formatted.substring(4, 8);
+                            }
+                          }
+                        }
+                        setRecurringEndDateDisplayValue(display);
+                        if (display.length === 10) {
+                          const iso = parseDateFromDisplay(display);
+                          handleEditInputChange('recurringEndDate', iso || '');
+                        } else {
+                          handleEditInputChange('recurringEndDate', '');
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="DD/MM/YYYY"
+                      maxLength={10}
+                    />
+                    {recurringEndDateDisplayValue && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRecurringEndDateDisplayValue('');
+                          handleEditInputChange('recurringEndDate', '');
+                        }}
+                        className="mt-1 text-xs text-red-600 hover:text-red-800"
+                      >
+                        Clear end date
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {editError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{editError}</div>
