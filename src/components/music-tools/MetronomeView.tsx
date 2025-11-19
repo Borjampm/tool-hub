@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChangeEvent, KeyboardEvent } from 'react';
+import type { ChangeEvent } from 'react';
 import metronomeSampleUrl from '../../assets/sounds/metronome/Perc_MetronomeQuartz_lo.wav?url';
 
 const MIN_BPM = 40;
@@ -78,7 +78,6 @@ export function MetronomeView() {
   const [isPulseActive, setIsPulseActive] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [isSampleLoaded, setIsSampleLoaded] = useState(false);
-  const [tempoInputValue, setTempoInputValue] = useState<string>(() => String(DEFAULT_BPM));
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const intervalIdRef = useRef<number | null>(null);
@@ -243,17 +242,6 @@ export function MetronomeView() {
     (event: ChangeEvent<HTMLInputElement>) => {
       const next = clampBpm(Number(event.target.value));
       setBpm(next);
-      setTempoInputValue(String(next));
-    },
-    []
-  );
-
-  const handleInputChange = useCallback(
-    (event: ChangeEvent<HTMLInputElement>) => {
-      const { value } = event.target;
-      if (/^\d*$/.test(value)) {
-        setTempoInputValue(value);
-      }
     },
     []
   );
@@ -261,32 +249,8 @@ export function MetronomeView() {
   const adjustBpm = useCallback((delta: number) => {
     setBpm((prev) => {
       const next = clampBpm(prev + delta);
-      setTempoInputValue(String(next));
       return next;
     });
-  }, []);
-
-  const handleInputBlur = useCallback(() => {
-    if (tempoInputValue.trim() === '') {
-      setTempoInputValue(String(bpm));
-      return;
-    }
-
-    const numericValue = Number(tempoInputValue);
-    if (!Number.isFinite(numericValue)) {
-      setTempoInputValue(String(bpm));
-      return;
-    }
-
-    const clamped = clampBpm(numericValue);
-    setBpm(clamped);
-    setTempoInputValue(String(clamped));
-  }, [bpm, tempoInputValue]);
-
-  const handleInputKeyDown = useCallback((event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      event.currentTarget.blur();
-    }
   }, []);
 
   const handleSubdivisionSelect = useCallback((value: number) => {
@@ -451,30 +415,8 @@ export function MetronomeView() {
             value={bpm}
             onChange={handleSliderChange}
             className="w-full accent-purple-600"
-            aria-labelledby="metronome-tempo-label"
+            aria-label="Tempo slider"
           />
-
-          <div className="flex flex-wrap items-center gap-3">
-            <label
-              id="metronome-tempo-label"
-              htmlFor="metronome-bpm-input"
-              className="text-xs font-medium uppercase tracking-[0.2em] text-gray-500"
-            >
-              Direct entry
-            </label>
-            <input
-              id="metronome-bpm-input"
-              type="number"
-              min={MIN_BPM}
-              max={MAX_BPM}
-              value={tempoInputValue}
-              onChange={handleInputChange}
-              onBlur={handleInputBlur}
-              onKeyDown={handleInputKeyDown}
-              className="w-24 rounded-md border border-gray-200 bg-white px-3 py-2 text-base font-medium text-gray-900 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200"
-            />
-            <span className="text-xs text-gray-400">{MIN_BPM}-{MAX_BPM} bpm</span>
-          </div>
         </div>
 
         <div className="w-full max-w-xl space-y-3">
