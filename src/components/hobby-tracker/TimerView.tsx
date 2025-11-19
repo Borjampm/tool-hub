@@ -40,7 +40,6 @@ export function TimerView() {
       }
     })();
     // We intentionally run only on initial mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleStart = async () => {

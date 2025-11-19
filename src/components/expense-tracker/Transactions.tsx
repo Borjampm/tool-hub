@@ -135,8 +135,7 @@ export function Transactions() {
 
   useEffect(() => {
     loadMonthData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentMonthDate]);
+  }, [currentMonthDate, loadMonthData]);
 
   const goToPreviousMonth = () => {
     setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -176,12 +175,17 @@ export function Transactions() {
     const categoryId = t.category_id || '';
     const accountId = t.account_id || '';
     const transactionDate = t.transaction_date; // already YYYY-MM-DD
-    const isRecurring = !!(t as any).recurring_rule_id;
-    const recurringRuleId = (t as any).recurring_rule_id || null;
+    const isRecurring = !!('recurring_rule_id' in t && t.recurring_rule_id);
+    const recurringRuleId = ('recurring_rule_id' in t && t.recurring_rule_id ? String(t.recurring_rule_id) : null);
     
     // Load rule data if recurring
-    let ruleData = {
-      frequency: 'monthly' as const,
+    let ruleData: {
+      frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+      interval: number;
+      startDate: string;
+      endDate: string;
+    } = {
+      frequency: 'monthly',
       interval: 1,
       startDate: transactionDate,
       endDate: '',
@@ -192,10 +196,10 @@ export function Transactions() {
         const rule = await RecurringTransactionService.getRuleForTransaction(transactionId);
         if (rule) {
           ruleData = {
-            frequency: rule.frequency || 'monthly',
-            interval: rule.interval || 1,
-            startDate: rule.start_date || transactionDate,
-            endDate: rule.end_date || '',
+            frequency: rule.frequency,
+            interval: rule.interval,
+            startDate: rule.start_date,
+            endDate: rule.end_date ?? '',
           };
         }
       } catch (err) {
@@ -268,15 +272,10 @@ export function Transactions() {
     // Calculate new cursor position
     let newCursorPosition = formatted.length;
     if (digitsBeforeCursor > 0) {
-      // Count slashes before the target digit position
-      let slashesBefore = 0;
+      // Count digits before cursor to determine cursor position
       let digitsCounted = 0;
       for (let i = 0; i < formatted.length; i++) {
-        if (formatted[i] === '/') {
-          if (digitsCounted < digitsBeforeCursor) {
-            slashesBefore++;
-          }
-        } else {
+        if (formatted[i] !== '/') {
           digitsCounted++;
           if (digitsCounted === digitsBeforeCursor) {
             newCursorPosition = i + 1;
@@ -321,7 +320,7 @@ export function Transactions() {
 
       if (editForm.isRecurring) {
         // Use recurring transaction update method
-        const updateData: any = {
+        const updateData: Record<string, unknown> = {
           type: editForm.type,
           amount: editForm.amount,
           currency: editForm.currency,
@@ -376,7 +375,7 @@ export function Transactions() {
   };
 
   const handleDelete = async (t: Transaction) => {
-    const isRecurring = !!(t as any).recurring_rule_id;
+    const isRecurring = !!('recurring_rule_id' in t && t.recurring_rule_id);
     
     if (isRecurring) {
       // For recurring transactions, offer options
@@ -803,8 +802,8 @@ export function Transactions() {
             </div>
           ) : (
             transactions.map((transaction) => {
-              const isRecurring = !!(transaction as any).recurring_rule_id;
-              const isSkipped = !!(transaction as any).is_recurring_skipped;
+              const isRecurring = !!('recurring_rule_id' in transaction && transaction.recurring_rule_id);
+              const isSkipped = !!('is_recurring_skipped' in transaction && transaction.is_recurring_skipped);
               
               return (
               <div key={transaction.id} className={`p-4 sm:p-6 hover:bg-gray-50 transition-colors ${isSkipped ? 'opacity-50' : ''}`}>
@@ -1073,7 +1072,7 @@ export function Transactions() {
                   <option value="">Select a category</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
-                      {(category as any).emoji ? `${(category as any).emoji} ` : ''}{category.name}
+                      {'emoji' in category && category.emoji ? `${category.emoji} ` : ''}{category.name}
                     </option>
                   ))}
                 </select>
