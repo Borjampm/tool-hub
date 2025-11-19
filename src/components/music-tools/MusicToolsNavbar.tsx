@@ -44,7 +44,7 @@ export function MusicToolsNavbar({ activeTab, onTabChange }: MusicToolsNavbarPro
               onClick={() => navigate('/')}
               className="text-xl font-semibold text-gray-900 mr-4 sm:mr-8 hover:text-purple-600 transition-colors duration-200 cursor-pointer touch-manipulation min-h-[44px] flex items-center"
             >
-              Marqness
+              Tool Hub
             </button>
 
             <div className="hidden md:flex space-x-8">
