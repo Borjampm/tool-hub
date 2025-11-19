@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { TransactionService } from '../../services/transactionService';
 import { UserAccountService } from '../../services/userAccountService';
 import { RecurringTransactionService } from '../../services/recurringTransactionService';
@@ -103,11 +103,11 @@ export function Transactions() {
   };
 
   // Load transactions for the visible month along with categories and accounts
-  const loadMonthData = async () => {
+  const loadMonthData = useCallback(async () => {
     try {
       setIsLoading(true);
       const { startDate, endDate } = getMonthRange(currentMonthDate);
-      
+
       // First, materialize recurring transactions for this month range
       try {
         await RecurringTransactionService.materializeForRange(startDate, endDate);
@@ -131,7 +131,7 @@ export function Transactions() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentMonthDate]);
 
   useEffect(() => {
     loadMonthData();
