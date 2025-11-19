@@ -411,6 +411,14 @@ export function MetronomeView() {
             <div className="flex gap-2">
               <button
                 type="button"
+                onClick={() => adjustBpm(-5)}
+                aria-label="Decrease tempo by 5"
+                className="min-h-[40px] min-w-[40px] rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-700 transition-colors duration-150 hover:border-purple-200 hover:text-purple-600"
+              >
+                -5
+              </button>
+              <button
+                type="button"
                 onClick={() => adjustBpm(-1)}
                 aria-label="Decrease tempo"
                 className="min-h-[40px] min-w-[40px] rounded-full border border-gray-200 bg-white text-base font-semibold text-gray-700 transition-colors duration-150 hover:border-purple-200 hover:text-purple-600"
@@ -424,6 +432,14 @@ export function MetronomeView() {
                 className="min-h-[40px] min-w-[40px] rounded-full border border-gray-200 bg-white text-base font-semibold text-gray-700 transition-colors duration-150 hover:border-purple-200 hover:text-purple-600"
               >
                 +
+              </button>
+              <button
+                type="button"
+                onClick={() => adjustBpm(5)}
+                aria-label="Increase tempo by 5"
+                className="min-h-[40px] min-w-[40px] rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-700 transition-colors duration-150 hover:border-purple-200 hover:text-purple-600"
+              >
+                +5
               </button>
             </div>
           </div>
