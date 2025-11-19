@@ -24,7 +24,7 @@ export class UserSettingsService {
 
     if (error) {
       // PGRST116: No rows returned
-      if ((error as any).code === 'PGRST116') {
+      if ('code' in error && error.code === 'PGRST116') {
         return {
           user_id: user.id,
           weekly_hobby_goal_hours: 2,

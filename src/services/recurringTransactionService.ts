@@ -2,6 +2,26 @@ import { supabase } from '../lib/supabase';
 
 export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
+interface RecurringRule {
+  id: string;
+  user_id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  currency: string;
+  category_id?: string | null;
+  account_id?: string | null;
+  title: string;
+  description?: string | null;
+  start_date: string;
+  end_date?: string | null;
+  frequency: RecurringFrequency;
+  interval: number;
+  timezone: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface CreateRecurringRuleData {
   type: 'income' | 'expense';
   amount: number;
@@ -103,7 +123,7 @@ export class RecurringTransactionService {
         .eq('is_recurring_skipped', true);
 
       const skippedDates = new Set(
-        (skippedTransactions || []).map((t: any) => t.recurrence_occurrence_date)
+        (skippedTransactions || []).map((t) => t.recurrence_occurrence_date)
       );
 
       // Filter out skipped occurrences
@@ -168,7 +188,7 @@ export class RecurringTransactionService {
       throw new Error('This is not a recurring transaction');
     }
 
-    const updatePayload: any = {};
+    const updatePayload: Record<string, unknown> = {};
     if (updates.type !== undefined) updatePayload.type = updates.type;
     if (updates.amount !== undefined) updatePayload.amount = updates.amount;
     if (updates.currency !== undefined) updatePayload.currency = updates.currency;
@@ -215,7 +235,7 @@ export class RecurringTransactionService {
       }
     } else if (scope === 'this-and-future') {
       // Build rule update payload (includes schedule fields)
-      const ruleUpdatePayload: any = { ...updatePayload };
+      const ruleUpdatePayload: Record<string, unknown> = { ...updatePayload };
       if (updates.frequency !== undefined) ruleUpdatePayload.frequency = updates.frequency;
       if (updates.interval !== undefined) ruleUpdatePayload.interval = updates.interval;
       if (updates.startDate !== undefined) ruleUpdatePayload.start_date = updates.startDate;
@@ -270,7 +290,7 @@ export class RecurringTransactionService {
       }
     } else if (scope === 'rule-only') {
       // Build rule update payload (includes schedule fields)
-      const ruleUpdatePayload: any = { ...updatePayload };
+      const ruleUpdatePayload: Record<string, unknown> = { ...updatePayload };
       if (updates.frequency !== undefined) ruleUpdatePayload.frequency = updates.frequency;
       if (updates.interval !== undefined) ruleUpdatePayload.interval = updates.interval;
       if (updates.startDate !== undefined) ruleUpdatePayload.start_date = updates.startDate;
@@ -331,7 +351,7 @@ export class RecurringTransactionService {
   /**
    * Get the recurring rule for a transaction.
    */
-  static async getRuleForTransaction(transactionId: string): Promise<any> {
+  static async getRuleForTransaction(transactionId: string): Promise<RecurringRule | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User must be authenticated');
 
@@ -361,7 +381,7 @@ export class RecurringTransactionService {
   }
 
   // Compute occurrence dates (YYYY-MM-DD) intersecting [startDate, endDate]
-  private static computeOccurrencesForRange(rule: any, startDate: string, endDate: string): string[] {
+  private static computeOccurrencesForRange(rule: RecurringRule, startDate: string, endDate: string): string[] {
     const result: string[] = [];
     const interval: number = Math.max(1, rule.interval || 1);
 
@@ -373,7 +393,7 @@ export class RecurringTransactionService {
     if (rangeStart > rangeEnd) return result;
 
     const toUTCDate = (s: string) => {
-      const [y, m, d] = s.split('-').map((n: string) => parseInt(n, 10));
+      const [y, m, d] = s.split('-').map((n) => parseInt(n, 10));
       return new Date(Date.UTC(y, m - 1, d));
     };
     const toISO = (d: Date) => {

@@ -29,6 +29,39 @@ npx supabase migration list  # View migration status
 npx supabase db diff     # See database differences
 ```
 
+## Git Workflow
+
+### CRITICAL: Starting Work on This Project
+
+**ALWAYS follow this workflow when beginning any task:**
+
+1. Switch to main branch: `git checkout main`
+2. Pull latest changes: `git pull origin main`
+3. Create a new feature branch with a descriptive name
+
+```bash
+# Standard workflow at start of every session
+git checkout main
+git pull origin main
+git checkout -b <descriptive-branch-name>
+```
+
+**Branch naming conventions:**
+- Feature: `feature/<short-description>` or `<date>-<description>`
+- Fix: `fix/<issue-description>`
+- Docs: `docs/<what-changed>`
+
+Examples:
+- `feature/add-pomodoro-timer`
+- `fix/metronome-tempo-bug`
+- `2025-11-19-expense-filters`
+
+**Why this matters:**
+- Ensures you're working with the latest code
+- Prevents merge conflicts
+- Keeps main branch clean and deployable
+- Makes it easier to review and track changes
+
 ## Architecture
 
 ### Modular Multi-App Structure
