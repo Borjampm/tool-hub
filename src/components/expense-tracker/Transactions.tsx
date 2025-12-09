@@ -19,6 +19,7 @@ export function Transactions() {
   const [exportError, setExportError] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
+  const [showDeletedTransactions, setShowDeletedTransactions] = useState(false);
   const [currentMonthDate, setCurrentMonthDate] = useState<Date>(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -151,10 +152,24 @@ export function Transactions() {
     return `${month}/${year}`; // Follows dd/mm/yyyy family style for UI consistency
   };
 
+  // Filter out deleted (skipped) transactions unless showDeletedTransactions is true
+  const filteredTransactions = useMemo(() => {
+    if (showDeletedTransactions) {
+      return transactions;
+    }
+    return transactions.filter(t => !('is_recurring_skipped' in t && t.is_recurring_skipped));
+  }, [transactions, showDeletedTransactions]);
+
+  // Count deleted transactions for the toggle button label
+  const deletedTransactionCount = useMemo(() => {
+    return transactions.filter(t => 'is_recurring_skipped' in t && t.is_recurring_skipped).length;
+  }, [transactions]);
+
   const summary = useMemo(() => {
     const incomesByCurrency: Record<string, number> = {};
     const expensesByCurrency: Record<string, number> = {};
-    for (const t of transactions) {
+    // Use filtered transactions for summary (exclude deleted)
+    for (const t of filteredTransactions.filter(tx => !('is_recurring_skipped' in tx && tx.is_recurring_skipped))) {
       const curr = t.currency;
       if (t.type === 'income') {
         incomesByCurrency[curr] = (incomesByCurrency[curr] || 0) + t.amount;
@@ -168,7 +183,7 @@ export function Transactions() {
       netByCurrency[c] = (incomesByCurrency[c] || 0) - (expensesByCurrency[c] || 0);
     });
     return { incomesByCurrency, expensesByCurrency, netByCurrency, currencies };
-  }, [transactions]);
+  }, [filteredTransactions]);
 
   const openEditModal = async (t: Transaction) => {
     const transactionId = t.transaction_id;
@@ -682,8 +697,22 @@ export function Transactions() {
                 </button>
               </div>
               <p className="text-gray-600 mt-1">
-                {transactions.length} transaction{transactions.length !== 1 ? 's' : ''} in {getMonthLabel(currentMonthDate)}
+                {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} in {getMonthLabel(currentMonthDate)}
+                {deletedTransactionCount > 0 && !showDeletedTransactions && (
+                  <span className="text-gray-400 ml-1">
+                    ({deletedTransactionCount} deleted hidden)
+                  </span>
+                )}
               </p>
+              {deletedTransactionCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeletedTransactions(!showDeletedTransactions)}
+                  className="mt-2 inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 touch-manipulation"
+                >
+                  {showDeletedTransactions ? 'Hide' : 'Show'} deleted ({deletedTransactionCount})
+                </button>
+              )}
               {summary.currencies.length > 0 && (
                 <div className="mt-3 space-y-2">
                   {summary.currencies.map((curr) => (
@@ -792,16 +821,29 @@ export function Transactions() {
 
         {/* Transaction List */}
         <div className="divide-y divide-gray-200">
-          {transactions.length === 0 ? (
+          {filteredTransactions.length === 0 ? (
             <div className="p-12 text-center">
               <div className="text-4xl mb-4">💳</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No transactions yet</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {transactions.length === 0 ? 'No transactions yet' : 'No visible transactions'}
+              </h3>
               <p className="text-gray-600">
-                Start by adding your first transaction using the Add Transaction tab.
+                {transactions.length === 0
+                  ? 'Start by adding your first transaction using the Add Transaction tab.'
+                  : `All ${deletedTransactionCount} transaction${deletedTransactionCount !== 1 ? 's' : ''} in this month ${deletedTransactionCount !== 1 ? 'are' : 'is'} deleted.`}
               </p>
+              {deletedTransactionCount > 0 && !showDeletedTransactions && (
+                <button
+                  type="button"
+                  onClick={() => setShowDeletedTransactions(true)}
+                  className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  Show deleted transactions
+                </button>
+              )}
             </div>
           ) : (
-            transactions.map((transaction) => {
+            filteredTransactions.map((transaction) => {
               const isRecurring = !!('recurring_rule_id' in transaction && transaction.recurring_rule_id);
               const isSkipped = !!('is_recurring_skipped' in transaction && transaction.is_recurring_skipped);
               
