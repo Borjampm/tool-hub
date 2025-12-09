@@ -710,7 +710,7 @@ export function Transactions() {
                   onClick={() => setShowDeletedTransactions(!showDeletedTransactions)}
                   className="mt-2 inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 touch-manipulation"
                 >
-                  {showDeletedTransactions ? '🙈 Hide' : '👁️ Show'} deleted ({deletedTransactionCount})
+                  {showDeletedTransactions ? 'Hide' : 'Show'} deleted ({deletedTransactionCount})
                 </button>
               )}
               {summary.currencies.length > 0 && (
@@ -838,7 +838,7 @@ export function Transactions() {
                   onClick={() => setShowDeletedTransactions(true)}
                   className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                 >
-                  👁️ Show deleted transactions
+                  Show deleted transactions
                 </button>
               )}
             </div>
