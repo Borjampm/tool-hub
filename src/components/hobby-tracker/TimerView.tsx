@@ -151,9 +151,13 @@ export function TimerView() {
         elapsedTime,
       };
       
-      await TimeEntryService.createManualEntry(manualEntryData);
-      console.log('✅ Manual time entry created successfully');
-      
+      const { isPending } = await TimeEntryService.createManualEntryOfflineAware(manualEntryData);
+      if (isPending) {
+        console.log('📴 Manual time entry saved offline, will sync when reconnected');
+      } else {
+        console.log('✅ Manual time entry created successfully');
+      }
+
       setIsManualEntryOpen(false);
     } catch (err) {
       console.error('Failed to save manual entry:', err);
