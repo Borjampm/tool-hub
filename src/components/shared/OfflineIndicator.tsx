@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { offlineQueue } from '../../services/offlineQueueService';
 import { TransactionService } from '../../services/transactionService';
@@ -7,19 +7,45 @@ import type { CreateTransactionData } from '../../services/transactionService';
 import type { ManualTimeEntryData } from '../../services/timeEntryService';
 
 /**
+ * Interface for serialized time entry data from the offline queue.
+ * Dates are stored as ISO strings when queued.
+ */
+interface SerializedManualTimeEntryData {
+  name: string;
+  description?: string;
+  categoryId?: string;
+  startTime: string; // ISO string
+  endTime: string; // ISO string
+  elapsedTime: number;
+}
+
+/**
  * Displays offline status and pending operations count.
  * Automatically processes queued operations when coming back online.
  */
 export function OfflineIndicator() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const processQueue = useCallback(async () => {
     setIsSyncing(true);
     setSyncError(null);
+    setShowSuccess(false);
+
+    // Clear any existing success timeout
+    if (successTimeoutRef.current) {
+      clearTimeout(successTimeoutRef.current);
+      successTimeoutRef.current = null;
+    }
+
+    let hasOperations = false;
+    let allSucceeded = true;
 
     try {
       const operations = await offlineQueue.getPendingOperations();
+      hasOperations = operations.length > 0;
 
       for (const operation of operations) {
         try {
@@ -32,9 +58,14 @@ export function OfflineIndicator() {
             // Add update/delete handling as needed
           } else if (operation.type === 'timeEntry') {
             if (operation.action === 'create') {
-              await TimeEntryService.createManualEntry(
-                operation.data as unknown as ManualTimeEntryData
-              );
+              // Deserialize dates from ISO strings back to Date objects
+              const serializedData = operation.data as unknown as SerializedManualTimeEntryData;
+              const deserializedData: ManualTimeEntryData = {
+                ...serializedData,
+                startTime: new Date(serializedData.startTime),
+                endTime: new Date(serializedData.endTime),
+              };
+              await TimeEntryService.createManualEntry(deserializedData);
             }
             // Add update/delete handling as needed
           }
@@ -42,6 +73,7 @@ export function OfflineIndicator() {
           await offlineQueue.removeFromQueue(operation.id);
         } catch (error) {
           console.error(`Failed to process operation ${operation.id}:`, error);
+          allSucceeded = false;
           const shouldRetry = await offlineQueue.incrementRetry(operation.id);
           if (!shouldRetry) {
             console.warn(`Operation ${operation.id} exceeded max retries, removed from queue`);
@@ -51,9 +83,18 @@ export function OfflineIndicator() {
     } catch (error) {
       console.error('Failed to process queue:', error);
       setSyncError('Failed to sync some items');
+      allSucceeded = false;
     } finally {
       setIsSyncing(false);
       refreshPendingCount();
+
+      // Show success message briefly if we had operations and all succeeded
+      if (hasOperations && allSucceeded) {
+        setShowSuccess(true);
+        successTimeoutRef.current = setTimeout(() => {
+          setShowSuccess(false);
+        }, 3000);
+      }
     }
   }, []);
 
@@ -66,8 +107,17 @@ export function OfflineIndicator() {
     }
   }, [isSyncing, refreshPendingCount]);
 
-  // Don't show anything if online with no pending items and no errors
-  if (isOnline && pendingCount === 0 && !syncError && !isSyncing) {
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Don't show anything if online with no pending items, no errors, not syncing, and no success message
+  if (isOnline && pendingCount === 0 && !syncError && !isSyncing && !showSuccess) {
     return null;
   }
 
@@ -80,7 +130,9 @@ export function OfflineIndicator() {
               ? 'bg-blue-600 text-white'
               : syncError
                 ? 'bg-red-600 text-white'
-                : 'bg-green-600 text-white'
+                : showSuccess
+                  ? 'bg-green-600 text-white'
+                  : 'bg-amber-600 text-white' // Pending items waiting to sync
             : 'bg-amber-600 text-white'
         }`}
       >
@@ -131,7 +183,7 @@ export function OfflineIndicator() {
               />
             </svg>
           )}
-          {isOnline && !isSyncing && !syncError && pendingCount > 0 && (
+          {isOnline && !isSyncing && !syncError && showSuccess && (
             <svg
               className="w-5 h-5"
               fill="none"
@@ -146,6 +198,21 @@ export function OfflineIndicator() {
               />
             </svg>
           )}
+          {isOnline && !isSyncing && !syncError && !showSuccess && pendingCount > 0 && (
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          )}
         </div>
 
         {/* Status Text */}
@@ -154,11 +221,17 @@ export function OfflineIndicator() {
             {!isOnline && 'You are offline'}
             {isOnline && isSyncing && 'Syncing...'}
             {isOnline && !isSyncing && syncError && syncError}
-            {isOnline && !isSyncing && !syncError && pendingCount > 0 && 'Synced successfully'}
+            {isOnline && !isSyncing && !syncError && showSuccess && 'Synced successfully'}
+            {isOnline && !isSyncing && !syncError && !showSuccess && pendingCount > 0 && 'Pending sync'}
           </p>
-          {pendingCount > 0 && !isSyncing && (
+          {!isOnline && pendingCount > 0 && (
             <p className="text-xs opacity-90">
               {pendingCount} pending {pendingCount === 1 ? 'item' : 'items'}
+            </p>
+          )}
+          {isOnline && !isSyncing && !syncError && !showSuccess && pendingCount > 0 && (
+            <p className="text-xs opacity-90">
+              {pendingCount} {pendingCount === 1 ? 'item' : 'items'} waiting to sync
             </p>
           )}
         </div>
