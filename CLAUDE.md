@@ -338,6 +338,29 @@ The `RecurringTransactionService` implements a materialization pattern:
 - **Single In-Progress Timer**: Enforced at database level for hobby tracker
 - **Unique Constraints**: Prevent duplicate recurring occurrences per user/rule/date
 
+## Responsive Design (Mobile-First)
+
+### Core Principles
+- **Start with mobile layout** and use Tailwind responsive prefixes (`sm:`, `md:`, `lg:`) for progressive enhancement
+- **Minimum 44px touch targets** for all interactive elements
+- **Add `touch-manipulation`** to buttons for better touch response
+
+```tsx
+// ✅ CORRECT - Mobile-first with progressive enhancement
+<div className="p-4 sm:p-6 lg:p-8">
+<h1 className="text-xl sm:text-2xl lg:text-3xl">
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+
+// ✅ CORRECT - Touch-friendly button
+<button className="px-6 py-3 min-h-[44px] touch-manipulation">
+
+// ✅ CORRECT - Responsive flex that stacks on mobile
+<div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+```
+
+### Input Sizing
+Use `text-base` (16px) for inputs to prevent iOS zoom on focus.
+
 ## Adding a New App
 
 1. Create folder under `src/components/<app-name>/`
