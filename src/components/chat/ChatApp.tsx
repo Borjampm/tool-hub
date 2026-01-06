@@ -50,9 +50,9 @@ export function ChatApp() {
   return (
     <AuthProvider>
       <AuthGuard>
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-cyan-900 flex flex-col">
+        <div className="min-h-screen bg-gradient-to-br from-cyan-50 to-teal-100">
           <ChatNavbar />
-          <main className="flex-1 flex flex-col max-w-4xl w-full mx-auto px-4 sm:px-6 py-6">
+          <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
             <ChatView />
           </main>
         </div>
