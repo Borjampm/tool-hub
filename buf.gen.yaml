@@ -1,0 +1,11 @@
+# buf.gen.yaml - Configuration for generating TypeScript from protobuf files
+# Run: npm run proto:generate
+version: v2
+plugins:
+  - local: protoc-gen-es
+    out: src/generated
+    opt:
+      - target=ts
+inputs:
+  - directory: ../AI-tasks-service/protobufs
+

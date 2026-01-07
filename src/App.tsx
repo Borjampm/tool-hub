@@ -7,6 +7,7 @@ import { SignInPage } from './components/shared/SignInPage';
 import { EmailVerified } from './components/shared/EmailVerified';
 import { EmailVerificationCallback } from './components/shared/EmailVerificationCallback';
 import { MusicToolsApp } from './components/music-tools/MusicToolsApp';
+import { ChatApp } from './components/chat/ChatApp';
 import { OfflineIndicator } from './components/shared/OfflineIndicator';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/hobby-tracker" element={<HobbyTrackerApp />} />
         <Route path="/expense-tracker" element={<ExpenseTracker />} />
         <Route path="/music-tools" element={<MusicToolsApp />} />
+        <Route path="/chat" element={<ChatApp />} />
         <Route path="/account" element={<AccountManagement />} />
       </Routes>
       <OfflineIndicator />
