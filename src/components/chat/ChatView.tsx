@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { streamQA, isAIServiceAvailable } from '../../services/aiService';
 
 interface Message {
   id: string;
@@ -11,15 +12,19 @@ export function ChatView() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
-      content: "Hello! Send me a message and I'll say hello back.",
+      content: isAIServiceAvailable()
+        ? "Hello! I'm connected to the AI service. Ask me anything!"
+        : "AI service is not configured. Please set VITE_GRPC_SERVER_URL.",
       sender: 'bot',
       timestamp: new Date(),
     },
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cancelStreamRef = useRef<(() => void) | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -29,8 +34,17 @@ export function ChatView() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!inputValue.trim()) return;
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => {
+      if (cancelStreamRef.current) {
+        cancelStreamRef.current();
+      }
+    };
+  }, []);
+
+  const handleSendMessage = useCallback(() => {
+    if (!inputValue.trim() || isTyping) return;
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -39,23 +53,55 @@ export function ChatView() {
       timestamp: new Date(),
     };
 
+    const botMessageId = `bot-${Date.now()}`;
+
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsTyping(true);
+    setError(null);
 
-    // Simulate typing delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    // Add an empty bot message that will be populated with streamed content
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: botMessageId,
+        content: '',
+        sender: 'bot',
+        timestamp: new Date(),
+      },
+    ]);
 
-    const botMessage: Message = {
-      id: `bot-${Date.now()}`,
-      content: 'Hello!',
-      sender: 'bot',
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, botMessage]);
-    setIsTyping(false);
-  };
+    // Start the streaming gRPC call
+    cancelStreamRef.current = streamQA(userMessage.content, {
+      onChunk: (answer) => {
+        // Append the new chunk to the bot message
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === botMessageId
+              ? { ...msg, content: msg.content + answer }
+              : msg
+          )
+        );
+      },
+      onComplete: () => {
+        setIsTyping(false);
+        cancelStreamRef.current = null;
+      },
+      onError: (err) => {
+        setIsTyping(false);
+        setError(err.message);
+        cancelStreamRef.current = null;
+        // Update the bot message to show the error
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === botMessageId
+              ? { ...msg, content: `Error: ${err.message}` }
+              : msg
+          )
+        );
+      },
+    });
+  }, [inputValue, isTyping]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -81,10 +127,27 @@ export function ChatView() {
             <span className="text-xl">🤖</span>
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">Chat Assistant</h2>
-            <p className="text-sm text-gray-500">Always ready to say hello</p>
+            <h2 className="text-lg font-semibold text-gray-900">AI Assistant</h2>
+            <p className="text-sm text-gray-500">
+              {isAIServiceAvailable() ? (
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                  Connected
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                  Not configured
+                </span>
+              )}
+            </p>
           </div>
         </div>
+        {error && (
+          <div className="mt-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+            {error}
+          </div>
+        )}
       </div>
 
       {/* Messages Area */}
@@ -157,3 +220,4 @@ export function ChatView() {
     </div>
   );
 }
+
