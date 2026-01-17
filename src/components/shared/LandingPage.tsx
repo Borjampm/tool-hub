@@ -120,10 +120,10 @@ export function LandingPage() {
           {/* Desktop layout - visible only on medium screens and up */}
           <div className="hidden md:grid md:grid-cols-4 gap-6 sm:gap-8 max-w-5xl mx-auto mb-8 sm:mb-12">
             {/* Hobby Tracker Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300 flex flex-col">
               <div className="text-3xl sm:text-4xl mb-4">🎯</div>
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Hobby Tracker</h2>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">
+              <p className="text-sm sm:text-base text-gray-600 mb-6 flex-1">
                 Track your hobbies, analyze time spent on activities, and manage your personal interests efficiently
               </p>
               <button
@@ -135,10 +135,10 @@ export function LandingPage() {
             </div>
 
             {/* Expense Tracker Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300 flex flex-col">
               <div className="text-3xl sm:text-4xl mb-4">💰</div>
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Expense Tracker</h2>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">
+              <p className="text-sm sm:text-base text-gray-600 mb-6 flex-1">
                 Monitor your spending, categorize expenses, and gain insights into your financial habits
               </p>
               <button
@@ -150,10 +150,10 @@ export function LandingPage() {
             </div>
 
             {/* Music Tools Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300 flex flex-col">
               <div className="text-3xl sm:text-4xl mb-4">🎵</div>
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Music Tools</h2>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">
+              <p className="text-sm sm:text-base text-gray-600 mb-6 flex-1">
                 Practice timers, metronome, and music-focused utilities
               </p>
               <button
@@ -165,10 +165,10 @@ export function LandingPage() {
             </div>
 
             {/* Chat Card */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300">
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300 flex flex-col">
               <div className="text-3xl sm:text-4xl mb-4">💬</div>
               <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Chat</h2>
-              <p className="text-sm sm:text-base text-gray-600 mb-6">
+              <p className="text-sm sm:text-base text-gray-600 mb-6 flex-1">
                 Chat interface for messaging and conversations
               </p>
               <button

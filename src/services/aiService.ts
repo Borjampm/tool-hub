@@ -10,7 +10,7 @@
 import { createClient } from '@connectrpc/connect';
 import { createGrpcWebTransport } from '@connectrpc/connect-web';
 import { create } from '@bufbuild/protobuf';
-import { AIService, QuestionSchema } from '../generated/ai_service_pb';
+import { ChatService, ChatRequestSchema } from '../generated/chat_service_pb';
 
 // Get the gRPC server URL from environment variables
 const GRPC_SERVER_URL = import.meta.env.VITE_GRPC_SERVER_URL;
@@ -29,7 +29,10 @@ const transport = GRPC_SERVER_URL
   : null;
 
 // Create the service client
-const client = transport ? createClient(AIService, transport) : null;
+const client = transport ? createClient(ChatService, transport) : null;
+
+// Session management - persists conversation history on the server
+let currentSessionId: string = '';
 
 export interface StreamCallbacks {
   onChunk: (answer: string) => void;
@@ -38,14 +41,15 @@ export interface StreamCallbacks {
 }
 
 /**
- * Send a question to the AI service and receive streaming responses.
+ * Send a message to the AI chat service and receive streaming responses.
+ * The service maintains conversation history using session IDs.
  *
- * @param questionText - The question to ask the AI
+ * @param messageText - The message to send to the AI
  * @param callbacks - Callbacks for handling the streaming response
  * @returns A cancel function to abort the stream
  */
 export function streamQA(
-  questionText: string,
+  messageText: string,
   callbacks: StreamCallbacks
 ): () => void {
   if (!client) {
@@ -56,16 +60,23 @@ export function streamQA(
   // Create an AbortController for cancellation
   const abortController = new AbortController();
 
-  // Create the request message
-  const request = create(QuestionSchema, { question: questionText });
+  // Create the request message with current session (empty string = new session)
+  const request = create(ChatRequestSchema, {
+    message: messageText,
+    sessionId: currentSessionId,
+  });
 
   // Start the streaming call
   (async () => {
     try {
-      for await (const response of client.qA(request, {
+      for await (const response of client.chat(request, {
         signal: abortController.signal,
       })) {
-        callbacks.onChunk(response.answer);
+        // Capture the session ID from the first response
+        if (response.sessionId && !currentSessionId) {
+          currentSessionId = response.sessionId;
+        }
+        callbacks.onChunk(response.message);
       }
       callbacks.onComplete();
     } catch (error) {
@@ -90,4 +101,20 @@ export function streamQA(
  */
 export function isAIServiceAvailable(): boolean {
   return client !== null;
+}
+
+/**
+ * Clear the current chat session.
+ * The next message will start a new conversation.
+ */
+export function clearSession(): void {
+  currentSessionId = '';
+}
+
+/**
+ * Get the current session ID.
+ * Returns empty string if no session is active.
+ */
+export function getSessionId(): string {
+  return currentSessionId;
 }
