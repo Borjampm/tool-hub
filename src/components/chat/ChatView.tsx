@@ -20,11 +20,12 @@ export function ChatView() {
     },
   ]);
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isWaitingForResponse, setIsWaitingForResponse] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelStreamRef = useRef<(() => void) | null>(null);
+  const pendingBotMessageRef = useRef<{ id: string; timestamp: Date } | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,7 +45,7 @@ export function ChatView() {
   }, []);
 
   const handleSendMessage = useCallback(() => {
-    if (!inputValue.trim() || isTyping) return;
+    if (!inputValue.trim() || isWaitingForResponse) return;
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -54,54 +55,67 @@ export function ChatView() {
     };
 
     const botMessageId = `bot-${Date.now()}`;
+    const botTimestamp = new Date();
 
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
-    setIsTyping(true);
+    setIsWaitingForResponse(true);
     setError(null);
 
-    // Add an empty bot message that will be populated with streamed content
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: botMessageId,
-        content: '',
-        sender: 'bot',
-        timestamp: new Date(),
-      },
-    ]);
+    // Store pending bot message info - don't add to messages yet
+    pendingBotMessageRef.current = { id: botMessageId, timestamp: botTimestamp };
 
     // Start the streaming gRPC call
     cancelStreamRef.current = streamQA(userMessage.content, {
       onChunk: (answer) => {
-        // Append the new chunk to the bot message
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === botMessageId
-              ? { ...msg, content: msg.content + answer }
-              : msg
-          )
-        );
+        setMessages((prev) => {
+          // Check if bot message already exists
+          const existingMessage = prev.find((msg) => msg.id === botMessageId);
+          
+          if (existingMessage) {
+            // Append to existing message
+            return prev.map((msg) =>
+              msg.id === botMessageId
+                ? { ...msg, content: msg.content + answer }
+                : msg
+            );
+          } else {
+            // First chunk - create the bot message now
+            return [
+              ...prev,
+              {
+                id: botMessageId,
+                content: answer,
+                sender: 'bot' as const,
+                timestamp: botTimestamp,
+              },
+            ];
+          }
+        });
       },
       onComplete: () => {
-        setIsTyping(false);
+        setIsWaitingForResponse(false);
+        pendingBotMessageRef.current = null;
         cancelStreamRef.current = null;
       },
       onError: (err) => {
-        setIsTyping(false);
+        setIsWaitingForResponse(false);
         setError(err.message);
+        pendingBotMessageRef.current = null;
         cancelStreamRef.current = null;
-        // Update the bot message to show the error
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === botMessageId
-              ? { ...msg, content: `Error: ${err.message}` }
-              : msg
-          )
-        );
+        // Add error message as bot response
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: botMessageId,
+            content: `Error: ${err.message}`,
+            sender: 'bot' as const,
+            timestamp: botTimestamp,
+          },
+        ]);
       },
     });
-  }, [inputValue, isTyping]);
+  }, [inputValue, isWaitingForResponse]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -178,8 +192,8 @@ export function ChatView() {
           </div>
         ))}
 
-        {/* Typing Indicator */}
-        {isTyping && (
+        {/* Typing Indicator - only show before first chunk arrives */}
+        {isWaitingForResponse && pendingBotMessageRef.current && !messages.find(m => m.id === pendingBotMessageRef.current?.id) && (
           <div className="flex justify-start">
             <div className="bg-white rounded-2xl rounded-bl-md px-4 py-3 border border-gray-200 shadow-sm">
               <div className="flex space-x-2">
@@ -208,7 +222,7 @@ export function ChatView() {
           />
           <button
             onClick={handleSendMessage}
-            disabled={!inputValue.trim() || isTyping}
+            disabled={!inputValue.trim() || isWaitingForResponse}
             className="bg-gradient-to-r from-cyan-500 to-teal-500 text-white px-5 py-3 rounded-xl font-medium hover:from-cyan-600 hover:to-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center shadow-md hover:shadow-lg"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
