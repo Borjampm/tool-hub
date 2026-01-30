@@ -6,6 +6,7 @@ import type { UpdateScope } from '../../services/recurringTransactionService';
 import type { Transaction, UserExpenseCategory, UserAccount } from '../../lib/supabase';
 import { formatDate } from '../../lib/dateUtils';
 import { CSVExportService } from '../../services/csvExportService';
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from '../../lib/currencies';
 
 export function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -51,7 +52,7 @@ export function Transactions() {
     transactionId: '',
     type: 'expense',
     amount: 0,
-    currency: 'CLP',
+    currency: DEFAULT_CURRENCY,
     categoryId: '',
     accountId: '',
     title: '',
@@ -1096,9 +1097,11 @@ export function Transactions() {
                     onChange={(e) => handleEditInputChange('currency', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="CLP">CLP</option>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
+                    {SUPPORTED_CURRENCIES.map((currency) => (
+                      <option key={currency} value={currency}>
+                        {currency}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

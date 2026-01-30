@@ -84,3 +84,14 @@ export interface UserSettings {
   created_at: string;
   updated_at: string;
 }
+
+export interface ExchangeRate {
+  id: string;
+  rate_date: string; // YYYY-MM-DD format
+  base_currency: string;
+  rates: Record<string, number>; // {"USD": 1, "CLP": 886.10, "EUR": 0.92, ...}
+  source: string;
+  fetched_at: string;
+  created_at: string;
+  updated_at: string;
+}

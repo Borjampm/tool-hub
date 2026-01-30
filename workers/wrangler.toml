@@ -1,0 +1,15 @@
+# Cloudflare Worker configuration for Exchange Rate Sync
+# This worker fetches daily exchange rates and stores them in Supabase
+
+name = "exchange-rate-sync"
+main = "exchange-rate-sync.ts"
+compatibility_date = "2024-01-01"
+
+# Cron trigger: runs daily at 05:00 UTC
+[triggers]
+crons = ["0 5 * * *"]
+
+# Environment variables are set via secrets (not committed to repo):
+# wrangler secret put OXR_API_KEY
+# wrangler secret put SUPABASE_URL
+# wrangler secret put SUPABASE_SERVICE_KEY
