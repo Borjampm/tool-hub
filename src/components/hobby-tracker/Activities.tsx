@@ -392,8 +392,11 @@ export function Activities() {
           elapsedTime,
         };
         
-        const newEntry = await TimeEntryService.createManualEntry(manualEntryData);
-        setEntries([newEntry, ...entries]);
+        const { entry, isPending } = await TimeEntryService.createManualEntryOfflineAware(manualEntryData);
+        if (entry && !isPending) {
+          setEntries([entry, ...entries]);
+        }
+        // When isPending, entry will appear after sync and page refresh
       } else if (modalMode === 'edit' && editingEntry) {
         // Find the category ID if a category was selected
         let categoryId: string | undefined;

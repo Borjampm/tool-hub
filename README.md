@@ -25,6 +25,11 @@ Explore and prototype music-focused utilities.
 - **🎚️ Metronome**: Dial tempo, pick subdivisions, and rehearse with sample-accurate audio clicks
 - **📖 Reading Practice**: Build sight-reading skills
 
+### 💬 Chat
+AI-powered chat interface connected to a gRPC backend.
+- **🔄 Streaming**: Real-time token-by-token responses via grpc-web
+- **☁️ Cloud Run**: Connects to AI Tasks Service on Google Cloud
+
 > The hub is designed to grow. New apps can be added quickly and shipped independently without breaking existing ones.
 
 ## 🧩 Architecture at a glance
@@ -83,9 +88,11 @@ src/
 │   ├── shared/                    # Shared UI (landing, auth, guards, verification)
 │   ├── hobby-tracker/             # Hobby Tracker app (views, modals, timer components)
 │   ├── expense-tracker/           # Expense Tracker app (pages, forms, lists)
-│   └── music-tools/               # Music Tools app (experiments and utilities)
+│   ├── music-tools/               # Music Tools app (experiments and utilities)
+│   └── chat/                      # Chat app (AI-powered chat with gRPC streaming)
 ├── contexts/                      # Cross-app React contexts (auth, timer)
-├── services/                      # App-agnostic services (CRUD, CSV, categories, transactions)
+├── services/                      # App-agnostic services (CRUD, CSV, categories, AI client)
+├── generated/                     # Auto-generated protobuf TypeScript (do not edit)
 ├── lib/                           # Supabase client, date/time utilities
 └── supabase/                      # Supabase config and SQL migrations
 ```
@@ -104,6 +111,22 @@ src/
 | `npm run preview` | Preview production build locally |
 | `npm run lint` | Run ESLint to check code quality |
 | `npm run lint:fix` | Run ESLint and auto-fix issues |
+| `npm run proto:generate` | Regenerate TypeScript from protobuf files |
+
+## 🤖 AI Service Integration
+
+The Chat app connects to a gRPC server via **Connect-Web** with grpc-web transport.
+
+### Setup
+1. Set `VITE_GRPC_SERVER_URL` in `.env` (e.g., `https://your-service.run.app`)
+2. The grpc-web plugin must be in your PATH: `~/bin/protoc-gen-grpc-web`
+
+### Regenerating Protobufs
+When `AI-tasks-service/protobufs/ai_service.proto` changes:
+```bash
+npm run proto:generate
+```
+This uses Buf to generate TypeScript in `src/generated/`. Configuration is in `buf.gen.yaml`.
 
 ## 🛠 Tech stack
 - **Vite**, **React 19**, **TypeScript**, **TailwindCSS v4**

@@ -7,9 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Tool Hub is a personal multi-app platform for everyday tools and experimental features. Built with React 19, TypeScript, Vite, TailwindCSS v4, and Supabase (PostgreSQL + Auth). Each app is independent but shares common authentication, UI components, and data services.
 
 **Current Apps:**
-- **Hobby Tracker**: Timer-based activity tracking with categories, history, and CSV export
-- **Expense Tracker**: Transaction management with categories, accounts, and recurring transactions
-- **Music Tools**: Metronome and reading practice utilities
+- **Hobby Tracker**: Timer-based activity tracking with categories, history, weekly goals, and CSV export
+- **Expense Tracker**: Transaction management with categories, accounts, recurring transactions, and skip functionality
+- **Music Tools**: Metronome with tempo controls and reading practice utilities
 
 ## Development Commands
 
@@ -78,6 +78,7 @@ src/
 ├── contexts/                # React contexts (AuthContext, TimerContext)
 ├── services/                # App-agnostic data services (CRUD operations)
 ├── lib/                     # Supabase client, utilities (dateUtils, etc.)
+├── assets/                  # Static assets (sounds, images)
 └── supabase/                # Database config and SQL migrations
 ```
 
@@ -86,6 +87,21 @@ src/
 - Shared components in `shared/` are used across multiple apps (auth, landing page)
 - Services layer (`services/`) handles all database operations and business logic
 - All data access goes through Supabase with Row Level Security (RLS) policies
+
+### Application Routes
+
+All routes are defined in `src/App.tsx`:
+
+| Route | Component | Description |
+|-------|-----------|-------------|
+| `/` | `LandingPage` | Home page with app navigation |
+| `/signin` | `SignInPage` | Authentication page |
+| `/email-verified` | `EmailVerified` | Email verification success |
+| `/verify-email` | `EmailVerificationCallback` | Email verification handler |
+| `/hobby-tracker` | `HobbyTrackerApp` | Hobby tracking app |
+| `/expense-tracker` | `ExpenseTracker` | Expense tracking app |
+| `/music-tools` | `MusicToolsApp` | Music tools app |
+| `/account` | `AccountManagement` | User account settings |
 
 ### Import Path Conventions
 
@@ -119,7 +135,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 **ALWAYS verify user authentication in service methods:**
 ```typescript
-// ✅ CORRECT - Every service method must check auth
+// Every service method must check auth
 static async createEntry(data: CreateTimeEntryData): Promise<TimeEntry> {
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -162,20 +178,28 @@ static async createEntry(data: CreateTimeEntryData): Promise<TimeEntry> {
 This project uses `verbatimModuleSyntax` in TypeScript config, which **requires** type-only imports:
 
 ```typescript
-// ✅ CORRECT - Type-only imports for types/interfaces
+// CORRECT - Type-only imports for types/interfaces
 import type { ReactNode } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import type { TimeEntry } from '../../lib/supabase';
 
-// ✅ CORRECT - Regular imports for runtime values
+// CORRECT - Regular imports for runtime values
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 
-// ❌ WRONG - Will cause compilation errors
+// WRONG - Will cause compilation errors
 import { User, Session } from '@supabase/supabase-js';
 ```
 
 **Rule:** If it's used in type annotations, use `import type`. If it's used at runtime, use regular `import`.
+
+### Strict TypeScript Settings
+
+The project uses strict TypeScript with these enabled:
+- `strict: true`
+- `noUnusedLocals: true`
+- `noUnusedParameters: true`
+- `noFallthroughCasesInSwitch: true`
 
 ## Date & Time Formatting
 
@@ -184,22 +208,20 @@ import { User, Session } from '@supabase/supabase-js';
 **ALWAYS use day/month/year format** for all date displays:
 
 ```typescript
-// Use dateUtils helpers
-import { formatDate, formatDateTime } from '../../lib/dateUtils';
+// Use dateUtils helpers from src/lib/dateUtils.ts
+import { formatDate, formatDateTime, formatDuration } from '../../lib/dateUtils';
 
-// Examples:
-formatDate(dateString);        // "20/01/2025"
-formatDateTime(dateString);    // "20/01/2025, 15:30"
-```
-
-**Manual formatting (if needed):**
-```typescript
-new Date(dateString).toLocaleDateString('en-GB', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-});
-// Output: "20/01/2025"
+// Available functions:
+formatDate(dateString);           // "20/01/2025"
+formatDateTime(dateString);       // "20/01/2025, 15:30"
+formatDateTimeRounded(dateString); // "20/01/2025, 15:30" (rounded to minute)
+formatTime(dateString);           // "15:30"
+formatTimeRounded(dateString);    // "15:30" (rounded to minute)
+formatTimeRange(start, end);      // "15:30 - 17:45"
+formatTimeRangeRounded(start, end); // "15:30 - 17:45" (rounded)
+formatDuration(seconds);          // "2h 30m" or "45m"
+formatRelativeTime(dateString);   // "2 hours ago", "Yesterday"
+toLocalDateTimeString(dateString); // For datetime-local inputs
 ```
 
 **Database vs Display:**
@@ -221,12 +243,14 @@ Migration workflow:
 5. Let user run the command themselves if they prefer
 
 Safe commands:
-- ✅ `npx supabase migration list` - Check status
-- ✅ `npx supabase db diff` - View differences
-- ❌ `npx supabase db push` - REQUIRES user confirmation
-- ❌ `npx supabase db reset` - REQUIRES user confirmation
+- `npx supabase migration list` - Check status
+- `npx supabase db diff` - View differences
+- `npx supabase db push` - REQUIRES user confirmation
+- `npx supabase db reset` - REQUIRES user confirmation
 
 Migrations are irreversible. Always review SQL before applying.
+
+**Current migration count:** 31 migrations (001 through 031)
 
 ## Code Quality & Pre-Commit Checks
 
@@ -262,14 +286,17 @@ npm run lint     # ESLint checks
 ## Service Layer Pattern
 
 All database operations go through service classes in `src/services/`:
-- `timeEntryService.ts` - Hobby tracker time entries
-- `categoryService.ts` - Hobby categories
-- `transactionService.ts` - Expense transactions
-- `recurringTransactionService.ts` - Recurring transactions
-- `expenseCategoryService.ts` - Expense categories
-- `userAccountService.ts` - User accounts
-- `csvExportService.ts` - CSV export functionality
-- `userSettingsService.ts` - User preferences
+
+| Service | Purpose |
+|---------|---------|
+| `timeEntryService.ts` | Hobby tracker time entries |
+| `categoryService.ts` | Hobby categories |
+| `transactionService.ts` | Expense transactions |
+| `recurringTransactionService.ts` | Recurring transactions with materialization |
+| `expenseCategoryService.ts` | Expense categories |
+| `userAccountService.ts` | User accounts (bank, cash, credit card, etc.) |
+| `csvExportService.ts` | CSV export functionality |
+| `userSettingsService.ts` | User preferences (e.g., weekly hobby goals) |
 
 Services handle:
 - Authentication checks
@@ -277,29 +304,62 @@ Services handle:
 - Error handling
 - Business logic
 
+### Recurring Transaction System
+
+The `RecurringTransactionService` implements a materialization pattern:
+- **Rules** define recurring patterns (frequency, interval, start/end dates)
+- **Materialization** creates actual transactions for a date range
+- **Skip functionality** allows hiding individual occurrences without deletion
+- **Update scopes**: `this-only`, `this-and-future`, `rule-only`
+
 ## Database Schema Overview
 
 **Hobby Tracker Tables:**
-- `time_entries` - Activity sessions with start/end times
-- `hobby_categories` - User-defined hobby categories
+- `time_entries` - Activity sessions with start/end times, linked to `hobby_categories`
+- `hobby_categories` - User-defined hobby categories with colors
 
 **Expense Tracker Tables:**
-- `transactions` - Income/expense transactions
-- `recurring_transactions` - Scheduled recurring transactions
-- `user_expense_categories` - User-defined expense categories
-- `user_accounts` - Bank accounts, cash, credit cards, etc.
+- `transactions` - Income/expense transactions with category and account FKs
+- `recurring_transactions` - Rules for scheduled recurring transactions
+- `user_expense_categories` - User-defined expense categories with emoji and color
+- `user_accounts` - Bank accounts, cash, credit cards, etc. with colors
 
 **Shared Tables:**
-- `user_settings` - User preferences (e.g., weekly hobby goals)
+- `user_settings` - User preferences (e.g., weekly hobby goals in hours)
 
 **Key Pattern:** All tables include `user_id` with RLS policies enforcing data isolation.
 
 ## Key Database Features
 
-- **Foreign Key Migrations**: Legacy text fields (`category`, `account`) migrated to FK relationships (`category_id`, `account_id`)
-- **Recurring Transactions**: Support for scheduled transactions with skip functionality
-- **Default Categories & Accounts**: Auto-created for new users via triggers
+- **Foreign Key Relationships**: `category_id` and `account_id` link to respective tables
+- **Recurring Transactions**: Support for daily/weekly/monthly/yearly with intervals
+- **Skip Flag**: `is_recurring_skipped` allows soft-delete of occurrences
+- **Default Categories & Accounts**: Auto-created for new users via database triggers
 - **Single In-Progress Timer**: Enforced at database level for hobby tracker
+- **Unique Constraints**: Prevent duplicate recurring occurrences per user/rule/date
+
+## Responsive Design (Mobile-First)
+
+### Core Principles
+- **Start with mobile layout** and use Tailwind responsive prefixes (`sm:`, `md:`, `lg:`) for progressive enhancement
+- **Minimum 44px touch targets** for all interactive elements
+- **Add `touch-manipulation`** to buttons for better touch response
+
+```tsx
+// ✅ CORRECT - Mobile-first with progressive enhancement
+<div className="p-4 sm:p-6 lg:p-8">
+<h1 className="text-xl sm:text-2xl lg:text-3xl">
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+
+// ✅ CORRECT - Touch-friendly button
+<button className="px-6 py-3 min-h-[44px] touch-manipulation">
+
+// ✅ CORRECT - Responsive flex that stacks on mobile
+<div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+```
+
+### Input Sizing
+Use `text-base` (16px) for inputs to prevent iOS zoom on focus.
 
 ## Adding a New App
 
@@ -312,14 +372,20 @@ Services handle:
 
 ## Deployment
 
-- Frontend: Build with `npm run build`, deploy to Vercel/Netlify/Cloudflare
-- Backend: Supabase project with environment variables in `.env`
-- Migrations: Located in `supabase/migrations/` - review before applying
+- **Frontend**: Build with `npm run build`, deploy to Cloudflare Pages
+- **Backend**: Supabase project with environment variables in `.env`
+- **Migrations**: Located in `supabase/migrations/` - review before applying
+- **Environment Variables**: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` required
 
 ## Tech Stack Summary
 
-- **Frontend**: Vite, React 19, TypeScript, TailwindCSS v4
-- **Backend**: Supabase (PostgreSQL, Auth, RLS)
-- **Forms**: React Hook Form
-- **Routing**: React Router DOM v7
-- **Deployment**: Cloudflare Pages (via @cloudflare/vite-plugin)
+| Category | Technology |
+|----------|------------|
+| **Build Tool** | Vite 7 |
+| **Frontend** | React 19, TypeScript 5.8 |
+| **Styling** | TailwindCSS v4 |
+| **Backend** | Supabase (PostgreSQL, Auth, RLS) |
+| **Forms** | React Hook Form 7 |
+| **Routing** | React Router DOM v7 |
+| **Deployment** | Cloudflare Pages (@cloudflare/vite-plugin) |
+| **Spreadsheet Export** | xlsx |

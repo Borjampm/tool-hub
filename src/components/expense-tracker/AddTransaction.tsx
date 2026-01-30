@@ -226,9 +226,14 @@ export function AddTransaction() {
         setSuccessSubtitle(`${frequencyText} transactions will appear automatically in your history.`);
         setSuccess(true);
       } else {
-        await TransactionService.createTransaction(formData);
-        setSuccessTitle('Transaction Added!');
-        setSuccessSubtitle('Your transaction has been successfully recorded.');
+        const { isPending } = await TransactionService.createTransactionOfflineAware(formData);
+        if (isPending) {
+          setSuccessTitle('Saved Offline');
+          setSuccessSubtitle('Transaction will sync when you reconnect.');
+        } else {
+          setSuccessTitle('Transaction Added!');
+          setSuccessSubtitle('Your transaction has been successfully recorded.');
+        }
         setSuccess(true);
       }
       

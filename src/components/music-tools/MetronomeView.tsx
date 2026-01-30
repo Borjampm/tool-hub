@@ -367,7 +367,7 @@ export function MetronomeView() {
         </button>
 
         <div className="w-full max-w-xl space-y-6">
-          <div className="flex items-center justify-between gap-6">
+          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between sm:gap-6">
             <div className="flex items-baseline gap-3">
               <span className="text-5xl font-semibold text-gray-900">{bpm}</span>
               <span className="text-sm uppercase tracking-[0.3em] text-gray-400">bpm</span>

@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { offlineQueue } from './offlineQueueService';
 import type { TimeEntry } from '../lib/supabase';
 
 export interface CreateTimeEntryData {
@@ -290,7 +291,7 @@ export class TimeEntryService {
    */
   static async hasInProgressEntry(): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       throw new Error('User must be authenticated to fetch time entries');
     }
@@ -309,5 +310,38 @@ export class TimeEntryService {
     }
 
     return !!existing;
+  }
+
+  /**
+   * Create a manual time entry with offline support.
+   * If offline, queues the operation and returns a pending state.
+   */
+  static async createManualEntryOfflineAware(
+    data: ManualTimeEntryData
+  ): Promise<{ entry: TimeEntry | null; isPending: boolean }> {
+    // Serialize dates for queue storage
+    const serializedData = {
+      ...data,
+      startTime: data.startTime.toISOString(),
+      endTime: data.endTime.toISOString(),
+    };
+
+    if (navigator.onLine) {
+      try {
+        const entry = await this.createManualEntry(data);
+        return { entry, isPending: false };
+      } catch (error) {
+        // If network fails despite being "online", queue it
+        if (error instanceof Error && error.message.includes('network')) {
+          await offlineQueue.addToQueue('timeEntry', 'create', serializedData as unknown as Record<string, unknown>);
+          return { entry: null, isPending: true };
+        }
+        throw error;
+      }
+    }
+
+    // Offline: queue the operation
+    await offlineQueue.addToQueue('timeEntry', 'create', serializedData as unknown as Record<string, unknown>);
+    return { entry: null, isPending: true };
   }
 } 

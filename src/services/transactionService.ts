@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { RecurringTransactionService } from './recurringTransactionService';
+import { offlineQueue } from './offlineQueueService';
 import type { Transaction, UserExpenseCategory, UserAccount } from '../lib/supabase';
 
 export interface CreateTransactionData {
@@ -300,7 +301,7 @@ export class TransactionService {
    */
   static async getTransactionsByCategory(categoryId: string): Promise<Transaction[]> {
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     if (!user) {
       throw new Error('User must be authenticated to fetch transactions');
     }
@@ -319,5 +320,31 @@ export class TransactionService {
     }
 
     return transactions || [];
+  }
+
+  /**
+   * Create a transaction with offline support.
+   * If offline, queues the operation and returns a pending transaction object.
+   */
+  static async createTransactionOfflineAware(
+    data: CreateTransactionData
+  ): Promise<{ transaction: Transaction | null; isPending: boolean }> {
+    if (navigator.onLine) {
+      try {
+        const transaction = await this.createTransaction(data);
+        return { transaction, isPending: false };
+      } catch (error) {
+        // If network fails despite being "online", queue it
+        if (error instanceof Error && error.message.includes('network')) {
+          await offlineQueue.addToQueue('transaction', 'create', data as unknown as Record<string, unknown>);
+          return { transaction: null, isPending: true };
+        }
+        throw error;
+      }
+    }
+
+    // Offline: queue the operation
+    await offlineQueue.addToQueue('transaction', 'create', data as unknown as Record<string, unknown>);
+    return { transaction: null, isPending: true };
   }
 }
