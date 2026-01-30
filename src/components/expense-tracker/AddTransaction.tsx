@@ -5,6 +5,7 @@ import { UserAccountService } from '../../services/userAccountService';
 import type { CreateTransactionData } from '../../services/transactionService';
 import type { UserAccount } from '../../lib/supabase';
 import { RecurringTransactionService } from '../../services/recurringTransactionService';
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from '../../lib/currencies';
 
 export function AddTransaction() {
   const [isLoading, setIsLoading] = useState(false);
@@ -59,7 +60,7 @@ export function AddTransaction() {
   const [formData, setFormData] = useState<CreateTransactionData>({
     type: 'expense', // preselected as expense
     amount: 0,
-    currency: 'CLP', // default to CLP
+    currency: DEFAULT_CURRENCY,
     categoryId: '',
     accountId: '',
     title: '',
@@ -239,7 +240,7 @@ export function AddTransaction() {
         setFormData({
           type: 'expense', // keep expense preselected
           amount: 0,
-          currency: 'CLP', // keep CLP default
+          currency: DEFAULT_CURRENCY,
           categoryId: categories.length > 0 ? categories[0].id : '',
           accountId: accounts.length > 0 ? accounts[0].id : '', // Reset to first available account
           title: '',
@@ -353,9 +354,11 @@ export function AddTransaction() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={isLoading}
               >
-                <option value="CLP">CLP</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
+                {SUPPORTED_CURRENCIES.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
@@ -552,7 +555,7 @@ export function AddTransaction() {
                 setFormData({
                   type: 'expense',
                   amount: 0,
-                  currency: 'CLP',
+                  currency: DEFAULT_CURRENCY,
                   categoryId: categories.length > 0 ? categories[0].id : '',
                   accountId: accounts.length > 0 ? accounts[0].id : '', // Reset to first available account
                   title: '',
