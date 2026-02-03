@@ -8,6 +8,7 @@ import { EmailVerified } from './components/shared/EmailVerified';
 import { EmailVerificationCallback } from './components/shared/EmailVerificationCallback';
 import { MusicToolsApp } from './components/music-tools/MusicToolsApp';
 import { ChatApp } from './components/chat/ChatApp';
+import { FlashcardsApp } from './components/flashcards/FlashcardsApp';
 import { OfflineIndicator } from './components/shared/OfflineIndicator';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/expense-tracker" element={<ExpenseTracker />} />
         <Route path="/music-tools" element={<MusicToolsApp />} />
         <Route path="/chat" element={<ChatApp />} />
+        <Route path="/flashcards" element={<FlashcardsApp />} />
         <Route path="/account" element={<AccountManagement />} />
       </Routes>
       <OfflineIndicator />
