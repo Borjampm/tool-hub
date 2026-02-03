@@ -115,10 +115,22 @@ export function LandingPage() {
                 Chat interface & messaging
               </p>
             </button>
+
+            {/* Flashcards Button */}
+            <button
+              onClick={() => navigate('/flashcards')}
+              className="bg-white rounded-xl shadow-lg p-4 sm:p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation min-h-[120px] sm:min-h-[140px] flex flex-col items-center justify-center group"
+            >
+              <div className="text-2xl sm:text-3xl mb-2 group-hover:scale-110 transition-transform duration-200">🧠</div>
+              <h2 className="text-sm sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">Flashcards</h2>
+              <p className="text-xs sm:text-sm text-gray-600 text-center leading-tight">
+                Spaced repetition learning
+              </p>
+            </button>
           </div>
 
           {/* Desktop layout - visible only on medium screens and up */}
-          <div className="hidden md:grid md:grid-cols-4 gap-6 sm:gap-8 max-w-5xl mx-auto mb-8 sm:mb-12">
+          <div className="hidden md:grid md:grid-cols-5 gap-6 sm:gap-8 max-w-6xl mx-auto mb-8 sm:mb-12">
             {/* Hobby Tracker Card */}
             <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300 flex flex-col">
               <div className="text-3xl sm:text-4xl mb-4">🎯</div>
@@ -176,6 +188,21 @@ export function LandingPage() {
                 className="w-full bg-cyan-600 text-white py-3 px-6 rounded-lg hover:bg-cyan-700 transition-colors duration-200 font-medium touch-manipulation min-h-[44px] text-base sm:text-lg"
               >
                 Start Chatting
+              </button>
+            </div>
+
+            {/* Flashcards Card */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 hover:shadow-xl transition-shadow duration-300 flex flex-col">
+              <div className="text-3xl sm:text-4xl mb-4">🧠</div>
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">Flashcards</h2>
+              <p className="text-sm sm:text-base text-gray-600 mb-6 flex-1">
+                Spaced repetition flashcards for effective memorization and learning
+              </p>
+              <button
+                onClick={() => navigate('/flashcards')}
+                className="w-full bg-amber-600 text-white py-3 px-6 rounded-lg hover:bg-amber-700 transition-colors duration-200 font-medium touch-manipulation min-h-[44px] text-base sm:text-lg"
+              >
+                Start Learning
               </button>
             </div>
           </div>

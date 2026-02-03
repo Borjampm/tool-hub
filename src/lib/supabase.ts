@@ -95,3 +95,49 @@ export interface ExchangeRate {
   created_at: string;
   updated_at: string;
 }
+
+// Flashcard types
+export type FlashcardCardType = 'basic' | 'reversible' | 'cloze';
+export type FlashcardTheme = 'light' | 'dark' | 'system';
+
+export interface FlashcardFolder {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FlashcardCard {
+  id: string;
+  user_id: string;
+  folder_id: string;
+  card_type: FlashcardCardType;
+  front: string;
+  back: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FlashcardCardSide {
+  id: string;
+  user_id: string;
+  card_id: string;
+  side_index: number;
+  ease_factor: number;
+  interval_days: number;
+  repetitions: number;
+  next_review: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FlashcardSettings {
+  user_id: string;
+  default_ease_factor: number;
+  daily_new_card_limit: number;
+  daily_review_limit: number;
+  theme: FlashcardTheme;
+  created_at: string;
+  updated_at: string;
+}
