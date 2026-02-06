@@ -66,10 +66,20 @@ function calculateSM2(
   return { ease, interval, reps };
 }
 
+/**
+ * Get end of today in the user's local timezone as ISO string.
+ * Cards due anytime today are considered studyable.
+ */
+function getEndOfToday(): string {
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+  return endOfDay.toISOString();
+}
+
 export class FlashcardQuizService {
   /**
    * Get cards due for review
-   * Cards are due if next_review <= now OR next_review IS NULL (new cards)
+   * Cards are due if next_review <= end of today OR next_review IS NULL (new cards)
    */
   static async getDueCards(folderId?: string, limit?: number): Promise<DueCard[]> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -78,14 +88,14 @@ export class FlashcardQuizService {
       throw new Error('User must be authenticated to get due cards');
     }
 
-    const now = new Date().toISOString();
+    const endOfToday = getEndOfToday();
 
-    // Build query for due card sides
+    // Build query for due card sides (new + due today)
     let sidesQuery = supabase
       .from('flashcard_card_sides')
       .select('*')
       .eq('user_id', user.id)
-      .or(`next_review.is.null,next_review.lte.${now}`)
+      .or(`next_review.is.null,next_review.lte.${endOfToday}`)
       .order('next_review', { ascending: true, nullsFirst: true });
 
     if (limit) {
@@ -99,7 +109,7 @@ export class FlashcardQuizService {
       throw new Error(`Failed to fetch due cards: ${sidesError.message}`);
     }
 
-    if (!sides || sides.length === 0) {
+    if (sides.length === 0) {
       return [];
     }
 
@@ -249,7 +259,7 @@ export class FlashcardQuizService {
   }
 
   /**
-   * Get count of due cards (next_review <= now)
+   * Get count of due cards (next_review <= end of today)
    */
   static async getDueCardCount(folderId?: string): Promise<number> {
     const { data: { user } } = await supabase.auth.getUser();
@@ -258,14 +268,14 @@ export class FlashcardQuizService {
       throw new Error('User must be authenticated to get card counts');
     }
 
-    const now = new Date().toISOString();
+    const endOfToday = getEndOfToday();
 
     let query = supabase
       .from('flashcard_card_sides')
       .select('id, card_id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .not('next_review', 'is', null)
-      .lte('next_review', now);
+      .lte('next_review', endOfToday);
 
     if (folderId) {
       // Need to filter by folder - get card IDs first
