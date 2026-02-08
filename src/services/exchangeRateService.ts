@@ -214,6 +214,36 @@ export class ExchangeRateService {
   }
 
   /**
+   * Get exchange rates for a date range (ascending order).
+   * Useful for rendering trends charts.
+   */
+  static async getRatesForDateRange(
+    startDate: string,
+    endDate: string
+  ): Promise<ExchangeRate[]> {
+    const { data, error } = await supabase
+      .from('exchange_rates')
+      .select('*')
+      .gte('rate_date', startDate)
+      .lte('rate_date', endDate)
+      .order('rate_date', { ascending: true });
+
+    if (error || !data) {
+      console.error('Error fetching exchange rates for range:', error);
+      return [];
+    }
+
+    const rates = data as ExchangeRate[];
+
+    // Populate individual date cache entries
+    for (const rate of rates) {
+      ratesCache.set(rate.rate_date, { data: rate, timestamp: Date.now() });
+    }
+
+    return rates;
+  }
+
+  /**
    * Clear the in-memory cache (useful for testing or forcing refresh)
    */
   static clearCache(): void {

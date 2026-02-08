@@ -6,6 +6,8 @@ import type { CreateTransactionData } from '../../services/transactionService';
 import type { UserAccount } from '../../lib/supabase';
 import { RecurringTransactionService } from '../../services/recurringTransactionService';
 import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from '../../lib/currencies';
+import type { SupportedCurrency } from '../../lib/currencies';
+import { ExchangeRateService } from '../../services/exchangeRateService';
 
 export function AddTransaction() {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +23,12 @@ export function AddTransaction() {
   const [recurringInterval, setRecurringInterval] = useState<number>(1);
   const [endDateDisplayValue, setEndDateDisplayValue] = useState('');
   const [endDateISO, setEndDateISO] = useState<string>('');
+
+  // Currency conversion helper
+  const [showConversion, setShowConversion] = useState(false);
+  const [convertFrom, setConvertFrom] = useState<SupportedCurrency>('USD');
+  const [convertAmount, setConvertAmount] = useState<number>(0);
+  const [convertPreview, setConvertPreview] = useState<string>('');
 
   // Get current date in YYYY-MM-DD format for internal storage
   const getCurrentDate = () => {
@@ -176,6 +184,25 @@ export function AddTransaction() {
     }
   };
 
+  const handleConvert = async () => {
+    if (convertAmount <= 0) return;
+    try {
+      const converted = await ExchangeRateService.convert(
+        convertAmount,
+        convertFrom,
+        formData.currency,
+        formData.transactionDate || undefined
+      );
+      if (converted !== null) {
+        handleInputChange('amount', Math.round(converted * 100) / 100);
+        const rate = await ExchangeRateService.convert(1, convertFrom, formData.currency, formData.transactionDate || undefined);
+        setConvertPreview(`1 ${convertFrom} = ${rate !== null ? rate.toFixed(4) : '?'} ${formData.currency}`);
+      }
+    } catch {
+      setConvertPreview('Conversion error');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -258,6 +285,9 @@ export function AddTransaction() {
         setRecurringInterval(1);
         setEndDateDisplayValue('');
         setEndDateISO('');
+        setShowConversion(false);
+        setConvertAmount(0);
+        setConvertPreview('');
       }, 1500);
 
     } catch (err) {
@@ -366,6 +396,62 @@ export function AddTransaction() {
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Currency Conversion Helper */}
+          <div className="border border-gray-200 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setShowConversion(v => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors touch-manipulation"
+            >
+              <span>Convert from another currency</span>
+              <span className="text-gray-400">{showConversion ? '▲' : '▼'}</span>
+            </button>
+            {showConversion && (
+              <div className="px-4 pb-4 space-y-3 border-t border-gray-100">
+                <p className="text-xs text-gray-500 pt-3">
+                  Enter an amount in a foreign currency to auto-fill the amount above in {formData.currency}.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Paid in</label>
+                    <select
+                      value={convertFrom}
+                      onChange={e => setConvertFrom(e.target.value as SupportedCurrency)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                    >
+                      {SUPPORTED_CURRENCIES.filter(c => c !== formData.currency).map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Amount</label>
+                    <input
+                      type="number"
+                      min={0}
+                      step="0.01"
+                      value={convertAmount || ''}
+                      onChange={e => setConvertAmount(parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleConvert}
+                    disabled={convertAmount <= 0}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-md text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-manipulation"
+                  >
+                    Convert
+                  </button>
+                </div>
+                {convertPreview && (
+                  <p className="text-xs text-emerald-700 bg-emerald-50 px-3 py-2 rounded-md">{convertPreview}</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Category */}

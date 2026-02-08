@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface ExpenseNavbarProps {
-  activeTab: 'add' | 'transactions' | 'dashboard' | 'settings';
-  onTabChange: (tab: 'add' | 'transactions' | 'dashboard' | 'settings') => void;
+  activeTab: 'add' | 'transactions' | 'dashboard' | 'converter' | 'settings';
+  onTabChange: (tab: 'add' | 'transactions' | 'dashboard' | 'converter' | 'settings') => void;
 }
 
 export function ExpenseNavbar({ activeTab, onTabChange }: ExpenseNavbarProps) {
@@ -20,7 +20,7 @@ export function ExpenseNavbar({ activeTab, onTabChange }: ExpenseNavbarProps) {
     }
   };
 
-  const handleTabChange = (tab: 'add' | 'transactions' | 'dashboard' | 'settings') => {
+  const handleTabChange = (tab: 'add' | 'transactions' | 'dashboard' | 'converter' | 'settings') => {
     onTabChange(tab);
     setIsMobileMenuOpen(false); // Close mobile menu when tab is selected
   };
@@ -34,6 +34,7 @@ export function ExpenseNavbar({ activeTab, onTabChange }: ExpenseNavbarProps) {
     { id: 'add' as const, label: 'Add Transaction' },
     { id: 'transactions' as const, label: 'Transactions' },
     { id: 'dashboard' as const, label: 'Dashboard' },
+    { id: 'converter' as const, label: 'Converter' },
     { id: 'settings' as const, label: 'Settings' },
   ];
 

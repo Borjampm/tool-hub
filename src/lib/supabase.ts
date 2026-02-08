@@ -81,6 +81,7 @@ export interface UserAccount {
 export interface UserSettings {
   user_id: string;
   weekly_hobby_goal_hours: number; // total target hours per week
+  default_currency: string; // preferred currency code (e.g., 'CLP', 'USD')
   created_at: string;
   updated_at: string;
 }

@@ -3,6 +3,7 @@ import type { UserSettings } from '../lib/supabase';
 
 export interface UpdateUserSettingsData {
   weeklyHobbyGoalHours?: number;
+  defaultCurrency?: string;
 }
 
 export class UserSettingsService {
@@ -28,6 +29,7 @@ export class UserSettingsService {
         return {
           user_id: user.id,
           weekly_hobby_goal_hours: 2,
+          default_currency: 'CLP',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
@@ -52,6 +54,9 @@ export class UserSettingsService {
       user_id: user.id,
       ...(data.weeklyHobbyGoalHours !== undefined
         ? { weekly_hobby_goal_hours: data.weeklyHobbyGoalHours }
+        : {}),
+      ...(data.defaultCurrency !== undefined
+        ? { default_currency: data.defaultCurrency }
         : {}),
     };
 
