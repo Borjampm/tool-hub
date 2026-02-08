@@ -7,9 +7,10 @@ import { AddTransaction } from './AddTransaction';
 import { Transactions } from './Transactions';
 import { ExpenseDashboard } from './ExpenseDashboard';
 import { ExpenseSettings } from './ExpenseSettings';
+import { CurrencyConverter } from './CurrencyConverter';
 
 export function ExpenseTracker() {
-  const [activeTab, setActiveTab] = useState<'add' | 'transactions' | 'dashboard' | 'settings'>('add');
+  const [activeTab, setActiveTab] = useState<'add' | 'transactions' | 'dashboard' | 'converter' | 'settings'>('add');
   const [isEmailVerification, setIsEmailVerification] = useState(false);
 
   useEffect(() => {
@@ -64,6 +65,7 @@ export function ExpenseTracker() {
             {activeTab === 'add' && <AddTransaction />}
             {activeTab === 'transactions' && <Transactions />}
             {activeTab === 'dashboard' && <ExpenseDashboard />}
+            {activeTab === 'converter' && <CurrencyConverter />}
             {activeTab === 'settings' && <ExpenseSettings />}
           </main>
         </div>

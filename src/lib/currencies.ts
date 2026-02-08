@@ -41,3 +41,17 @@ export function getCurrencyInfo(currency: string): { name: string; symbol: strin
   }
   return { name: currency, symbol: currency, locale: 'en-US' };
 }
+
+/**
+ * Format an amount with the correct locale and currency symbol.
+ * Centralised so every component uses the same formatting.
+ */
+export function formatCurrency(amount: number, currency: string): string {
+  const { locale } = getCurrencyInfo(currency);
+  // Let Intl use each currency's standard fraction digits
+  // (CLP → 0 decimals, USD/EUR/GBP/BRL → 2 decimals)
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+  }).format(amount);
+}

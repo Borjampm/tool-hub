@@ -367,12 +367,15 @@ export class CSVExportService {
     return res;
   }
   /**
-   * Convert transactions to CSV format
+   * Convert transactions to CSV format.
+   * If convertedAmounts is provided, adds "Converted Amount" and "Conversion Currency" columns.
    */
   static formatTransactionsToCSV(
     transactions: Transaction[],
     categories: UserExpenseCategory[] = [],
-    accounts: UserAccount[] = []
+    accounts: UserAccount[] = [],
+    convertedAmounts?: Map<string, number>,
+    conversionCurrency?: string
   ): string {
     const headers = [
       'Date',
@@ -383,6 +386,7 @@ export class CSVExportService {
       'Account',
       'Amount',
       'Currency',
+      ...(convertedAmounts && conversionCurrency ? ['Converted Amount', 'Conversion Currency'] : []),
       'Created At',
       'Transaction ID',
     ];
@@ -413,36 +417,68 @@ export class CSVExportService {
     };
 
     const rows = transactions.map(t => {
-      return [
+      const base = [
         escapeCSVValue(formatDate(t.transaction_date)),
         escapeCSVValue(t.type),
         escapeCSVValue(t.title),
         escapeCSVValue(t.description || ''),
         escapeCSVValue(getCategoryName(t)),
         escapeCSVValue(getAccountName(t)),
-        // Keep amount as raw number string to preserve data fidelity
         escapeCSVValue(String(t.amount)),
         escapeCSVValue(t.currency),
-        // Created At contains a comma due to 24h time formatting, so ensure it is escaped
+      ];
+      if (convertedAmounts && conversionCurrency) {
+        const converted = convertedAmounts.get(t.id);
+        base.push(
+          escapeCSVValue(converted !== undefined ? String(Math.round(converted)) : ''),
+          escapeCSVValue(conversionCurrency),
+        );
+      }
+      base.push(
         escapeCSVValue(formatDateTime(t.created_at)),
         escapeCSVValue(t.transaction_id),
-      ].join(',');
+      );
+      return base.join(',');
     });
 
     return [headers.join(','), ...rows].join('\n');
   }
 
   /**
-   * Download transactions CSV directly without storage
+   * Download transactions CSV directly without storage.
+   * If convertToCurrency is provided, converts each transaction and adds extra columns.
    */
-  static downloadTransactionsCSVDirect(
+  static async downloadTransactionsCSVDirect(
     transactions: Transaction[],
     categories: UserExpenseCategory[] = [],
     accounts: UserAccount[] = [],
-    filename?: string
-  ): void {
+    filename?: string,
+    convertToCurrency?: string
+  ): Promise<void> {
     try {
-      const csvContent = this.formatTransactionsToCSV(transactions, categories, accounts);
+      let convertedAmounts: Map<string, number> | undefined;
+      if (convertToCurrency) {
+        const { ExchangeRateService } = await import('./exchangeRateService');
+        convertedAmounts = new Map();
+        for (const t of transactions) {
+          const converted = await ExchangeRateService.convert(
+            t.amount,
+            t.currency,
+            convertToCurrency,
+            t.transaction_date
+          );
+          if (converted !== null) {
+            convertedAmounts.set(t.id, converted);
+          }
+        }
+      }
+      const csvContent = this.formatTransactionsToCSV(
+        transactions,
+        categories,
+        accounts,
+        convertedAmounts,
+        convertToCurrency
+      );
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');

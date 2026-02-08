@@ -16,6 +16,7 @@ Tool Hub is a personal multi-app platform for everyday tools and experimental fe
 ```bash
 # Development
 npm run dev              # Start dev server at localhost:5173
+npm run dev:tailscale    # Start dev server exposed over Tailscale (use this for remote/mobile testing)
 
 # Building and Linting
 npm run build            # TypeScript check + production build
@@ -245,7 +246,6 @@ Migration workflow:
 Safe commands:
 - `npx supabase migration list` - Check status
 - `npx supabase db diff` - View differences
-- `npx supabase db push` - REQUIRES user confirmation
 - `npx supabase db reset` - REQUIRES user confirmation
 
 Migrations are irreversible. Always review SQL before applying.

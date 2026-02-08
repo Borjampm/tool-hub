@@ -2,12 +2,17 @@ import { useState, useEffect } from 'react';
 import { ExpenseCategoryService } from '../../services/expenseCategoryService';
 import { UserAccountService } from '../../services/userAccountService';
 import type { UserExpenseCategory, UserAccount } from '../../lib/supabase';
+import { useUserSettings } from '../../hooks/useUserSettings';
+import { SUPPORTED_CURRENCIES, CURRENCY_INFO } from '../../lib/currencies';
+import type { SupportedCurrency } from '../../lib/currencies';
 
 export function ExpenseSettings() {
   const [allCategories, setAllCategories] = useState<UserExpenseCategory[]>([]);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const { defaultCurrency, updateDefaultCurrency, isLoading: isSettingsLoading } = useUserSettings();
+  const [isSavingCurrency, setIsSavingCurrency] = useState(false);
 
   // Modal states
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -175,6 +180,18 @@ export function ExpenseSettings() {
     }
   };
 
+  const handleCurrencyChange = async (currency: SupportedCurrency) => {
+    try {
+      setIsSavingCurrency(true);
+      setError('');
+      await updateDefaultCurrency(currency);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update default currency');
+    } finally {
+      setIsSavingCurrency(false);
+    }
+  };
+
   // Modal functions
   const openCategoryModal = (category?: UserExpenseCategory) => {
     closeDropdown();
@@ -235,6 +252,36 @@ export function ExpenseSettings() {
             {error}
           </div>
         )}
+
+        {/* Default Currency Section */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Default Currency</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Used as the default in forms, dashboard conversions, and exports.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {SUPPORTED_CURRENCIES.map((code) => {
+              const info = CURRENCY_INFO[code];
+              const isActive = code === defaultCurrency;
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => handleCurrencyChange(code)}
+                  disabled={isSavingCurrency || isSettingsLoading}
+                  className={`px-4 py-3 rounded-lg font-medium transition-colors duration-200 min-h-[44px] touch-manipulation ${
+                    isActive
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  } disabled:opacity-50`}
+                >
+                  <span className="text-sm">{info.symbol}</span>{' '}
+                  <span className="text-sm">{code}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* All Categories Section */}
         <div className="mb-8">

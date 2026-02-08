@@ -6,9 +6,13 @@ import type { UpdateScope } from '../../services/recurringTransactionService';
 import type { Transaction, UserExpenseCategory, UserAccount } from '../../lib/supabase';
 import { formatDate } from '../../lib/dateUtils';
 import { CSVExportService } from '../../services/csvExportService';
-import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY } from '../../lib/currencies';
+import { SUPPORTED_CURRENCIES, DEFAULT_CURRENCY, formatCurrency as formatCurrencyUtil } from '../../lib/currencies';
+import type { SupportedCurrency } from '../../lib/currencies';
+import { ExchangeRateService } from '../../services/exchangeRateService';
+import { useUserSettings } from '../../hooks/useUserSettings';
 
 export function Transactions() {
+  const { defaultCurrency } = useUserSettings();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<UserExpenseCategory[]>([]);
   const [accounts, setAccounts] = useState<UserAccount[]>([]);
@@ -68,6 +72,20 @@ export function Transactions() {
   const [showRecurringDialog, setShowRecurringDialog] = useState(false);
   const [recurringUpdateScope, setRecurringUpdateScope] = useState<UpdateScope>('this-only');
   const editDateInputRef = useRef<HTMLInputElement>(null);
+
+  // Historical conversion: track which transaction is expanded
+  const [expandedConversionId, setExpandedConversionId] = useState<string | null>(null);
+  const [conversionResult, setConversionResult] = useState<string | null>(null);
+  const [isConvertingHistory, setIsConvertingHistory] = useState(false);
+
+  // Edit modal: currency conversion helper
+  const [showEditConversion, setShowEditConversion] = useState(false);
+  const [editConvertFrom, setEditConvertFrom] = useState<SupportedCurrency>(DEFAULT_CURRENCY);
+  const [editConvertAmount, setEditConvertAmount] = useState<number>(0);
+  const [editConvertPreview, setEditConvertPreview] = useState<string>('');
+
+  // Export with conversion
+  const [exportConvertCurrency, setExportConvertCurrency] = useState<SupportedCurrency | ''>('');
 
   const toYYYYMMDD = (d: Date) => {
     const y = d.getFullYear();
@@ -424,6 +442,55 @@ export function Transactions() {
     }
   };
 
+  // Toggle historical conversion for a transaction
+  const toggleConversion = async (t: Transaction) => {
+    if (expandedConversionId === t.id) {
+      setExpandedConversionId(null);
+      setConversionResult(null);
+      return;
+    }
+    if (t.currency === defaultCurrency) {
+      setExpandedConversionId(t.id);
+      setConversionResult('Same as your default currency');
+      return;
+    }
+    setExpandedConversionId(t.id);
+    setConversionResult(null);
+    setIsConvertingHistory(true);
+    try {
+      const converted = await ExchangeRateService.convert(t.amount, t.currency, defaultCurrency, t.transaction_date);
+      if (converted !== null) {
+        setConversionResult(`≈ ${formatCurrencyUtil(converted, defaultCurrency)} on this date`);
+      } else {
+        setConversionResult('Conversion unavailable');
+      }
+    } catch {
+      setConversionResult('Conversion error');
+    } finally {
+      setIsConvertingHistory(false);
+    }
+  };
+
+  // Edit modal: conversion helper
+  const handleEditConvert = async () => {
+    if (editConvertAmount <= 0) return;
+    try {
+      const converted = await ExchangeRateService.convert(
+        editConvertAmount,
+        editConvertFrom,
+        editForm.currency,
+        editForm.transactionDate || undefined
+      );
+      if (converted !== null) {
+        handleEditInputChange('amount', Math.round(converted * 100) / 100);
+        const rate = await ExchangeRateService.convert(1, editConvertFrom, editForm.currency, editForm.transactionDate || undefined);
+        setEditConvertPreview(`1 ${editConvertFrom} = ${rate !== null ? rate.toFixed(4) : '?'} ${editForm.currency}`);
+      }
+    } catch {
+      setEditConvertPreview('Conversion error');
+    }
+  };
+
   // Dev-only sample data generator
   const generateSampleTransactions = async () => {
     if (!import.meta.env.DEV) return;
@@ -532,7 +599,13 @@ export function Transactions() {
     try {
       setIsExporting(true);
       setExportError('');
-      CSVExportService.downloadTransactionsCSVDirect(transactions, categories, accounts);
+      await CSVExportService.downloadTransactionsCSVDirect(
+        transactions,
+        categories,
+        accounts,
+        undefined,
+        exportConvertCurrency || undefined
+      );
     } catch (err) {
       console.error('Failed to export transactions CSV:', err);
       setExportError('Failed to export transactions as CSV. Please try again.');
@@ -770,6 +843,17 @@ export function Transactions() {
               >
                 {isImporting ? 'Importing…' : 'Import XLSX'}
               </button>
+              <select
+                value={exportConvertCurrency}
+                onChange={e => setExportConvertCurrency(e.target.value as SupportedCurrency | '')}
+                className="px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                title="Add converted column to export"
+              >
+                <option value="">No conversion</option>
+                {SUPPORTED_CURRENCIES.map(c => (
+                  <option key={c} value={c}>Convert to {c}</option>
+                ))}
+              </select>
               <button
                 type="button"
                 onClick={handleExportCSV}
@@ -905,6 +989,22 @@ export function Transactions() {
                     <p className="text-sm text-gray-500">
                       {formatDate(transaction.transaction_date)}
                     </p>
+
+                    {/* Historical conversion toggle */}
+                    {!isSkipped && transaction.currency !== defaultCurrency && (
+                      <button
+                        type="button"
+                        onClick={() => toggleConversion(transaction)}
+                        className="text-xs text-emerald-600 hover:text-emerald-800 mt-1"
+                      >
+                        {expandedConversionId === transaction.id ? 'Hide' : `Show in ${defaultCurrency}`}
+                      </button>
+                    )}
+                    {expandedConversionId === transaction.id && (
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {isConvertingHistory ? 'Converting...' : conversionResult}
+                      </p>
+                    )}
                   </div>
                   
                   {/* Right side - Amount */}
@@ -1295,6 +1395,58 @@ export function Transactions() {
                   </div>
                 </div>
               )}
+
+              {/* Currency conversion helper */}
+              <div className="border-t border-gray-200 pt-4">
+                <button
+                  type="button"
+                  onClick={() => { setShowEditConversion(v => !v); setEditConvertPreview(''); }}
+                  className="text-sm text-emerald-600 hover:text-emerald-800 font-medium"
+                >
+                  {showEditConversion ? 'Hide conversion helper' : 'Convert from another currency'}
+                </button>
+                {showEditConversion && (
+                  <div className="mt-3 space-y-3">
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Paid amount</label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={editConvertAmount || ''}
+                          onChange={e => setEditConvertAmount(parseFloat(e.target.value) || 0)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Currency</label>
+                        <select
+                          value={editConvertFrom}
+                          onChange={e => setEditConvertFrom(e.target.value as SupportedCurrency)}
+                          className="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        >
+                          {SUPPORTED_CURRENCIES.filter(c => c !== editForm.currency).map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleEditConvert}
+                      disabled={editConvertAmount <= 0}
+                      className="px-3 py-1.5 bg-emerald-600 text-white text-sm rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      Convert to {editForm.currency}
+                    </button>
+                    {editConvertPreview && (
+                      <p className="text-xs text-gray-500">{editConvertPreview}</p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {editError && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{editError}</div>
