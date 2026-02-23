@@ -3,8 +3,10 @@ import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { offlineQueue } from '../../services/offlineQueueService';
 import { TransactionService } from '../../services/transactionService';
 import { TimeEntryService } from '../../services/timeEntryService';
+import { DebtService } from '../../services/debtService';
 import type { CreateTransactionData } from '../../services/transactionService';
 import type { ManualTimeEntryData } from '../../services/timeEntryService';
+import type { CreateDebtData, CreateDebtTransactionData } from '../../services/debtService';
 
 /**
  * Interface for serialized time entry data from the offline queue.
@@ -68,6 +70,18 @@ export function OfflineIndicator() {
               await TimeEntryService.createManualEntry(deserializedData);
             }
             // Add update/delete handling as needed
+          } else if (operation.type === 'debt') {
+            if (operation.action === 'create') {
+              const debtData = operation.data as unknown as CreateDebtData & {
+                createTransaction?: boolean;
+                transactionData?: CreateDebtTransactionData;
+              };
+              const { createTransaction, transactionData, ...data } = debtData;
+              await DebtService.createDebt(
+                data,
+                createTransaction ? transactionData : undefined
+              );
+            }
           }
 
           await offlineQueue.removeFromQueue(operation.id);

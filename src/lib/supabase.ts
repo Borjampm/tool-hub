@@ -97,6 +97,40 @@ export interface ExchangeRate {
   updated_at: string;
 }
 
+// Debt tracking types
+export interface UserContact {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Debt {
+  id: string;
+  user_id: string;
+  contact_id: string;
+  type: 'owed_to_me' | 'owed_by_me';
+  title: string;
+  description?: string;
+  amount: number;
+  currency: string;
+  transaction_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DebtPayment {
+  id: string;
+  user_id: string;
+  debt_id: string;
+  amount: number;
+  payment_date: string;
+  note?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // Flashcard types
 export type FlashcardCardType = 'basic' | 'reversible' | 'cloze';
 export type FlashcardTheme = 'light' | 'dark' | 'system';
