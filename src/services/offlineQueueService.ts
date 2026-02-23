@@ -9,7 +9,7 @@ const DB_VERSION = 1;
 const STORE_NAME = 'pending-operations';
 const MAX_RETRIES = 3;
 
-export type OperationType = 'transaction' | 'timeEntry';
+export type OperationType = 'transaction' | 'timeEntry' | 'debt';
 export type ActionType = 'create' | 'update' | 'delete';
 
 export interface QueuedOperation {

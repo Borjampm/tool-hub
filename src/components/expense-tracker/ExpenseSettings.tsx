@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ExpenseCategoryService } from '../../services/expenseCategoryService';
 import { UserAccountService } from '../../services/userAccountService';
-import type { UserExpenseCategory, UserAccount } from '../../lib/supabase';
+import { UserContactService } from '../../services/userContactService';
+import type { UserExpenseCategory, UserAccount, UserContact } from '../../lib/supabase';
 import { useUserSettings } from '../../hooks/useUserSettings';
 import { SUPPORTED_CURRENCIES, CURRENCY_INFO } from '../../lib/currencies';
 import type { SupportedCurrency } from '../../lib/currencies';
@@ -9,6 +10,7 @@ import type { SupportedCurrency } from '../../lib/currencies';
 export function ExpenseSettings() {
   const [allCategories, setAllCategories] = useState<UserExpenseCategory[]>([]);
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
+  const [userContacts, setUserContacts] = useState<UserContact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const { defaultCurrency, updateDefaultCurrency, isLoading: isSettingsLoading } = useUserSettings();
@@ -17,20 +19,23 @@ export function ExpenseSettings() {
   // Modal states
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<UserExpenseCategory | null>(null);
   const [editingAccount, setEditingAccount] = useState<UserAccount | null>(null);
+  const [editingContact, setEditingContact] = useState<UserContact | null>(null);
 
   // Dropdown states
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // Form states
   const [categoryForm, setCategoryForm] = useState({ name: '', emoji: '📝', color: '#6B7280' });
-  const [accountForm, setAccountForm] = useState({ 
-    name: '', 
-    type: 'bank' as 'bank' | 'cash' | 'credit_card' | 'investment' | 'other', 
+  const [accountForm, setAccountForm] = useState({
+    name: '',
+    type: 'bank' as 'bank' | 'cash' | 'credit_card' | 'investment' | 'other',
     color: '#6B7280',
-    description: '' 
+    description: ''
   });
+  const [contactForm, setContactForm] = useState({ name: '' });
 
   // Load data
   useEffect(() => {
@@ -64,13 +69,15 @@ export function ExpenseSettings() {
   const loadData = async () => {
       try {
         setIsLoading(true);
-        const [allCategoriesData, accounts] = await Promise.all([
+        const [allCategoriesData, accounts, contactsData] = await Promise.all([
           ExpenseCategoryService.getAllAvailableExpenseCategories(),
-          UserAccountService.getUserAccounts()
+          UserAccountService.getUserAccounts(),
+          UserContactService.getContacts()
         ]);
-        
+
         setAllCategories(allCategoriesData);
         setUserAccounts(accounts);
+        setUserContacts(contactsData);
     } catch (err) {
       console.error('Error loading settings data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load settings');
@@ -178,6 +185,58 @@ export function ExpenseSettings() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete account');
     }
+  };
+
+  // Contact functions
+  const handleCreateContact = async () => {
+    try {
+      setError('');
+      await UserContactService.createContact({ name: contactForm.name });
+      setContactForm({ name: '' });
+      setShowContactModal(false);
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create contact');
+    }
+  };
+
+  const handleUpdateContact = async () => {
+    if (!editingContact) return;
+    try {
+      setError('');
+      await UserContactService.updateContact(editingContact.id, { name: contactForm.name });
+      setContactForm({ name: '' });
+      setEditingContact(null);
+      setShowContactModal(false);
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update contact');
+    }
+  };
+
+  const handleDeleteContact = async (contact: UserContact) => {
+    closeDropdown();
+    if (!confirm(`Are you sure you want to delete "${contact.name}"?`)) return;
+    try {
+      setError('');
+      await UserContactService.deleteContact(contact.id);
+      loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete contact');
+    }
+  };
+
+  const openContactModal = (contact?: UserContact) => {
+    closeDropdown();
+    if (contact) {
+      setEditingContact(contact);
+      setContactForm({ name: contact.name });
+    } else {
+      setEditingContact(null);
+      setContactForm({ name: '' });
+    }
+    setShowContactModal(true);
+    setError('');
   };
 
   const handleCurrencyChange = async (currency: SupportedCurrency) => {
@@ -413,6 +472,65 @@ export function ExpenseSettings() {
             ))}
           </div>
         </div>
+
+        {/* Contacts Section */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Contacts</h3>
+            <button
+              onClick={() => openContactModal()}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors duration-200 text-sm font-medium"
+            >
+              Add Contact
+            </button>
+          </div>
+
+          {userContacts.length === 0 ? (
+            <p className="text-sm text-gray-500">No contacts yet. Add contacts to use with the Debts tracker.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {userContacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  className="border-2 rounded-lg p-4 transition-all hover:shadow-lg bg-gray-600 border-gray-600"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">👤</span>
+                      <span className="font-medium text-white text-shadow">{contact.name}</span>
+                    </div>
+                    <div className="dropdown-container relative">
+                      <button
+                        onClick={() => toggleDropdown(`contact-${contact.id}`)}
+                        className="text-white hover:text-gray-200 p-2 rounded-full bg-black bg-opacity-20 hover:bg-opacity-40 transition-all shadow-sm"
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                        </svg>
+                      </button>
+                      {openDropdown === `contact-${contact.id}` && (
+                        <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+                          <button
+                            onClick={() => openContactModal(contact)}
+                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteContact(contact)}
+                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Category Modal */}
@@ -588,6 +706,48 @@ export function ExpenseSettings() {
               </button>
               <button
                 onClick={() => setShowAccountModal(false)}
+                className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contact Modal */}
+      {showContactModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              {editingContact ? 'Edit Contact' : 'Add Contact'}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Contact Name *
+                </label>
+                <input
+                  type="text"
+                  value={contactForm.name}
+                  onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="e.g., John Doe"
+                />
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={editingContact ? handleUpdateContact : handleCreateContact}
+                disabled={!contactForm.name.trim()}
+                className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {editingContact ? 'Update' : 'Create'}
+              </button>
+              <button
+                onClick={() => setShowContactModal(false)}
                 className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"
               >
                 Cancel

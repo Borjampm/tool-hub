@@ -8,9 +8,10 @@ import { Transactions } from './Transactions';
 import { ExpenseDashboard } from './ExpenseDashboard';
 import { ExpenseSettings } from './ExpenseSettings';
 import { CurrencyConverter } from './CurrencyConverter';
+import { DebtTracker } from './DebtTracker';
 
 export function ExpenseTracker() {
-  const [activeTab, setActiveTab] = useState<'add' | 'transactions' | 'dashboard' | 'converter' | 'settings'>('add');
+  const [activeTab, setActiveTab] = useState<'add' | 'transactions' | 'dashboard' | 'converter' | 'debts' | 'settings'>('add');
   const [isEmailVerification, setIsEmailVerification] = useState(false);
 
   useEffect(() => {
@@ -66,6 +67,7 @@ export function ExpenseTracker() {
             {activeTab === 'transactions' && <Transactions />}
             {activeTab === 'dashboard' && <ExpenseDashboard />}
             {activeTab === 'converter' && <CurrencyConverter />}
+            {activeTab === 'debts' && <DebtTracker />}
             {activeTab === 'settings' && <ExpenseSettings />}
           </main>
         </div>

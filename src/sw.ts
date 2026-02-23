@@ -57,7 +57,7 @@ const STORE_NAME = 'pending-operations';
 
 interface QueuedOperation {
   id: string;
-  type: 'transaction' | 'timeEntry';
+  type: 'transaction' | 'timeEntry' | 'debt';
   action: 'create' | 'update' | 'delete';
   data: Record<string, unknown>;
   timestamp: number;
@@ -158,6 +158,17 @@ async function processOperation(operation: QueuedOperation): Promise<void> {
   }
 
   if (operation.type === 'timeEntry' && operation.action === 'create') {
+    const clients = await self.clients.matchAll();
+    if (clients.length > 0) {
+      clients[0].postMessage({
+        type: 'PROCESS_QUEUED_OPERATION',
+        operation,
+      });
+    }
+    return;
+  }
+
+  if (operation.type === 'debt' && operation.action === 'create') {
     const clients = await self.clients.matchAll();
     if (clients.length > 0) {
       clients[0].postMessage({
